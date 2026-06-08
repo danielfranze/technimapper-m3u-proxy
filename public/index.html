@@ -195,7 +195,21 @@
                 if(config.port) document.getElementById('receiverPort').value = config.port;
                 if(config.cronExpression) document.getElementById('cronExpression').value = config.cronExpression;
             } catch(e) {}
+
+            updateSyncTime();
+            setInterval(updateSyncTime, 30000);
         });
+
+        async function updateSyncTime() {
+            try {
+                const res = await fetch(BACKEND_URL + '/api/get-config');
+                const data = await res.json();
+                const el = document.getElementById('last-sync-time');
+                if (el) el.innerText = data.lastSync || "Never";
+            } catch(e) {
+                console.error("Sync-Update Fehler:", e);
+            }
+        }
 
         async function fetchChannels() {
             const statusMsg = document.getElementById('statusMsg');
