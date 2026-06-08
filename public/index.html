@@ -180,34 +180,45 @@
         let detectedChannels = [];
         const BACKEND_URL = window.location.origin;
 
-        document.addEventListener("DOMContentLoaded", async () => {
+        document.addEventListener("DOMContentLoaded", () => {
             const linkElement = document.getElementById('m3uLink');
             if (linkElement) {
                 linkElement.href = BACKEND_URL + '/playlist.m3u';
                 linkElement.innerText = BACKEND_URL + '/playlist.m3u';
             }
             
-            // Load configuration from backend on startup
+            // Konfiguration laden (nicht-blockierend)
+            loadInitialConfig();
+            
+            // Sync-Update starten (läuft im Hintergrund)
+            updateSyncTime();
+            setInterval(updateSyncTime, 30000);
+        });
+
+        async function loadInitialConfig() {
             try {
                 const res = await fetch(BACKEND_URL + '/api/get-config');
                 const config = await res.json();
                 if(config.ip) document.getElementById('receiverIp').value = config.ip;
                 if(config.port) document.getElementById('receiverPort').value = config.port;
                 if(config.cronExpression) document.getElementById('cronExpression').value = config.cronExpression;
-            } catch(e) {}
-
-            updateSyncTime();
-            setInterval(updateSyncTime, 30000);
-        });
+            } catch(e) { console.error("Initial config load failed"); }
+        }
 
         async function updateSyncTime() {
             try {
-                const res = await fetch(BACKEND_URL + '/api/get-config');
+                // Timeout-Logik: Wenn der Server nach 5s nicht antwortet, abbrechen
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const res = await fetch(BACKEND_URL + '/api/get-config', { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
                 const data = await res.json();
                 const el = document.getElementById('last-sync-time');
                 if (el) el.innerText = data.lastSync || "Never";
             } catch(e) {
-                console.error("Sync-Update Fehler:", e);
+                console.log("Sync-Status aktuell nicht abrufbar.");
             }
         }
 
@@ -228,21 +239,16 @@
                 });
                 const data = await res.json();
 
-                if (data.error) {
-                    statusMsg.innerText = "Error: " + data.error;
-                    statusMsg.style.color = "#c5221f";
-                    return;
-                }
+                if (data.error) throw new Error(data.error);
 
                 detectedChannels = data.channels;
                 currentMapping = data.mapping;
                 
-                statusMsg.innerText = `Success! ${detectedChannels.length} channels loaded. Active Cron Schedule: "${cronExpression}"`;
+                statusMsg.innerText = `Success! ${detectedChannels.length} channels loaded.`;
                 statusMsg.style.color = "#137333";
-                
                 renderTable();
             } catch (err) {
-                statusMsg.innerText = "Network error connecting to backend.";
+                statusMsg.innerText = "Error: " + err.message;
                 statusMsg.style.color = "#c5221f";
             }
         }
