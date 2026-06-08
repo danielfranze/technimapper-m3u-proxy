@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  technisat-mapper:
+    build: .
+    container_name: technisat-mapper
+    ports:
+      - "3000:3000"
+    volumes:
+      # Sichert die mapping.json auf deiner echten Festplatte
+      - ./mapping.json:/app/mapping.json
+    restart: unless-stopped
