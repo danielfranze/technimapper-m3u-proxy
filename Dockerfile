@@ -1,18 +1,20 @@
+# Use a lightweight Node.js image
 FROM node:18-alpine
 
-# Arbeitsverzeichnis im Container erstellen
+# Set the working directory inside the container
 WORKDIR /app
 
-# Package-Dateien kopieren und Abhängigkeiten installieren
+# Copy dependency files first to leverage Docker layer caching
 COPY package*.json ./
+
+# Install only production dependencies to keep the image size small
 RUN npm install --production
 
-# Den Rest des Codes kopieren (server.js und public/)
-COPY server.js ./
-COPY public/ ./public/
+# Copy the rest of the application source code
+COPY . .
 
-# Port nach außen öffnen
+# Expose the application port
 EXPOSE 3000
 
-# Server starten
+# Start the application
 CMD ["node", "server.js"]
