@@ -26,6 +26,7 @@ let appConfig = {
 };
 
 let cachedM3u = '';
+let lastSync = 'Never';
 let cronTask = null;
 
 function loadConfig() {
@@ -34,7 +35,7 @@ function loadConfig() {
             const raw = fs.readFileSync(CONFIG_FILE, 'utf8');
             const parsed = JSON.parse(raw);
             appConfig = { ...appConfig, ...parsed };
-            console.log(`[Storage] Configuration successfully loaded from storage.`);
+            console.log(`[Storage] Configuration loaded.`);
             generateM3u();
             startBackgroundCron();
         }
@@ -46,7 +47,7 @@ function loadConfig() {
 function saveConfigToDisk() {
     try {
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(appConfig, null, 2), 'utf8');
-        console.log(`[Storage] Configuration successfully flushed to disk storage.`);
+        console.log(`[Storage] Configuration flushed to disk.`);
     } catch (err) {
         console.error(`[Storage Error] Failed to write mapping.json:`, err.message);
     }
@@ -94,14 +95,13 @@ async function fetchFromTechniSat() {
                             const items = browseResult['DIDL-Lite']['item'];
                             const itemList = Array.isArray(items) ? items : [items];
                             const freshChannels = [];
-
                             itemList.forEach(item => {
-                                // Extract URL safely from object if necessary
                                 const url = typeof item['res'] === 'object' ? item['res']._ : item['res'];
                                 if (item['dc:title'] && url) {
                                     freshChannels.push({ name: item['dc:title'], url: url });
                                 }
                             });
+                            lastSync = new Date().toLocaleString();
                             resolve(freshChannels);
                         });
                     } catch (ex) { reject(ex); }
@@ -115,27 +115,21 @@ async function fetchFromTechniSat() {
 }
 
 function generateM3u() {
-    let m3u = `#EXTM3U\n`;
+    let m3u = `#EXTM3U
+`;
     appConfig.channels.forEach(ch => {
         const rawId = appConfig.mapping[ch.name];
-        
-        // Prüfe, ob rawId existiert und nicht leer ist
-        if (rawId !== undefined && rawId !== null && rawId !== '') {
-            // Erzwinge, dass es ein String ist, um .replace() sicher nutzen zu können
+        if (rawId) {
             const assignedId = String(rawId);
-            
-            // Extrahiere den reinen URL-String
             const streamUrl = typeof ch.url === 'object' ? (ch.url._ || ch.url) : ch.url;
-            
-            // Entferne 'ts-ch' für die Kanalnummer, falls es ein String ist
             const chNo = assignedId.replace('ts-ch', '');
-
-            m3u += `#EXTINF:-1 tvg-id="${assignedId}" tvg-name="${ch.name}" tvg-chno="${chNo}" cuid="${assignedId}" group-title="TechniSat",${ch.name}\n`;
-            m3u += `${streamUrl}\n`;
+            m3u += `#EXTINF:-1 tvg-id="${assignedId}" tvg-name="${ch.name}" tvg-chno="${chNo}" cuid="${assignedId}" group-title="TechniSat",${ch.name}
+`;
+            m3u += `${streamUrl}
+`;
         }
     });
     cachedM3u = m3u;
-    console.log(`[M3U Engine] Playlist rebuilt successfully.`);
 }
 
 function startBackgroundCron() {
@@ -145,17 +139,21 @@ function startBackgroundCron() {
 
     cronTask = cron.schedule(pattern, async () => {
         try {
-            const rawChannels = await fetchFromTechniSat();
-            if (rawChannels.length > 0) {
-                appConfig.channels = rawChannels;
-                generateM3u();
-                saveConfigToDisk();
-            }
+            appConfig.channels = await fetchFromTechniSat();
+            generateM3u();
+            saveConfigToDisk();
         } catch (err) { console.error(err.message); }
     });
 }
 
-app.get('/api/get-config', (req, res) => res.json({ ip: appConfig.ip, port: appConfig.port, cronExpression: appConfig.cronExpression }));
+app.get('/api/get-config', (req, res) => {
+    res.json({
+        ip: appConfig.ip,
+        port: appConfig.port,
+        cronExpression: appConfig.cronExpression,
+        lastSync: lastSync
+    });
+});
 
 app.post('/api/fetch-channels', async (req, res) => {
     const { ip, port, cronExpression } = req.body;
