@@ -2,15 +2,21 @@
 
 A lightweight abstraction proxy that stabilizes shifting TechniSat UPnP streams into a permanent, static M3U playlist tailored exclusively for Dispatcharr.
 
-## The Problem This Tool Solves
-Hardware receivers like the **TechniSat DIGIT ISIO STC** generate live TV streams locally, but they suffer from a major flaw for automated homelab setups: **the receiver constantly changes the internal stream URLs and dynamic parameters** (e.g., after channel rescans, background updates, or device reboots). 
+## The Problem: Dynamic Stream Instability
+Hardware receivers like the TechniSat DIGIT ISIO STC generate live TV streams locally, but they suffer from a major design flaw for automated homelab setups: The Twonky UPnP server on these devices constantly changes the internal stream URLs and dynamic session parameters (e.g., after channel rescans, background updates, or simple device reboots).
 
-If you link these raw URLs directly into automated IPTV tools like **Dispatcharr**, your setup will constantly break because the old URLs point to dead ends after a change, destroying your hard-earned channel mapping.
+If you link these raw URLs directly into automated IPTV tools like Dispatcharr, your setup will constantly break. The old URLs point to dead ends as soon as the receiver refreshes its internal state, effectively destroying your channel mappings.
 
-**TechniSat M3U Mapper** acts as a smart abstraction layer to solve this exact headache:
-1. It runs a background cron engine to constantly crawl the receiver's shifting UPnP structure and fetches the *latest* valid stream URLs.
-2. It maps these constantly changing URLs to **permanent, static Channel IDs** that you define once via the Web UI.
-3. It serves a consistent, unchanging M3U playlist. **Dispatcharr only talks to this Mapper**, meaning Dispatcharr's configuration stays 100% stable and never breaks again when the receiver changes its internal URLs.
+### The Solution: TechniSat M3U Mapper
+Note: This tool is specifically designed and tested for the TechniSat DIGIT ISIO STC. Other TechniSat receiver models have not been tested and are currently not officially supported.
+
+The TechniSat M3U Mapper acts as a smart abstraction layer to solve this exact headache:
+
+Dynamic Synchronization: It runs a background cron engine to constantly crawl the receiver's shifting UPnP structure and fetches the latest, currently valid stream URLs.
+
+Static Mapping: It maps these volatile, constantly changing URLs to permanent, static Channel IDs that you define once via the Web UI.
+
+Persistent Playlist: It serves a consistent, unchanging M3U playlist. Dispatcharr only talks to this Mapper, meaning your configuration stays 100% stable. Your setup will never break again, even when the receiver shuffles its internal URL parameters.
 
 ## Targeted Integration
 This tool is **specifically built and optimized to be utilized exclusively in tandem with Dispatcharr**. It serves as the dedicated translation bridge, eliminating formatting mismatches and URL instability natively, feeding your TechniSat tuner streams reliably into your automated **Dispatcharr** pipeline.
