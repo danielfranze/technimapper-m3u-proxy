@@ -58,13 +58,14 @@ If you just want to fire up the container instantly via SSH/Terminal without usi
 
 ```bash
 docker pull ghcr.io/danielfranze/technisat-m3u-mapper:latest
-
+```
+```bash
 docker run -d \
   -p 3000:3000 \
   --name technisat-m3u-mapper \
   -v ./data:/app/data \
   --restart unless-stopped \
-  ghcr.io/YOUR_GITHUB_USERNAME/technisat-m3u-mapper:latest
+  ghcr.io/danielfranze/technisat-m3u-mapper:latest
   ```
 
 ## License
