@@ -73,6 +73,8 @@ docker run -d \
   -p 3000:3000 \
   --name technisat-m3u-mapper \
   -v ./data:/app/data \
+  -v /etc/localtime:/etc/localtime:ro \
+  -e TZ=Europe/Berlin \
   --restart unless-stopped \
   ghcr.io/danielfranze/technisat-m3u-mapper:latest
   ```
