@@ -56,6 +56,9 @@ services:
       - "3000:3000"
     volumes:
       - ./data:/app/data
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=Europe/Berlin
     restart: unless-stopped
 ```
 
