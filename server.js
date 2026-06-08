@@ -117,16 +117,25 @@ async function fetchFromTechniSat() {
 function generateM3u() {
     let m3u = `#EXTM3U\n`;
     appConfig.channels.forEach(ch => {
-        const assignedId = appConfig.mapping[ch.name];
-        if (assignedId) {
+        const rawId = appConfig.mapping[ch.name];
+        
+        // Prüfe, ob rawId existiert und nicht leer ist
+        if (rawId !== undefined && rawId !== null && rawId !== '') {
+            // Erzwinge, dass es ein String ist, um .replace() sicher nutzen zu können
+            const assignedId = String(rawId);
+            
+            // Extrahiere den reinen URL-String
             const streamUrl = typeof ch.url === 'object' ? (ch.url._ || ch.url) : ch.url;
+            
+            // Entferne 'ts-ch' für die Kanalnummer, falls es ein String ist
             const chNo = assignedId.replace('ts-ch', '');
+
             m3u += `#EXTINF:-1 tvg-id="${assignedId}" tvg-name="${ch.name}" tvg-chno="${chNo}" cuid="${assignedId}" group-title="TechniSat",${ch.name}\n`;
             m3u += `${streamUrl}\n`;
         }
     });
     cachedM3u = m3u;
-    console.log(`[M3U Engine] Playlist rebuilt.`);
+    console.log(`[M3U Engine] Playlist rebuilt successfully.`);
 }
 
 function startBackgroundCron() {
