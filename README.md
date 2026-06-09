@@ -79,6 +79,43 @@ docker run -d \
   ghcr.io/danielfranze/technisat-m3u-mapper:latest
   ```
 
+
+## Dispatcharr Configuration
+
+### 1. M3U Account Settings
+Add a new M3U account in Dispatcharr using the playlist URL provided by your Mapper instance.
+
+* URL: http://<YOUR-SERVER-IP>:3000/playlist.m3u
+
+* Account Type: Standard
+
+* Cron Expression: We recommend 1-59/5 * * * * to ensure Dispatcharr checks for updates regularly without overloading the receiver.
+
+![Dispatcharr M3U Configuration](assets/screenshot_dispatcahrr_config_m3u.png)
+
+
+### 2. Stream Settings
+For best compatibility with TechniSat streams, configure your system-wide stream settings as follows:
+
+* Default User Agent: Set to VLC. This often helps with handshake issues on older receiver firmware.
+
+* Default Stream Profile: Use Redirect. This allows the receiver to push the stream directly to your player/client.
+
+* Default Output Format: MPEG-TS is the native format for DVB streams and provides the highest compatibility.
+
+* M3U Hash Key: Set this to TVG-ID. This ensures that Dispatcharr correctly tracks your channels based on the static IDs you defined in the Mapper UI.
+
+![Dispatcharr Stream Settings Configuration](assets/screenshot_dispatcahrr_config_stream_settings.png)
+
+### Pro-Tip:
+Note: To keep your setup perfectly synchronized and prevent any "dead links," align your cron schedules to ensure the Mapper has updated data before Dispatcharr requests it:
+
+* TechniSat Mapper Cron: Set this to */5 * * * * (every 5 minutes). This ensures the Mapper proactively fetches fresh stream URLs from your receiver and updates the playlist.
+
+* Dispatcharr Cron: Set this to 1-59/5 * * * * (every 5 minutes, starting 1 minute past). This slight offset ensures that Dispatcharr always pulls the "freshly baked" playlist from your Mapper.
+
+By following this 5-minute sync cycle with a 1-minute offset, your Dispatcharr will always have the most current and valid stream URLs available.
+
 ## License
 
 This project is open-source software licensed under the [MIT License](LICENSE.md). Feel free to use, modify, and distribute it.
