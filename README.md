@@ -93,6 +93,16 @@ Add a new M3U account in Dispatcharr using the playlist URL provided by your Map
 
 ![Dispatcharr M3U Configuration](assets/screenshot_dispatcahrr_config_m3u.png)
 
+#### 1.1 M3U Group & Auto-Sync Settings
+To fully automate your channel management, configure the Group settings within your M3U account. This ensures that Dispatcharr automatically adopts any channel changes detected by the Mapper.
+
+* Auto Channel Sync: Enable this for the "TechniSat" group. This allows Dispatcharr to automatically create or remove channels based on the current M3U list.
+
+* Channel Numbering Mode: Set this to Provider. Since the Mapper provides the tvg-chno attribute, Dispatcharr will automatically respect the channel numbering defined on your TechniSat receiver.
+
+* Auto-sync orphan cleanup: We recommend Always remove. This keeps your channel list clean by automatically removing any streams that are no longer present on the receiver (e.g., after a channel rescan).
+
+![Dispatcharr M3U Configuration](assets/screenshot_dispatcahrr_config_m3u_groups.png)
 
 ### 2. Stream Settings
 For best compatibility with TechniSat streams, configure your system-wide stream settings as follows:
@@ -107,7 +117,7 @@ For best compatibility with TechniSat streams, configure your system-wide stream
 
 ![Dispatcharr Stream Settings Configuration](assets/screenshot_dispatcahrr_config_stream_settings.png)
 
-### Pro-Tip:
+### ℹ️ Pro-Tip:
 Note: To keep your setup perfectly synchronized and prevent any "dead links," align your cron schedules to ensure the Mapper has updated data before Dispatcharr requests it:
 
 * TechniSat Mapper Cron: Set this to */5 * * * * (every 5 minutes). This ensures the Mapper proactively fetches fresh stream URLs from your receiver and updates the playlist.
