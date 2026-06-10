@@ -7,11 +7,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # Sichert die mapping.json auf der Festplatte
+      # Saves the mapping.json file to the hard drive
       - ./mapping.json:/app/data/mapping.json
-      # Bindet die lokale Systemzeit in den Container ein
+      # Incorporates the local system time into the container
       - /etc/localtime:/etc/localtime:ro
     environment:
-      # Setzt die Zeitzone explizit auf Berlin/Mitteleuropa
+
       - TZ=Europe/Berlin
     restart: unless-stopped

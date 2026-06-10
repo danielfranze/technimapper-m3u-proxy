@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,45 +25,90 @@
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
-            margin: 0; padding: 24px;
-            display: flex; flex-direction: column; align-items: center;
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         header {
-            width: 100%; max-width: 1100px;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
         }
 
-        header h1 { font-size: 1.25rem; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 12px; }
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-        .badge { font-size: 0.65rem; background: #374151; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; color: var(--text-dim); }
+        .badge {
+            font-size: 0.65rem;
+            background: #374151;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
 
         /* Smartphone */
         @media (max-width: 600px) {
-            .badge { display: none; }
-            .form-grid { grid-template-columns: 1fr !important; }
-            
-            header { 
-                flex-direction: column; 
-                align-items: flex-start; 
-                gap: 12px; 
+            .badge {
+                display: none;
             }
 
-            header div { 
-                display: flex; 
-                flex-direction: column; 
-                gap: 6px; 
+            .form-grid {
+                grid-template-columns: 1fr !important;
             }
 
-            header div span:nth-child(2) { display: none; }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            header div {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            header div span:nth-child(2) {
+                display: none;
+            }
         }
 
-        main { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; }
+        main {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
 
-        .card { background-color: var(--bg-card); border-radius: 8px; padding: 24px; border: 1px solid var(--border); }
+        .card {
+            background-color: var(--bg-card);
+            border-radius: 8px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
 
-        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; color: #fff; }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #fff;
+        }
 
         .form-grid {
             display: grid;
@@ -71,49 +117,131 @@
             margin-bottom: 20px;
         }
 
-        .input-group { display: flex; flex-direction: column; gap: 8px; }
-        .input-group label { font-size: 0.85rem; font-weight: 500; }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
-        .input-wrapper { position: relative; display: flex; align-items: center; }
-        .input-wrapper .material-icons-outlined { position: absolute; left: 12px; color: var(--text-dim); font-size: 20px; }
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper .material-icons-outlined {
+            position: absolute;
+            left: 12px;
+            color: var(--text-dim);
+            font-size: 20px;
+        }
 
         .config-input {
-            width: 100%; padding: 12px 16px 12px 44px;
-            border: 1px solid var(--border); border-radius: 6px;
-            font-size: 0.9rem; background: var(--bg-input); color: white;
-            box-sizing: border-box; outline: none;
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: var(--bg-input);
+            color: white;
+            box-sizing: border-box;
+            outline: none;
         }
 
-        .config-input:focus { border-color: var(--accent); }
+        .config-input:focus {
+            border-color: var(--accent);
+        }
 
         .btn {
-            font-family: 'Inter', sans-serif; font-weight: 500; font-size: 0.9rem;
-            padding: 0 20px; height: 40px; border-radius: 6px; border: none; cursor: pointer;
-            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-            background-color: var(--accent); color: white; transition: background-color 0.2s;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 0 20px;
+            height: 40px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: var(--accent);
+            color: white;
+            transition: background-color 0.2s;
         }
 
-        .btn:hover { background-color: var(--accent-hover); }
-        .btn-success { background-color: var(--success); }
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { color: var(--text-dim); padding: 12px 16px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border); }
-        td { padding: 16px; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
+        .btn-success {
+            background-color: var(--success);
+        }
 
-        .id-input { width: 80px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; text-align: center; background: var(--bg-input); color: white; outline: none; }
-        .status-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: 500; }
-        .status-mapped { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .status-unmapped { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th {
+            color: var(--text-dim);
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .id-input {
+            width: 80px;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            text-align: center;
+            background: var(--bg-input);
+            color: white;
+            outline: none;
+        }
+
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .status-mapped {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+        }
+
+        .status-unmapped {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
     </style>
 </head>
+
 <body>
 
-<header>
+    <header>
         <h1>TechniSat M3U Mapper <span class="badge">Unofficial</span></h1>
         <div>
             <span>Last Sync: <span id="last-sync-time" style="color: #fff;">Loading...</span></span>
             <span>|</span>
-            <span>M3U: <a href="/playlist.m3u" target="_blank" id="m3uLink" style="color: var(--accent); text-decoration: none;">/playlist.m3u</a></span>
+            <span>M3U: <a href="/playlist.m3u" target="_blank" id="m3uLink"
+                    style="color: var(--accent); text-decoration: none;">/playlist.m3u</a></span>
         </div>
     </header>
 
@@ -157,7 +285,13 @@
                 </button>
             </div>
             <table>
-                <thead><tr style="background: #161616;"><th>Status</th><th>Channel Name</th><th>Channel ID</th></tr></thead>
+                <thead>
+                    <tr style="background: #161616;">
+                        <th>Status</th>
+                        <th>Channel Name</th>
+                        <th>Channel ID</th>
+                    </tr>
+                </thead>
                 <tbody id="channelTableBody"></tbody>
             </table>
         </div>
@@ -174,11 +308,11 @@
                 linkElement.href = BACKEND_URL + '/playlist.m3u';
                 linkElement.innerText = BACKEND_URL + '/playlist.m3u';
             }
-            
-            // Konfiguration laden (nicht-blockierend)
+
+            // Load configuration (non-blocking)
             loadInitialConfig();
-            
-            // Sync-Update starten (läuft im Hintergrund)
+
+            // Start sync update (runs in the background)
             updateSyncTime();
             setInterval(updateSyncTime, 30000);
         });
@@ -187,25 +321,25 @@
             try {
                 const res = await fetch(BACKEND_URL + '/api/get-config');
                 const config = await res.json();
-                if(config.ip) document.getElementById('receiverIp').value = config.ip;
-                if(config.port) document.getElementById('receiverPort').value = config.port;
-                if(config.cronExpression) document.getElementById('cronExpression').value = config.cronExpression;
-            } catch(e) { console.error("Initial config load failed"); }
+                if (config.ip) document.getElementById('receiverIp').value = config.ip;
+                if (config.port) document.getElementById('receiverPort').value = config.port;
+                if (config.cronExpression) document.getElementById('cronExpression').value = config.cronExpression;
+            } catch (e) { console.error("Initial config load failed"); }
         }
 
         async function updateSyncTime() {
             try {
-                // Timeout-Logik: Wenn der Server nach 5s nicht antwortet, abbrechen
+
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 5000);
 
                 const res = await fetch(BACKEND_URL + '/api/get-config', { signal: controller.signal });
                 clearTimeout(timeoutId);
-                
+
                 const data = await res.json();
                 const el = document.getElementById('last-sync-time');
                 if (el) el.innerText = data.lastSync || "Never";
-            } catch(e) {
+            } catch (e) {
                 console.log("Sync-Status aktuell nicht abrufbar.");
             }
         }
@@ -231,7 +365,7 @@
 
                 detectedChannels = data.channels;
                 currentMapping = data.mapping;
-                
+
                 statusMsg.innerText = `Success! ${detectedChannels.length} channels loaded.`;
                 statusMsg.style.color = "#137333";
                 renderTable();
@@ -244,11 +378,11 @@
         function renderTable() {
             const tbody = document.getElementById('channelTableBody');
             tbody.innerHTML = '';
-            
+
             detectedChannels.sort().forEach(name => {
                 const assignedId = currentMapping[name] || '';
                 const isMapped = assignedId !== '';
-                
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
@@ -293,4 +427,5 @@
         }
     </script>
 </body>
+
 </html>

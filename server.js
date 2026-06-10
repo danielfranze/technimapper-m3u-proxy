@@ -55,7 +55,7 @@ function saveConfigToDisk() {
 
 async function fetchFromTechniSat() {
     return new Promise((resolve, reject) => {
-        const soapEnvelope = 
+        const soapEnvelope =
             `<?xml version="1.0" encoding="utf-8"?>` +
             `<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">` +
             `  <s:Body>` +
