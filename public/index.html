@@ -38,10 +38,24 @@
 
         .badge { font-size: 0.65rem; background: #374151; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; color: var(--text-dim); }
 
-        /* Smartphone-Anpassungen */
+        /* Smartphone */
         @media (max-width: 600px) {
             .badge { display: none; }
             .form-grid { grid-template-columns: 1fr !important; }
+            
+            header { 
+                flex-direction: column; 
+                align-items: flex-start; 
+                gap: 12px; 
+            }
+
+            header div { 
+                display: flex; 
+                flex-direction: column; 
+                gap: 6px; 
+            }
+
+            header div span:nth-child(2) { display: none; }
         }
 
         main { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; }
@@ -94,11 +108,12 @@
 </head>
 <body>
 
-    <header>
+<header>
         <h1>TechniSat M3U Mapper <span class="badge">Unofficial</span></h1>
-        <div style="font-size: 0.85rem; color: var(--text-dim);">
-            Last Sync: <span id="last-sync-time" style="color: #fff;">Loading...</span> | 
-            M3U: <a href="/playlist.m3u" target="_blank" id="m3uLink" style="color: var(--accent); text-decoration: none;">/playlist.m3u</a>
+        <div>
+            <span>Last Sync: <span id="last-sync-time" style="color: #fff;">Loading...</span></span>
+            <span>|</span>
+            <span>M3U: <a href="/playlist.m3u" target="_blank" id="m3uLink" style="color: var(--accent); text-decoration: none;">/playlist.m3u</a></span>
         </div>
     </header>
 
