@@ -25,4 +25,4 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          tags: ghcr.io/danielfranze/technisat-m3u-mapper:latest
+          tags: ghcr.io/danielfranze/technimapper-m3u-proxy:latest

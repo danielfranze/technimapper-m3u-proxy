@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  technisat-mapper:
+  technimapper-m3u-proxy:
     build: .
-    container_name: technisat-mapper
+    container_name: technimapper-m3u-proxy
     ports:
       - "3000:3000"
     volumes:
