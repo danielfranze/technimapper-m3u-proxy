@@ -61,37 +61,40 @@
             color: var(--text-dim);
         }
 
-    /* Smartphone */
-    @media (max-width: 600px) {
-        .badge { display: none; }
+/* Responsive Anpassungen für Geräte < 900px */
+    @media (max-width: 900px) {
         .form-grid { grid-template-columns: 1fr !important; }
         
-        header { flex-direction: column; align-items: flex-start; gap: 12px; }
-        header div { display: flex; flex-direction: column; gap: 6px; }
-        header div span:nth-child(2) { display: none; }
+        /* Badge bleibt in Originalgröße, wir müssen nur sicherstellen, 
+           dass es den Header nicht sprengt */
         
         #listCard > div { flex-direction: column; align-items: flex-start !important; gap: 12px; width: 100%; }
         
-        /* Fix table */
         table { table-layout: fixed; width: 100%; }
-        
-        /* Set line height */
         td { height: 50px; padding: 0 4px !important; vertical-align: middle; }
         
-        /* Column widths */
         td:nth-child(1) { width: 22%; }
         td:nth-child(2) { width: 48%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         td:nth-child(3) { width: 30%; }
         
-        /* Badge customization */
-        .status-badge { 
-            padding: 2px 4px; 
-            font-size: 0.6rem !important; 
-            white-space: nowrap; 
-        }
-        
+        .status-badge { padding: 2px 4px; font-size: 0.6rem !important; white-space: nowrap; }
         .id-input { width: 100%; padding: 6px 0; box-sizing: border-box; }
         th { font-size: 0.7rem !important; padding: 8px 4px !important; }
+    }
+
+    /* Header für Smartphones (< 600px) */
+    @media (max-width: 599px) {
+        header { flex-direction: column; align-items: flex-start; gap: 12px; }
+        header div { display: flex; flex-direction: column; gap: 6px; }
+        header div span:nth-child(2) { display: none; }
+    }
+
+    /* Header für Tablets (600px - 900px) */
+    @media (min-width: 600px) and (max-width: 900px) {
+        header { flex-direction: row; align-items: center; justify-content: space-between; }
+        header div { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        header div span:nth-child(2) { display: none; }
+        header div span { font-size: 0.8rem; }
     }
 
         main {
