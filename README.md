@@ -16,9 +16,11 @@ TechniMapper acts as an abstraction layer to ensure your configuration remains s
 ## Compatibility Note
 TechniMapper is specifically developed and tested for the TechniSat DIGIT ISIO STC.
 
-✅ Supported: DIGIT ISIO STC
+✅ Supported: DIGIT ISIO S / S1 / S2, DIGIT ISIO STC
 
-❌ Not Supported: DIGIT ISIO S / S1 / S2, DIGIPLUS UHD S2, DIGIT ISIO S3
+❌ Not Supported: DIGIPLUS UHD S2, DIGIT ISIO S3, and newer
+
+Note: Models not listed as supported may use different SOAP service structures which are not currently implemented.
 
 ## Targeted Integration
 This tool is **specifically built and optimized to be utilized exclusively in tandem with Dispatcharr**. It serves as the dedicated translation bridge, eliminating formatting mismatches and URL instability natively, feeding your TechniSat tuner streams reliably into your automated **Dispatcharr** pipeline.
