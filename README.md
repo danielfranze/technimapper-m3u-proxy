@@ -93,7 +93,7 @@ Add a new M3U account in Dispatcharr using the playlist URL provided by your Map
 
 * Account Type: Standard
 
-* Cron Expression: We recommend 1-59/5 * * * * to ensure Dispatcharr checks for updates regularly without overloading the receiver.
+* Cron Expression: A setting of */5 * * * * is suggested to ensure regular checks for updates while maintaining receiver performance.
 
 ![Dispatcharr M3U Configuration](assets/screenshot_dispatcahrr_config_m3u.png)
 
@@ -104,7 +104,7 @@ To fully automate your channel management, configure the Group settings within y
 
 * Channel Numbering Mode: Set this to Provider. Since the Mapper provides the tvg-chno attribute, Dispatcharr will automatically respect the channel numbering defined on your TechniSat receiver.
 
-* Auto-sync orphan cleanup: We recommend Always remove. This keeps your channel list clean by automatically removing any streams that are no longer present on the receiver (e.g., after a channel rescan).
+* Auto-sync orphan cleanup: The Always remove setting is recommended to maintain a clean channel list by automatically purging streams that are no longer available on the receiver (e.g., following a channel rescan).
 
 ![Dispatcharr M3U Configuration](assets/screenshot_dispatcahrr_config_m3u_groups.png)
 
