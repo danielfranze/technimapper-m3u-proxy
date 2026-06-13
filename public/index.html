@@ -106,6 +106,31 @@
             header div span { font-size: 0.8rem; }
         }
 
+        /* Base style for the badge */
+        .model-badge { 
+            font-size: 0.75rem; 
+            color: var(--accent); 
+            background: rgba(59, 130, 246, 0.1); 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-weight: 600; 
+            border: 1px solid rgba(59, 130, 246, 0.2); 
+            white-space: nowrap; 
+        }
+
+        /* Smartphone optimization */
+        @media (max-width: 450px) {
+            .model-badge { 
+                font-size: 0.65rem; 
+                padding: 4px 8px; 
+            }
+            .card-header-wrapper { 
+                flex-direction: column; 
+                align-items: center; 
+                gap: 12px; 
+            }
+        }
+
         main { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; }
 
         .card { background-color: var(--bg-card); border-radius: 8px; padding: 24px; border: 1px solid var(--border); }
@@ -237,14 +262,10 @@
         let detectedChannels = [];
         const BACKEND_URL = window.location.origin;
 
-        // Helper to update the model badge style and text
+        /* Updates the visual status badge based on detection results */
         function updateModelBadge(status, text) {
             const badge = document.getElementById('modelInfo');
-            // Remove previous color classes
-            badge.classList.remove('model-badge-pending');
-            badge.style.background = "";
-            badge.style.color = "";
-            badge.style.borderColor = "";
+            badge.className = 'model-badge';
 
             if (status === 'pending') {
                 badge.classList.add('model-badge-pending');
