@@ -185,7 +185,7 @@
                 <div class="card-title" style="margin: 0;">Connection & Auto-Update Configuration</div>
                 <div id="modelInfo" class="model-badge">Not detected yet</div>
             </div>
-            <div class="form-grid">
+            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
                 <div class="input-group">
                     <label>Receiver IP Address</label>
                     <div class="input-wrapper">
@@ -205,6 +205,15 @@
                     <div class="input-wrapper">
                         <span class="material-icons-outlined">schedule</span>
                         <input type="text" id="cronExpression" class="config-input" value="*/5 * * * *">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Target Channel List</label>
+                    <div class="input-wrapper">
+                        <span class="material-icons-outlined">list</span>
+                        <select id="selectedListName" class="config-input" style="padding-left: 44px; appearance: none;">
+                            <option value="TV-Liste">TV-Liste</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -279,13 +288,15 @@
             try {
                 const res = await fetch(BACKEND_URL + '/api/get-config');
                 const config = await res.json();
-                // Update Version Label
-                if (config.version) {
-                    document.getElementById('versionLabel').innerText = config.version;
-                }
+                if (config.version) document.getElementById('versionLabel').innerText = config.version;
                 if (config.ip) document.getElementById('receiverIp').value = config.ip;
                 if (config.port) document.getElementById('receiverPort').value = config.port;
                 if (config.cronExpression) document.getElementById('cronExpression').value = config.cronExpression;
+                
+                if (config.selectedListName) {
+                    const select = document.getElementById('selectedListName');
+                    select.innerHTML = `<option value="${config.selectedListName}">${config.selectedListName}</option>`;
+                }
             } catch (e) { console.error("Initial config load failed"); }
         }
 
@@ -309,10 +320,11 @@
         // Sends configuration to backend and triggers a new channel scan
         async function fetchChannels() {
             const statusMsg = document.getElementById('statusMsg');
-            const listCard = document.getElementById('listCard'); // Reference to the table card
+            const listCard = document.getElementById('listCard');
             const ip = document.getElementById('receiverIp').value.trim();
             const port = document.getElementById('receiverPort').value.trim();
             const cronExpression = document.getElementById('cronExpression').value.trim();
+            const selectedListName = document.getElementById('selectedListName').value;
 
             statusMsg.innerText = `Saving configuration and querying TechniSat receiver...`;
             statusMsg.style.color = "var(--text-main)";
@@ -321,28 +333,38 @@
                 const res = await fetch(BACKEND_URL + '/api/fetch-channels', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ip, port, cronExpression })
+                    body: JSON.stringify({ ip, port, cronExpression, selectedListName })
                 });
                 const data = await res.json();
 
                 if (data.error) throw new Error(data.error);
                 
-                // Success: Update badge to blue and show the table
+                // Update list options dynamically from receiver response
+                if (data.availableLists && data.availableLists.length > 0) {
+                    const select = document.getElementById('selectedListName');
+                    select.innerHTML = '';
+                    data.availableLists.forEach(listName => {
+                        const opt = document.createElement('option');
+                        opt.value = listName;
+                        opt.innerText = listName;
+                        if (listName === data.selectedListName) opt.selected = true;
+                        select.appendChild(opt);
+                    });
+                }
+
                 updateModelBadge('success', data.detectedModel);
                 
                 detectedChannels = data.channels;
                 currentMapping = data.mapping;
 
-                statusMsg.innerText = `Success! ${detectedChannels.length} channels loaded.`;
-                statusMsg.style.color = "#137333";
-                renderTable(); // This will display the listCard
+                statusMsg.innerText = `Success! ${detectedChannels.length} channels loaded from "${data.selectedListName}".`;
+                statusMsg.style.color = "#10b981";
+                renderTable();
             } catch (err) {
-                // Error: Update badge to red and hide the table
                 updateModelBadge('error');
-                listCard.style.display = 'none'; // Ensure the mapping table is hidden
-
+                listCard.style.display = 'none';
                 statusMsg.innerText = "Error: " + err.message;
-                statusMsg.style.color = "#c5221f";
+                statusMsg.style.color = "#f87171";
             }
         }
 
