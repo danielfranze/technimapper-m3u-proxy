@@ -4,26 +4,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechniMapper</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" 
-          rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" 
-          rel="stylesheet">
+    <title>TechniMapper: M3U Proxy</title>
+    <!-- Favicon: Clean SVG-based receiver icon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H4V8h16v8zM6 10h2v4H6zm10 0h2v4h-2zm-4 0h2v4h-2z'/%3E%3C/svg%3E">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 
     <style>
-        /* --- 1. Variables & Global Styles --- */
+        /* ==========================================
+           CSS Variables & Design System Token Setup
+           ================================---------- */
         :root {
-            --bg-body: #121212;
-            --bg-card: #1e1e1e;
-            --bg-input: #2d2d2d;
+            --bg-body: #16191d;
+            --bg-card: #1e2228;
+            --bg-input: #262b33;
             --text-main: #ffffff;
-            --text-dim: #a0a0a0;
+            --text-dim: #94a3b8;
             --accent: #3b82f6;
             --accent-hover: #2563eb;
             --success: #10b981;
-            --border: #333333;
+            --success-hover: #059669;
+            --border: #2e3642;
+            --danger: #ef4444;
         }
 
+        /* ==========================================
+           Base Layout & Typography
+           ================================---------- */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-body);
@@ -35,7 +42,6 @@
             align-items: center;
         }
 
-        /* --- 2. Header & Layout --- */
         main { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; }
 
         header {
@@ -47,6 +53,8 @@
             padding: 16px 0;
             border-bottom: 1px solid var(--border);
             margin-bottom: 24px;
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
         header h1 {
@@ -56,19 +64,101 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            flex-wrap: wrap;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ==========================================
+           Branding & Header Elements
+           ================================---------- */
+        .header-logo {
+            width: 28px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #262b33, #16191d);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--accent);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-logo .material-icons-outlined {
+            font-size: 18px;
+        }
+
+        .brand-title {
+            color: #cbd5e1;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+        .brand-subtitle {
+            color: #3b82f6;
+            font-weight: 600;
+            letter-spacing: -0.2px;
+            text-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-badge {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            height: 30px;
+            padding: 0 12px;
+            border-radius: 15px;
+            font-size: 0.76rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-badge span {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* Sync status flash animation state */
+        .header-badge.success-flash {
+            background: rgba(16, 185, 129, 0.15);
+            border-color: rgba(16, 185, 129, 0.3);
+            color: #34d399;
+        }
+        .header-badge.success-flash span {
+            color: #34d399;
         }
 
         .badge {
-            font-size: 0.65rem;
-            background: #374151;
-            padding: 4px 8px;
-            border-radius: 4px;
-            text-transform: uppercase;
+            font-size: 0.72rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            border-radius: 12px;
             color: var(--text-dim);
+            font-weight: 500;
         }
 
-        /* --- 3. Card & Form Elements --- */
-        .card { background-color: var(--bg-card); border-radius: 8px; padding: 24px; border: 1px solid var(--border); }
+        /* ==========================================
+           Cards & Component Layouts
+           ================================---------- */
+        .card { 
+            background-color: var(--bg-card); 
+            border-radius: 8px; 
+            padding: 24px; 
+            border: 1px solid var(--border); 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
         
         .card-header-wrapper { 
             display: flex; 
@@ -87,47 +177,225 @@
             flex-shrink: 0;
         }
 
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
         
-        .input-group { display: flex; flex-direction: column; gap: 8px; }
-        .input-group label { font-size: 0.85rem; font-weight: 500; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; }
+        .input-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-dim); }
         
-        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper { position: relative; display: flex; align-items: center; height: 30px; }
         .input-wrapper .material-icons-outlined { 
-            position: absolute; left: 12px; color: var(--text-dim); font-size: 20px; 
+            position: absolute; left: 8px; color: var(--text-dim); font-size: 16px; pointer-events: none;
         }
 
+        /* Standardized 30px input elements */
         .config-input {
-            width: 100%; padding: 12px 16px 12px 44px; border: 1px solid var(--border);
-            border-radius: 6px; font-size: 0.9rem; background: var(--bg-input); 
-            color: white; box-sizing: border-box; outline: none;
+            width: 100%; height: 30px; padding: 0 10px 0 30px; border: 1px solid var(--border);
+            border-radius: 15px; font-size: 0.78rem; background: var(--bg-input); 
+            color: white; box-sizing: border-box; outline: none; transition: border-color 0.2s;
         }
-        .config-input:focus { border-color: var(--accent); }
+        .config-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
 
-        /* --- 4. Buttons, Tables & Badges --- */
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* Standardized button component variants */
         .btn {
-            font-family: 'Inter', sans-serif; font-weight: 500; font-size: 0.9rem;
-            padding: 0 20px; height: 40px; border-radius: 6px; border: none; 
+            font-family: 'Inter', sans-serif; font-weight: 500; font-size: 0.78rem;
+            padding: 0 14px; height: 30px; border-radius: 15px; border: none; 
             cursor: pointer; display: inline-flex; align-items: center; 
-            justify-content: center; gap: 8px; background-color: var(--accent); 
-            color: white; transition: background-color 0.2s;
+            justify-content: center; gap: 6px; background-color: var(--accent); 
+            color: white; transition: background-color 0.2s; box-sizing: border-box;
+            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
         }
         .btn:hover { background-color: var(--accent-hover); }
-        .btn-success { background-color: var(--success); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { color: var(--text-dim); padding: 12px 16px; font-size: 0.85rem; text-align: left; border-bottom: 1px solid var(--border); }
-        td { padding: 16px; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
+        .btn-success {
+            background-color: var(--success);
+            height: 30px;
+            padding: 0 10px;
+            font-size: 0.76rem;
+            border-radius: 15px;
+            gap: 3px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+        }
+        .btn-success:hover { background-color: var(--success-hover); }
 
-        .id-input {
-            width: 80px; padding: 8px 12px; border: 1px solid var(--border);
-            border-radius: 4px; text-align: center; background: var(--bg-input); 
-            color: white; outline: none;
+        .btn-subtle {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            height: 30px;
+            padding: 0 10px;
+            font-size: 0.76rem;
+            border-radius: 15px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+        .btn-subtle:hover {
+            border-color: #444;
+            color: #fff;
+            background: #333;
         }
 
-        .status-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; font-weight: 500; }
-        .status-mapped { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-        .status-unmapped { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        /* Compact inline status message block */
+        #statusMsg {
+            font-size: 0.76rem;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            height: 30px;
+            padding: 0 12px;
+            border-radius: 15px;
+            box-sizing: border-box;
+            border: 1px solid transparent;
+        }
+        #statusMsg.info, #statusMsg.success, #statusMsg.error {
+            display: inline-flex;
+        }
+        #statusMsg.info { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--accent); }
+        #statusMsg.success { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #34d399; }
+        #statusMsg.error { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        /* ==========================================
+           Toolbar & Table Components
+           ================================---------- */
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            height: 30px;
+            padding: 0 3px;
+            border-radius: 15px;
+            gap: 2px;
+            box-sizing: border-box;
+        }
+
+        .filter-chip {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            height: 22px;
+            padding: 0 9px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .filter-chip:hover { color: #fff; }
+        .filter-chip.active { background: var(--accent); color: white; font-weight: 500; }
+
+        .search-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 30px;
+        }
+
+        .search-input {
+            width: 75px;
+            height: 30px;
+            padding: 0 8px 0 26px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            color: white;
+            font-size: 0.76rem;
+            outline: none;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: width 0.3s ease, border-color 0.2s, background-color 0.2s, border-radius 0.2s;
+        }
+
+        .search-input::placeholder { color: var(--text-dim); font-size: 0.74rem; }
+        .search-container:hover .search-input { border-color: #444; }
+        .search-input:focus, .search-input.has-value {
+            width: 140px;
+            border-color: var(--accent);
+            border-radius: 6px;
+            cursor: text;
+        }
+
+        .search-container .material-icons-outlined {
+            position: absolute;
+            left: 7px;
+            font-size: 14px;
+            color: var(--text-dim);
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .search-input:focus ~ .material-icons-outlined, 
+        .search-input.has-value ~ .material-icons-outlined {
+            color: var(--accent);
+        }
+
+        /* Compact Data Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th { color: var(--text-dim); padding: 10px 14px; font-size: 0.78rem; text-align: left; border-bottom: 1px solid var(--border); }
+        td { padding: 10px 14px; font-size: 0.84rem; border-bottom: 1px solid var(--border); }
+
+        tr { transition: background-color 0.2s; }
+        tr.focused-row { background-color: rgba(59, 130, 246, 0.12); }
+
+        .id-input {
+            width: 90px;
+            height: 30px;
+            padding: 0 10px;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+            text-align: center;
+            background: var(--bg-input);
+            color: white;
+            font-size: 0.78rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .id-input:focus { border-color: var(--accent); }
+
+        /* Unified Compact Status Badges */
+        .status-badge { 
+            font-size: 0.72rem; 
+            height: 24px;
+            padding: 0 10px; 
+            border-radius: 12px; 
+            font-weight: 500; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+        .status-mapped { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+        .status-unmapped { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
 
         .model-badge {
             font-size: 0.75rem; color: var(--accent); background: rgba(59, 130, 246, 0.1);
@@ -139,53 +407,110 @@
             border: 1px solid rgba(251, 191, 36, 0.2);
         }
 
-        /* --- 5. Media Queries (Responsive) --- */
+        /* ==========================================
+           Notifications & Toast System
+           ================================---------- */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        .toast {
+            background: var(--bg-card);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease forwards;
+        }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ==========================================
+           Responsive Media Queries for Mobile Devices
+           ================================---------- */
         @media (max-width: 900px) {
-            .form-grid { grid-template-columns: 1fr !important; }
-            #listCard > div { flex-direction: column; align-items: flex-start !important; gap: 12px; width: 100%; }
-            table { table-layout: fixed; width: 100%; }
-            td { height: 50px; padding: 0 4px !important; vertical-align: middle; }
-            .status-badge { padding: 2px 4px; font-size: 0.6rem !important; }
-            .id-input { width: 100%; padding: 6px 0; box-sizing: border-box; }
-            th { font-size: 0.7rem !important; padding: 8px 4px !important; }
-        }
-
-        @media (max-width: 600px) {
-            header { flex-direction: column; align-items: flex-start; gap: 12px; }
-            header div { display: flex; flex-direction: column; gap: 6px; }
-            header div span:nth-child(2) { display: none; }
+            body { padding: 12px; }
+            .form-grid { grid-template-columns: 1fr !important; gap: 12px; }
             
-            .card-header-wrapper { flex-direction: column; align-items: center; gap: 12px; margin-bottom: 24px; }
-            .card-title { font-size: 0.95rem; white-space: nowrap; }
-            #modelInfo { align-self: center; }
-        }
+            .card { padding: 16px; }
+            header { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+            
+            .card-header-wrapper { 
+                flex-direction: column; 
+                align-items: center; 
+                text-align: center; 
+                gap: 12px; 
+            }
 
-        @media (min-width: 600px) and (max-width: 900px) {
-            header { flex-direction: row; align-items: center; justify-content: space-between; }
-            header div { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
-            header div span:nth-child(2) { display: none; }
+            .form-actions {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            .table-toolbar {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+                gap: 12px;
+            }
+            .table-toolbar .card-title {
+                text-align: center;
+                width: 100%;
+            }
+            .toolbar-right {
+                justify-content: center;
+                width: 100%;
+            }
+            
+            th, td { padding: 8px 8px; font-size: 0.78rem; }
+            .id-input { width: 70px; }
         }
     </style>
 </head>
 
 <body>
+    <!-- App Header Section -->
     <header>
-        <h1>TechniMapper: M3U Proxy <span class="badge">v<span id="versionLabel">0.0.0</span></span></h1>
-        <div>
-            <span>Last Sync: <span id="last-sync-time" style="color: #fff;">Loading...</span></span>
-            <span>|</span>
-            <span>M3U: <a href="/playlist.m3u" target="_blank" id="m3uLink"
-                style="color: var(--accent); text-decoration: none;">/playlist.m3u</a></span>
+        <h1>
+            <div class="header-logo" title="TechniSat Receiver Logo">
+                <span class="material-icons-outlined">settings_input_antenna</span>
+            </div>
+            <span class="brand-title">TechniMapper:</span> <span class="brand-subtitle">M3U Proxy</span> 
+            <span class="badge">v<span id="versionLabel">...</span></span>
+        </h1>
+        <div class="header-meta">
+            <div id="syncBadge" class="header-badge">
+                <span class="material-icons-outlined" style="font-size: 15px; color: var(--success);">sync</span>
+                <span>Last Sync:</span> <span id="last-sync-time">Loading...</span>
+            </div>
+            <button class="btn-subtle" onclick="copyM3uLink()" title="Copy M3U URL to clipboard">
+                <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> Copy M3U
+            </button>
         </div>
     </header>
 
     <main>
+        <!-- Configuration Card Component -->
         <div class="card">
             <div class="card-header-wrapper">
-                <div class="card-title" style="margin: 0;">Connection & Auto-Update Configuration</div>
-                <div id="modelInfo" class="model-badge">Not detected yet</div>
+                <div class="card-title">Connection & Auto-Update Configuration</div>
+                <div id="modelInfo" class="model-badge model-badge-pending">Not detected yet</div>
             </div>
-            <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+            <div class="form-grid">
                 <div class="input-group">
                     <label>Receiver IP Address</label>
                     <div class="input-wrapper">
@@ -211,31 +536,53 @@
                     <label>Target Channel List</label>
                     <div class="input-wrapper">
                         <span class="material-icons-outlined">list</span>
-                        <select id="selectedListName" class="config-input" style="padding-left: 44px; appearance: none;">
+                        <!-- Automatically triggers fetchChannels on selection change -->
+                        <select id="selectedListName" class="config-input" style="padding-left: 30px; appearance: none;" onchange="fetchChannels()">
                             <option value="TV-Liste">TV-Liste</option>
                         </select>
                     </div>
                 </div>
             </div>
-            <button class="btn" onclick="fetchChannels()">
-                <span class="material-icons-outlined">refresh</span> Apply Settings & Fetch Channels
-            </button>
-            <p id="statusMsg" style="margin-top: 16px; font-weight: 500;"></p>
+            <div class="form-actions">
+                <button class="btn" onclick="fetchChannels()">
+                    <span class="material-icons-outlined" style="font-size: 16px;">refresh</span> Apply & Fetch
+                </button>
+                <div id="statusMsg"></div>
+            </div>
         </div>
 
+        <!-- Channel Mapping Card Component -->
         <div class="card" id="listCard" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div class="table-toolbar">
                 <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
-                <button class="btn btn-success" onclick="saveMapping()">
-                    <span class="material-icons-outlined">save</span> Save Mappings
-                </button>
+                
+                <div class="toolbar-right">
+                    <div class="filter-group">
+                        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+                        <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
+                        <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                    </div>
+                    
+                    <div class="search-container">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="handleSearchInput(this)">
+                        <span class="material-icons-outlined">search</span>
+                    </div>
+
+                    <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
+                        <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
+                    </button>
+
+                    <button class="btn btn-success" onclick="saveMapping()">
+                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                    </button>
+                </div>
             </div>
             <table>
                 <thead>
-                    <tr style="background: #161616;">
-                        <th>Status</th>
+                    <tr style="background: #16191d;">
+                        <th style="width: 100px;">Status</th>
                         <th>Channel Name</th>
-                        <th>Channel ID</th>
+                        <th style="width: 150px;">Channel ID</th>
                     </tr>
                 </thead>
                 <tbody id="channelTableBody"></tbody>
@@ -243,16 +590,53 @@
         </div>
     </main>
 
+    <div id="toast-container"></div>
+
+    <!-- Application Script Logic -->
     <script>
         let currentMapping = {};
         let detectedChannels = [];
+        let currentFilter = 'all';
         const BACKEND_URL = window.location.origin;
 
-        /* Updates the visual status badge based on detection results */
+        /**
+         * Renders floating toast notification elements dynamically
+         */
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="material-icons-outlined" style="color: ${type === 'success' ? 'var(--success)' : 'var(--danger)'}">
+                    ${type === 'success' ? 'check_circle' : 'error'}
+                </span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /**
+         * Copies the generated M3U proxy stream link to system clipboard
+         */
+        function copyM3uLink() {
+            const m3uUrl = BACKEND_URL + '/playlist.m3u';
+            navigator.clipboard.writeText(m3uUrl).then(() => {
+                showToast('M3U URL copied to clipboard!');
+            }).catch(err => {
+                showToast('Failed to copy URL', 'error');
+            });
+        }
+
+        /**
+         * Updates receiver model detection status badge appearance
+         */
         function updateModelBadge(status, text) {
             const badge = document.getElementById('modelInfo');
             badge.className = 'model-badge';
-
             if (status === 'pending') {
                 badge.classList.add('model-badge-pending');
                 badge.innerText = text;
@@ -269,21 +653,17 @@
             }
         }
 
-        // Initialize UI and settings on page load
+        // Initialize application state on DOM content load
         document.addEventListener("DOMContentLoaded", () => {
             updateModelBadge('pending', 'Not detected yet');
-            const linkElement = document.getElementById('m3uLink');
-            if (linkElement) {
-                linkElement.href = BACKEND_URL + '/playlist.m3u';
-                linkElement.innerText = BACKEND_URL + '/playlist.m3u';
-            }
-
             loadInitialConfig();
             updateSyncTime();
             setInterval(updateSyncTime, 30000);
         });
 
-        // Fetches initial configuration from backend to populate inputs
+        /**
+         * Fetches initial backend configuration parameters
+         */
         async function loadInitialConfig() {
             try {
                 const res = await fetch(BACKEND_URL + '/api/get-config');
@@ -300,24 +680,41 @@
             } catch (e) { console.error("Initial config load failed"); }
         }
 
-        // Queries backend for the last synchronization timestamp
+        /**
+         * Polls and updates last synchronization timestamp
+         */
         async function updateSyncTime() {
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-                const res = await fetch(BACKEND_URL + '/api/get-config', { signal: controller.signal });
-                clearTimeout(timeoutId);
-
+                const res = await fetch(BACKEND_URL + '/api/get-config');
                 const data = await res.json();
                 const el = document.getElementById('last-sync-time');
-                if (el) el.innerText = data.lastSync || "Never";
-            } catch (e) {
-                console.log("Sync status currently unavailable.");
+                const newTime = data.lastSync || "Never";
+                
+                if (el && el.innerText !== newTime && el.innerText !== "Loading...") {
+                    el.innerText = newTime;
+                    triggerSyncFlash();
+                } else if (el) {
+                    el.innerText = newTime;
+                }
+            } catch (e) {}
+        }
+
+        /**
+         * Triggers visual success flash effect on sync badge
+         */
+        function triggerSyncFlash() {
+            const badge = document.getElementById('syncBadge');
+            if (badge) {
+                badge.classList.add('success-flash');
+                setTimeout(() => {
+                    badge.classList.remove('success-flash');
+                }, 1500);
             }
         }
 
-        // Sends configuration to backend and triggers a new channel scan
+        /**
+         * Communicates with backend to fetch channel list from receiver device
+         */
         async function fetchChannels() {
             const statusMsg = document.getElementById('statusMsg');
             const listCard = document.getElementById('listCard');
@@ -326,8 +723,8 @@
             const cronExpression = document.getElementById('cronExpression').value.trim();
             const selectedListName = document.getElementById('selectedListName').value;
 
-            statusMsg.innerText = `Saving configuration and querying TechniSat receiver...`;
-            statusMsg.style.color = "var(--text-main)";
+            statusMsg.className = 'info';
+            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 15px;">sync</span> Connecting...`;
 
             try {
                 const res = await fetch(BACKEND_URL + '/api/fetch-channels', {
@@ -339,55 +736,117 @@
 
                 if (data.error) throw new Error(data.error);
                 
-                // Update list options dynamically from receiver response
                 if (data.availableLists && data.availableLists.length > 0) {
                     const select = document.getElementById('selectedListName');
-                    select.innerHTML = '';
-                    data.availableLists.forEach(listName => {
-                        const opt = document.createElement('option');
-                        opt.value = listName;
-                        opt.innerText = listName;
-                        if (listName === data.selectedListName) opt.selected = true;
-                        select.appendChild(opt);
-                    });
+                    const currentValues = Array.from(select.options).map(o => o.value);
+                    const newValues = data.availableLists;
+                    
+                    // Update dropdown lists only if data changed to prevent onChange loops
+                    if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
+                        select.innerHTML = '';
+                        data.availableLists.forEach(listName => {
+                            const opt = document.createElement('option');
+                            opt.value = listName;
+                            opt.innerText = listName;
+                            if (listName === data.selectedListName) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+                    }
                 }
 
                 updateModelBadge('success', data.detectedModel);
-                
                 detectedChannels = data.channels;
-                currentMapping = data.mapping;
+                currentMapping = data.mapping || {};
 
-                statusMsg.innerText = `Success! ${detectedChannels.length} channels loaded from "${data.selectedListName}".`;
-                statusMsg.style.color = "#10b981";
+                statusMsg.className = 'success';
+                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 15px;">check_circle</span> Loaded <strong>${detectedChannels.length} channels</strong> (&ldquo;${data.selectedListName}&rdquo;)`;
+                
                 renderTable();
+                updateSyncTime();
+                triggerSyncFlash();
+                showToast(`${detectedChannels.length} channels loaded`);
             } catch (err) {
                 updateModelBadge('error');
                 listCard.style.display = 'none';
-                statusMsg.innerText = "Error: " + err.message;
-                statusMsg.style.color = "#f87171";
+                
+                statusMsg.className = 'error';
+                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 15px;">error</span> ${err.message}`;
+                
+                showToast(err.message, 'error');
             }
         }
 
-        // Dynamically renders the channel mapping table
+        /**
+         * Filters channel table rows (All, Mapped, Unmapped)
+         */
+        function setFilter(filterType, element) {
+            currentFilter = filterType;
+            document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+            renderTable();
+        }
+
+        /**
+         * Handles interactive search input expanding behavior
+         */
+        function handleSearchInput(input) {
+            if (input.value.length > 0) {
+                input.classList.add('has-value');
+            } else {
+                input.classList.remove('has-value');
+            }
+            renderTable();
+        }
+
+        /**
+         * Automatically parses channel numbers from channel string names
+         */
+        function autoFillFromName() {
+            let count = 0;
+            detectedChannels.forEach(name => {
+                if (!currentMapping[name]) {
+                    const match = name.match(/^(\d+)/);
+                    if (match) {
+                        currentMapping[name] = parseInt(match[1], 10);
+                        count++;
+                    }
+                }
+            });
+
+            renderTable();
+            showToast(count > 0 ? `Extracted ${count} channel IDs from names` : 'No new channel numbers found in names');
+        }
+
+        /**
+         * Renders the interactive channel mapping table rows dynamically
+         */
         function renderTable() {
             const tbody = document.getElementById('channelTableBody');
             tbody.innerHTML = '';
 
-            detectedChannels.sort().forEach(name => {
-                const assignedId = currentMapping[name] || '';
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            detectedChannels.forEach(name => {
+                const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
                 const isMapped = assignedId !== '';
+
+                if (currentFilter === 'mapped' && !isMapped) return;
+                if (currentFilter === 'unmapped' && isMapped) return;
+                if (searchTerm && !name.toLowerCase().includes(searchTerm)) return;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
                         <span class="status-badge ${isMapped ? 'status-mapped' : 'status-unmapped'}">
-                            ${isMapped ? 'Mapped' : 'Unassigned'}
+                            ${isMapped ? 'Mapped' : 'Unmapped'}
                         </span>
                     </td>
                     <td><strong>${name}</strong></td>
                     <td>
                         <input type="text" class="id-input" value="${assignedId}" 
-                               onchange="updateId('${name}', this.value)" placeholder="-">
+                               onfocus="this.closest('tr').classList.add('focused-row')"
+                               onblur="this.closest('tr').classList.remove('focused-row')"
+                               onchange="updateId('${name.replace(/'/g, "\\'")}', this.value)" placeholder="-">
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -396,16 +855,21 @@
             document.getElementById('listCard').style.display = 'block';
         }
 
-        // Updates the local mapping object when an ID input changes
+        /**
+         * Updates single channel ID value mapping state
+         */
         function updateId(name, value) {
             if (value === '') {
                 delete currentMapping[name];
             } else {
-                currentMapping[name] = parseInt(value);
+                const parsed = parseInt(value, 10);
+                currentMapping[name] = isNaN(parsed) ? value : parsed;
             }
         }
 
-        // Sends the updated channel mappings to the backend for storage
+        /**
+         * Persists current channel ID mappings to backend storage
+         */
         async function saveMapping() {
             try {
                 const res = await fetch(BACKEND_URL + '/api/save-mapping', {
@@ -414,11 +878,13 @@
                     body: JSON.stringify({ mapping: currentMapping })
                 });
                 if (res.ok) {
-                    alert('Successfully saved! Channel IDs are active in your M3U playlist.');
+                    showToast('Mappings saved successfully!');
                     renderTable();
+                } else {
+                    throw new Error('Save failed');
                 }
             } catch (err) {
-                alert('Error saving data to the backend.');
+                showToast('Error saving data to backend.', 'error');
             }
         }
     </script>

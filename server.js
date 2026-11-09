@@ -1,43 +1,63 @@
+/**
+ * ============================================================================
+ * TechniMapper - M3U Proxy & Channel Mapping Server
+ * ============================================================================
+ * A robust Node.js Express backend designed to interface with TechniSat 
+ * receivers via UPnP/SOAP, parse live TV channel lists, and proxy them into
+ * standard M3U playlist formats.
+ * ============================================================================
+ */
+
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const xml2js = require('xml2js');
 const cron = require('node-cron');
+const packageJson = require('./package.json');
 
+// Initialize Express application instance
 const app = express();
-const APP_VERSION = "1.1.0";
+const APP_VERSION = packageJson.version; // Dynamic version binding from package.json
 const PORT = 3000;
 
+// Middleware configuration
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Persistent storage configuration directory and file paths
 const DATA_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 const CONFIG_FILE = path.join(DATA_DIR, 'mapping.json');
 
+// Core application state configuration schema
 let appConfig = {
     ip: '192.168.178.28',
     port: '9100',
     cronExpression: '*/60 * * * *',
-    selectedListName: 'TV-Liste', // Standard auf deine Favoritenliste
+    selectedListName: 'TV-Liste', // Default target favorites list
     mapping: {},
     channels: []
 };
 
+// Runtime cache and background worker references
 let cachedM3u = '';
 let lastSync = 'Never';
 let cronTask = null;
 
+/**
+ * Loads configuration and channel mappings from local disk storage.
+ * Automatically triggers initial M3U compilation and cron scheduling on success.
+ */
 function loadConfig() {
     try {
         if (fs.existsSync(CONFIG_FILE)) {
             const raw = fs.readFileSync(CONFIG_FILE, 'utf8');
             const parsed = JSON.parse(raw);
             appConfig = { ...appConfig, ...parsed };
-            console.log(`[Storage] Configuration loaded.`);
+            console.log(`[Storage] Configuration successfully loaded from disk.`);
             generateM3u();
             startBackgroundCron();
         }
@@ -46,6 +66,9 @@ function loadConfig() {
     }
 }
 
+/**
+ * Flushes current application state and configuration to persistent disk storage.
+ */
 function saveConfigToDisk() {
     try {
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(appConfig, null, 2), 'utf8');
@@ -55,7 +78,15 @@ function saveConfigToDisk() {
     }
 }
 
-// Generische SOAP Browse Funktion
+/**
+ * Executes a generic UPnP SOAP Browse request against the receiver device.
+ * 
+ * @param {string} ip - Receiver IP address
+ * @param {string} port - UPnP control port
+ * @param {string} objectId - UPnP container or object ID to browse
+ * @param {string} path - SOAP endpoint path
+ * @returns {Promise<Object>} Parsed DIDL-Lite response payload
+ */
 function browseUpnp(ip, port, objectId, path) {
     return new Promise((resolve, reject) => {
         const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
@@ -95,7 +126,9 @@ function browseUpnp(ip, port, objectId, path) {
     });
 }
 
-// Hilfsfunktion zum Erkennen aller verfügbaren Live-TV Listen
+/**
+ * Discovers available Live-TV channel container lists across known device series architectures.
+ */
 async function discoverTvLists(ip, port) {
     const testTargets = [
         { type: 'STC', parentObj: '0$3$41', path: '/dev0/srv1/control' },
@@ -121,14 +154,16 @@ async function discoverTvLists(ip, port) {
     throw new Error("No TechniSat Live-TV containers found.");
 }
 
-// Senderliste der ausgewählten Liste laden
+/**
+ * Fetches stream items and channel definitions from the selected TechniSat list container.
+ */
 async function fetchFromTechniSat() {
     const discovery = await discoverTvLists(appConfig.ip, appConfig.port);
     
-    // Nach der vom User gewünschten Liste suchen (z.B. "TV-Liste")
+    // Attempt to match the target list name configured by the user
     let targetList = discovery.lists.find(l => l.title === appConfig.selectedListName);
     
-    // Fallback: Falls der Name nicht gefunden wird, nimm die erste Liste
+    // Fallback strategy: Default to the first available list if target is missing
     if (!targetList && discovery.lists.length > 0) {
         targetList = discovery.lists[0];
         appConfig.selectedListName = targetList.title;
@@ -155,6 +190,9 @@ async function fetchFromTechniSat() {
     throw new Error('Failed to parse channel items.');
 }
 
+/**
+ * Compiles raw channel data and user-defined ID mappings into an M3U playlist format string.
+ */
 function generateM3u() {
     let m3u = `#EXTM3U\n`;
     appConfig.channels.forEach(ch => {
@@ -170,6 +208,9 @@ function generateM3u() {
     cachedM3u = m3u;
 }
 
+/**
+ * Initializes or updates the background cron scheduler for automated playlist synchronizations.
+ */
 function startBackgroundCron() {
     if (cronTask) cronTask.stop();
     const pattern = appConfig.cronExpression || '*/60 * * * *';
@@ -185,6 +226,16 @@ function startBackgroundCron() {
     });
 }
 
+/**
+ * ============================================================================
+ * REST API Endpoints
+ * ============================================================================
+ */
+
+/**
+ * GET /api/get-config
+ * Returns current server configuration parameters and synchronization metadata.
+ */
 app.get('/api/get-config', (req, res) => {
     res.json({
         version: APP_VERSION,
@@ -196,6 +247,10 @@ app.get('/api/get-config', (req, res) => {
     });
 });
 
+/**
+ * POST /api/fetch-channels
+ * Updates connection parameters and initiates a live fetch operation from the receiver.
+ */
 app.post('/api/fetch-channels', async (req, res) => {
     const { ip, port, cronExpression, selectedListName } = req.body;
 
@@ -224,6 +279,10 @@ app.post('/api/fetch-channels', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/save-mapping
+ * Persists user-defined channel ID mappings and updates the M3U cache.
+ */
 app.post('/api/save-mapping', (req, res) => {
     appConfig.mapping = req.body.mapping;
     generateM3u();
@@ -231,11 +290,16 @@ app.post('/api/save-mapping', (req, res) => {
     res.json({ success: true });
 });
 
+/**
+ * GET /playlist.m3u
+ * Serves the compiled M3U playlist stream proxy endpoint to clients.
+ */
 app.get('/playlist.m3u', (req, res) => {
     res.setHeader('Content-Type', 'audio/x-mpegurl');
     res.send(cachedM3u);
 });
 
+// Start Express server instance and load initial configuration
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     loadConfig();
