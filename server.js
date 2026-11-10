@@ -67,12 +67,15 @@ function loadConfig() {
 }
 
 /**
- * Flushes current application state and configuration to persistent disk storage.
+ * Flushes current application state and configuration to persistent disk storage atomically.
+ * Writes to a temporary file first and renames it to prevent file corruption on crash.
  */
 function saveConfigToDisk() {
     try {
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(appConfig, null, 2), 'utf8');
-        console.log(`[Storage] Configuration flushed to disk.`);
+        const tempFile = CONFIG_FILE + '.tmp';
+        fs.writeFileSync(tempFile, JSON.stringify(appConfig, null, 2), 'utf8');
+        fs.renameSync(tempFile, CONFIG_FILE);
+        console.log(`[Storage] Configuration flushed to disk atomically.`);
     } catch (err) {
         console.error(`[Storage Error] Failed to write mapping.json:`, err.message);
     }
@@ -288,6 +291,67 @@ app.post('/api/save-mapping', (req, res) => {
     generateM3u();
     saveConfigToDisk();
     res.json({ success: true });
+});
+
+/**
+ * GET /api/export-config
+ * Exports current configuration and channel mapping as a downloadable JSON file.
+ */
+app.get('/api/export-config', (req, res) => {
+    try {
+        const configData = {
+            version: APP_VERSION,
+            exportedAt: new Date().toISOString(),
+            config: {
+                ip: appConfig.ip,
+                port: appConfig.port,
+                cronExpression: appConfig.cronExpression,
+                selectedListName: appConfig.selectedListName
+            },
+            mapping: appConfig.mapping || {}
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename="technimapper-config.json"');
+        return res.json(configData);
+    } catch (err) {
+        return res.status(500).json({ error: 'Failed to export configuration' });
+    }
+});
+
+/**
+ * POST /api/import-config
+ * Imports configuration and channel mappings from an uploaded JSON payload.
+ */
+app.post('/api/import-config', (req, res) => {
+    try {
+        const importedData = req.body;
+
+        if (!importedData || typeof importedData !== 'object') {
+            return res.status(400).json({ error: 'Invalid JSON payload' });
+        }
+
+        // Apply config options if present
+        if (importedData.config) {
+            if (importedData.config.ip) appConfig.ip = importedData.config.ip;
+            if (importedData.config.port) appConfig.port = importedData.config.port;
+            if (importedData.config.cronExpression) appConfig.cronExpression = importedData.config.cronExpression;
+            if (importedData.config.selectedListName) appConfig.selectedListName = importedData.config.selectedListName;
+        }
+
+        // Apply channel mapping
+        if (importedData.mapping && typeof importedData.mapping === 'object') {
+            appConfig.mapping = importedData.mapping;
+        }
+
+        generateM3u();
+        saveConfigToDisk();
+        startBackgroundCron();
+
+        return res.json({ success: true, message: 'Configuration imported successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: 'Failed to import configuration: ' + err.message });
+    }
 });
 
 /**

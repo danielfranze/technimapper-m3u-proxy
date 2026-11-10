@@ -161,11 +161,21 @@
         }
         
         .card-header-wrapper { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
             margin-bottom: 20px; 
-            gap: 16px;
+        }
+
+        /* Standardisierte Steuerung für Desktop vs. Mobile Layouts */
+        .desktop-view { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; }
+        .mobile-view { display: none; }
+
+        /* Toolbar View Switches */
+        .toolbar-desktop { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; }
+        .toolbar-mobile { display: none; }
+
+        .card-title-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .card-title { 
@@ -174,7 +184,6 @@
             margin: 0; 
             color: #fff; 
             white-space: nowrap; 
-            flex-shrink: 0;
         }
 
         .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
@@ -197,9 +206,10 @@
 
         .form-actions {
             display: flex;
+            justify-content: space-between;
             align-items: center;
+            width: 100%;
             gap: 12px;
-            flex-wrap: wrap;
         }
 
         /* Standardized button component variants */
@@ -210,6 +220,8 @@
             justify-content: center; gap: 6px; background-color: var(--accent); 
             color: white; transition: background-color 0.2s; box-sizing: border-box;
             box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+            white-space: nowrap;
+            margin-left: auto; /* Zwingt den Button immer nach rechts, auch wenn #statusMsg leer/hidden ist */
         }
         .btn:hover { background-color: var(--accent-hover); }
 
@@ -246,42 +258,40 @@
             background: #333;
         }
 
-        /* Compact inline status message block */
+        /* Einheitliche Kompakt-Größe für Status- & Statusmeldung-Badges */
         #statusMsg {
-            font-size: 0.76rem;
+            font-size: 0.72rem;
             display: none;
             align-items: center;
             gap: 6px;
-            height: 30px;
-            padding: 0 12px;
-            border-radius: 15px;
+            height: 24px;
+            padding: 0 10px;
+            border-radius: 12px;
             box-sizing: border-box;
             border: 1px solid transparent;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #statusMsg.info, #statusMsg.success, #statusMsg.error {
             display: inline-flex;
         }
         #statusMsg.info { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--accent); }
-        #statusMsg.success { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #34d399; }
-        #statusMsg.error { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+        #statusMsg.success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399; }
+        #statusMsg.error { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
 
         /* ==========================================
            Toolbar & Table Components
            ================================---------- */
         .table-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             margin-bottom: 16px;
-            gap: 16px;
-            flex-wrap: wrap;
         }
 
         .toolbar-right {
             display: flex;
             align-items: center;
             gap: 8px;
-            flex-wrap: wrap;
         }
 
         .filter-group {
@@ -378,7 +388,7 @@
         }
         .id-input:focus { border-color: var(--accent); }
 
-        /* Unified Compact Status Badges */
+        /* Unified Compact Status Badges (Mapped / Unmapped size baseline) */
         .status-badge { 
             font-size: 0.72rem; 
             height: 24px;
@@ -393,14 +403,25 @@
         .status-mapped { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
         .status-unmapped { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
 
+        /* Einheitliche Badge-Größe für Modell-Badge (Desktop & Mobile identisch) */
         .model-badge {
-            font-size: 0.75rem; color: var(--accent); background: rgba(59, 130, 246, 0.1);
-            padding: 4px 10px; border-radius: 20px; font-weight: 600; 
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            font-size: 0.72rem; 
+            color: var(--accent); 
+            background: rgba(59, 130, 246, 0.1);
+            height: 24px;
+            padding: 0 10px; 
+            border-radius: 12px; 
+            font-weight: 500; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            white-space: nowrap;
         }
         .model-badge-pending {
             color: #fbbf24; background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.2);
+            border: 1px solid rgba(251, 191, 36, 0.3);
         }
 
         /* ==========================================
@@ -445,46 +466,56 @@
             .card { padding: 16px; }
             header { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
             
-            .card-header-wrapper { 
-                flex-direction: column; 
-                align-items: center; 
-                text-align: center; 
-                gap: 12px; 
+            /* Umschaltung auf das saubere Mobile-Layout (Getrennte Container) */
+            .desktop-view { display: none !important; }
+            .mobile-view { display: flex !important; flex-direction: column; gap: 12px; width: 100%; }
+
+            /* Toolbar Umschaltung für Mobile */
+            .toolbar-desktop { display: none !important; }
+            .toolbar-mobile { display: flex !important; flex-direction: column; width: 100%; gap: 12px; }
+
+            .mobile-row-1 {
+                display: flex;
+                justify-content: center;
+                width: 100%;
+                text-align: center;
+            }
+
+            .mobile-row-2 {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
             }
 
             .form-actions {
-                justify-content: center;
-                width: 100%;
+                flex-direction: row !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                width: 100% !important;
+                gap: 8px !important;
             }
-            
+
+            .form-actions .btn {
+                width: auto !important;
+                margin-left: auto !important; /* Button auch mobil immer rechts erzwingen */
+            }
+
+            #statusMsg {
+                width: auto !important;
+                justify-content: flex-start !important;
+            }
+
             .table-toolbar {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-                gap: 12px;
+                align-items: stretch;
             }
-            .table-toolbar .card-title {
-                text-align: center;
-                width: 100%;
-            }
-            .toolbar-right {
-                justify-content: flex-start;
-                width: 100%;
-                gap: 10px;
-            }
-            
+
             /* Mobile Search Field: Full width in dedicated top line */
             .search-container {
                 width: 100%;
-                order: -1;
             }
             .search-input {
                 width: 100% !important;
-            }
-
-            /* Push Parse button and following elements (Save) to the right on mobile */
-            .btn-subtle {
-                margin-left: auto;
             }
 
             th, td { padding: 8px 8px; font-size: 0.78rem; }
@@ -518,8 +549,42 @@
         <!-- Configuration Card Component -->
         <div class="card">
             <div class="card-header-wrapper">
-                <div class="card-title">Connection & Auto-Update Configuration</div>
-                <div id="modelInfo" class="model-badge model-badge-pending">Not detected yet</div>
+                <!-- DESKTOP ANSICHT (Alles in einer Zeile) -->
+                <div class="desktop-view">
+                    <div class="card-title-group">
+                        <div class="card-title">Connection & Auto-Update Configuration</div>
+                        <div id="modelInfoDesktop" class="model-badge model-badge-pending">Not detected yet</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                        <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON">
+                            <span class="material-icons-outlined" style="font-size: 15px;">download</span> Export
+                        </button>
+                        <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON">
+                            <span class="material-icons-outlined" style="font-size: 15px;">upload</span> Import
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MOBILE ANSICHT (Zeile 1: Titel zentriert, Zeile 2: Badge links, Buttons rechts) -->
+                <div class="mobile-view">
+                    <div class="mobile-row-1">
+                        <div class="card-title">Connection & Auto-Update Configuration</div>
+                    </div>
+                    <div class="mobile-row-2">
+                        <div id="modelInfoMobile" class="model-badge model-badge-pending">Not detected yet</div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON">
+                                <span class="material-icons-outlined" style="font-size: 15px;">download</span> Export
+                            </button>
+                            <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON">
+                                <span class="material-icons-outlined" style="font-size: 15px;">upload</span> Import
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shared Hidden File Input for Import -->
+                <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
             </div>
             <div class="form-grid">
                 <div class="input-group">
@@ -554,39 +619,65 @@
                     </div>
                 </div>
             </div>
+            <!-- Statusmeldung links, Apply & Fetch Button standardmäßig rechts -->
             <div class="form-actions">
+                <div id="statusMsg"></div>
                 <button class="btn" onclick="fetchChannels()">
                     <span class="material-icons-outlined" style="font-size: 16px;">refresh</span> Apply & Fetch
                 </button>
-                <div id="statusMsg"></div>
             </div>
         </div>
 
         <!-- Channel Mapping Card Component -->
         <div class="card" id="listCard" style="display: none;">
             <div class="table-toolbar">
-                <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
-                
-                <div class="toolbar-right">
-                    <!-- Search Container (Exact 178px width on Desktop, full width on Mobile) -->
-                    <div class="search-container">
-                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="renderTable()">
+                <!-- DESKTOP TOOLBAR (Alles in einer sauberen Zeile) -->
+                <div class="toolbar-desktop">
+                    <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
+                    <div class="toolbar-right">
+                        <div class="search-container">
+                            <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="renderTable()">
+                            <span class="material-icons-outlined">search</span>
+                        </div>
+                        <div class="filter-group">
+                            <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+                            <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
+                            <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                        </div>
+                        <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
+                            <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
+                        </button>
+                        <button class="btn btn-success" onclick="saveMapping()">
+                            <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                        </button>
+                    </div>
+                </div>
+
+                <!-- MOBILE TOOLBAR (Zeile 1: Titel, Zeile 2: Suche voll, Zeile 3: Filter links & Buttons rechts) -->
+                <div class="toolbar-mobile">
+                    <div class="card-title" style="text-align: center; width: 100%; margin-bottom: 4px;">Channel ID Mapping</div>
+                    
+                    <div class="search-container" style="width: 100%;">
+                        <input type="text" id="searchInputMobile" class="search-input" placeholder="Search" oninput="syncSearch(this.value)" style="width: 100% !important;">
                         <span class="material-icons-outlined">search</span>
                     </div>
 
-                    <div class="filter-group">
-                        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-                        <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
-                        <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
+                        <div class="filter-group">
+                            <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+                            <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
+                            <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
+                                <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
+                            </button>
+                            <button class="btn btn-success" onclick="saveMapping()">
+                                <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                            </button>
+                        </div>
                     </div>
-
-                    <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
-                        <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
-                    </button>
-
-                    <button class="btn btn-success" onclick="saveMapping()">
-                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
-                    </button>
                 </div>
             </div>
             <table>
@@ -610,6 +701,25 @@
         let detectedChannels = [];
         let currentFilter = 'all';
         const BACKEND_URL = window.location.origin;
+
+        /**
+         * Synchronizes search inputs between desktop and mobile views
+         */
+        function syncSearch(val) {
+            document.getElementById('searchInput').value = val;
+            if (document.getElementById('searchInputMobile')) {
+                document.getElementById('searchInputMobile').value = val;
+            }
+            renderTable();
+        }
+
+        // Auch Desktop-Suche mit Mobile synchronisieren
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            if (document.getElementById('searchInputMobile')) {
+                document.getElementById('searchInputMobile').value = e.target.value;
+            }
+            renderTable();
+        });
 
         /**
          * Renders floating toast notification elements dynamically
@@ -644,25 +754,29 @@
         }
 
         /**
-         * Updates receiver model detection status badge appearance
+         * Updates receiver model detection status badge appearance in both desktop and mobile views
          */
         function updateModelBadge(status, text) {
-            const badge = document.getElementById('modelInfo');
-            badge.className = 'model-badge';
-            if (status === 'pending') {
-                badge.classList.add('model-badge-pending');
-                badge.innerText = text;
-            } else if (status === 'success') {
-                badge.innerText = "Detected: " + text;
-                badge.style.background = "rgba(59, 130, 246, 0.1)";
-                badge.style.color = "var(--accent)";
-                badge.style.borderColor = "rgba(59, 130, 246, 0.2)";
-            } else if (status === 'error') {
-                badge.innerText = "Not detected";
-                badge.style.background = "rgba(239, 68, 68, 0.1)";
-                badge.style.color = "#f87171";
-                badge.style.borderColor = "rgba(239, 68, 68, 0.2)";
-            }
+            const badges = [document.getElementById('modelInfoDesktop'), document.getElementById('modelInfoMobile')];
+            
+            badges.forEach(badge => {
+                if (!badge) return;
+                badge.className = 'model-badge';
+                if (status === 'pending') {
+                    badge.classList.add('model-badge-pending');
+                    badge.innerText = text;
+                } else if (status === 'success') {
+                    badge.innerText = "Detected: " + text;
+                    badge.style.background = "rgba(59, 130, 246, 0.1)";
+                    badge.style.color = "var(--accent)";
+                    badge.style.borderColor = "rgba(59, 130, 246, 0.3)";
+                } else if (status === 'error') {
+                    badge.innerText = "Not detected";
+                    badge.style.background = "rgba(239, 68, 68, 0.1)";
+                    badge.style.color = "#f87171";
+                    badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                }
+            });
         }
 
         // Initialize application state on DOM content load
@@ -736,7 +850,7 @@
             const selectedListName = document.getElementById('selectedListName').value;
 
             statusMsg.className = 'info';
-            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 15px;">sync</span> Connecting...`;
+            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">sync</span> Connecting...`;
 
             try {
                 const res = await fetch(BACKEND_URL + '/api/fetch-channels', {
@@ -771,7 +885,7 @@
                 currentMapping = data.mapping || {};
 
                 statusMsg.className = 'success';
-                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 15px;">check_circle</span> Loaded <strong>${detectedChannels.length} channels</strong> (&ldquo;${data.selectedListName}&rdquo;)`;
+                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">check_circle</span> Loaded <strong>${detectedChannels.length} channels</strong> (&ldquo;${data.selectedListName}&rdquo;)`;
                 
                 renderTable();
                 updateSyncTime();
@@ -782,7 +896,7 @@
                 listCard.style.display = 'none';
                 
                 statusMsg.className = 'error';
-                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 15px;">error</span> ${err.message}`;
+                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">error</span> ${err.message}`;
                 
                 showToast(err.message, 'error');
             }
@@ -793,8 +907,16 @@
          */
         function setFilter(filterType, element) {
             currentFilter = filterType;
-            document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
+            const chipTexts = element.textContent.trim().toLowerCase();
+            
+            document.querySelectorAll('.filter-chip').forEach(el => {
+                if (el.textContent.trim().toLowerCase() === chipTexts) {
+                    el.classList.add('active');
+                } else {
+                    el.classList.remove('active');
+                }
+            });
+
             renderTable();
         }
 
@@ -818,13 +940,12 @@
         }
 
         /**
-         * Renders the interactive channel mapping table rows dynamically
+         * Renders the interactive channel mapping table rows dynamically (Optimized with array joining)
          */
         function renderTable() {
             const tbody = document.getElementById('channelTableBody');
-            tbody.innerHTML = '';
-
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = [];
 
             detectedChannels.forEach(name => {
                 const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
@@ -834,24 +955,25 @@
                 if (currentFilter === 'unmapped' && isMapped) return;
                 if (searchTerm && !name.toLowerCase().includes(searchTerm)) return;
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>
-                        <span class="status-badge ${isMapped ? 'status-mapped' : 'status-unmapped'}">
-                            ${isMapped ? 'Mapped' : 'Unmapped'}
-                        </span>
-                    </td>
-                    <td><strong>${name}</strong></td>
-                    <td>
-                        <input type="text" class="id-input" value="${assignedId}" 
-                               onfocus="this.closest('tr').classList.add('focused-row')"
-                               onblur="this.closest('tr').classList.remove('focused-row')"
-                               onchange="updateId('${name.replace(/'/g, "\\'")}', this.value)" placeholder="-">
-                    </td>
-                `;
-                tbody.appendChild(tr);
+                rows.push(`
+                    <tr>
+                        <td>
+                            <span class="status-badge ${isMapped ? 'status-mapped' : 'status-unmapped'}">
+                                ${isMapped ? 'Mapped' : 'Unmapped'}
+                            </span>
+                        </td>
+                        <td><strong>${name}</strong></td>
+                        <td>
+                            <input type="text" class="id-input" value="${assignedId}" 
+                                   onfocus="this.closest('tr').classList.add('focused-row')"
+                                   onblur="this.closest('tr').classList.remove('focused-row')"
+                                   onchange="updateId('${name.replace(/'/g, "\\'")}', this.value)" placeholder="-">
+                        </td>
+                    </tr>
+                `);
             });
 
+            tbody.innerHTML = rows.join('');
             document.getElementById('listCard').style.display = 'block';
         }
 
@@ -886,6 +1008,56 @@
             } catch (err) {
                 showToast('Error saving data to backend.', 'error');
             }
+        }
+
+        /**
+         * Triggers the download of the current configuration as a JSON file
+         */
+        function exportConfig() {
+            window.location.href = BACKEND_URL + '/api/export-config';
+            showToast('Exporting configuration...');
+        }
+
+        /**
+         * Triggers file picker dialog for importing JSON config
+         */
+        function triggerImport() {
+            document.getElementById('importFileInput').click();
+        }
+
+        /**
+         * Handles uploaded configuration file and sends it to backend
+         */
+        async function handleImportFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+
+                    const res = await fetch(BACKEND_URL + '/api/import-config', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(importedData)
+                    });
+
+                    const result = await res.json();
+                    if (res.ok && result.success) {
+                        showToast('Configuration imported successfully!');
+                        await loadInitialConfig();
+                        await fetchChannels(); // Reload channels & update mapping UI
+                    } else {
+                        throw new Error(result.error || 'Import failed');
+                    }
+                } catch (err) {
+                    showToast('Import failed: ' + err.message, 'error');
+                } finally {
+                    event.target.value = ''; // Reset input selection
+                }
+            };
+            reader.readAsText(file);
         }
     </script>
 </body>
