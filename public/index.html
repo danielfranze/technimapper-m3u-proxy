@@ -320,41 +320,37 @@
             height: 30px;
         }
 
+        /* Fixed search input width matching filter-group container exactly (178px) */
         .search-input {
-            width: 75px;
+            width: 178px;
             height: 30px;
-            padding: 0 8px 0 26px;
+            padding: 0 10px 0 28px;
             background: var(--bg-input);
             border: 1px solid var(--border);
             border-radius: 15px;
             color: white;
             font-size: 0.76rem;
             outline: none;
-            cursor: pointer;
             box-sizing: border-box;
-            transition: width 0.3s ease, border-color 0.2s, background-color 0.2s, border-radius 0.2s;
+            transition: border-color 0.2s;
         }
 
         .search-input::placeholder { color: var(--text-dim); font-size: 0.74rem; }
         .search-container:hover .search-input { border-color: #444; }
-        .search-input:focus, .search-input.has-value {
-            width: 140px;
+        .search-input:focus {
             border-color: var(--accent);
-            border-radius: 6px;
-            cursor: text;
         }
 
         .search-container .material-icons-outlined {
             position: absolute;
-            left: 7px;
+            left: 8px;
             font-size: 14px;
             color: var(--text-dim);
             pointer-events: none;
             transition: color 0.2s;
         }
 
-        .search-input:focus ~ .material-icons-outlined, 
-        .search-input.has-value ~ .material-icons-outlined {
+        .search-input:focus ~ .material-icons-outlined {
             color: var(--accent);
         }
 
@@ -472,10 +468,25 @@
                 width: 100%;
             }
             .toolbar-right {
-                justify-content: center;
+                justify-content: flex-start;
                 width: 100%;
+                gap: 10px;
             }
             
+            /* Mobile Search Field: Full width in dedicated top line */
+            .search-container {
+                width: 100%;
+                order: -1;
+            }
+            .search-input {
+                width: 100% !important;
+            }
+
+            /* Push Parse button and following elements (Save) to the right on mobile */
+            .btn-subtle {
+                margin-left: auto;
+            }
+
             th, td { padding: 8px 8px; font-size: 0.78rem; }
             .id-input { width: 70px; }
         }
@@ -557,15 +568,16 @@
                 <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
                 
                 <div class="toolbar-right">
+                    <!-- Search Container (Exact 178px width on Desktop, full width on Mobile) -->
+                    <div class="search-container">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="renderTable()">
+                        <span class="material-icons-outlined">search</span>
+                    </div>
+
                     <div class="filter-group">
                         <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
                         <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
                         <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
-                    </div>
-                    
-                    <div class="search-container">
-                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="handleSearchInput(this)">
-                        <span class="material-icons-outlined">search</span>
                     </div>
 
                     <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
@@ -580,9 +592,9 @@
             <table>
                 <thead>
                     <tr style="background: #16191d;">
-                        <th style="width: 100px;">Status</th>
-                        <th>Channel Name</th>
-                        <th style="width: 150px;">Channel ID</th>
+                        <th style="width: 75px;">Status</th>
+                        <th style="width: 100%;">Channel Name</th>
+                        <th style="width: 100px;">Channel ID</th>
                     </tr>
                 </thead>
                 <tbody id="channelTableBody"></tbody>
@@ -783,18 +795,6 @@
             currentFilter = filterType;
             document.querySelectorAll('.filter-chip').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
-            renderTable();
-        }
-
-        /**
-         * Handles interactive search input expanding behavior
-         */
-        function handleSearchInput(input) {
-            if (input.value.length > 0) {
-                input.classList.add('has-value');
-            } else {
-                input.classList.remove('has-value');
-            }
             renderTable();
         }
 
