@@ -1,561 +1,582 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TechniMapper: M3U Proxy</title>
-    <!-- Favicon: Clean SVG-based receiver icon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H4V8h16v8zM6 10h2v4H6zm10 0h2v4h-2zm-4 0h2v4h-2z'/%3E%3C/svg%3E">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- ==========================================================================
+     Global Document Head & Metadata
+     Architecture: Enterprise Web Standards
+     ========================================================================== -->
+<title>TechniMapper: M3U Proxy & Channel Mapping Dashboard</title>
+<meta name="description" content="Maps volatile TechniSat UPnP stream URLs to stable channel IDs and serves them as an M3U playlist.">
+<meta name="author" content="Daniel Franze">
+<meta name="robots" content="noindex, nofollow">
+<meta name="application-name" content="TechniMapper">
+<meta name="theme-color" content="#16191d">
 
-    <style>
-        /* ==========================================
-           CSS Variables & Design System Token Setup
-           ================================---------- */
-        :root {
-            --bg-body: #16191d;
-            --bg-card: #1e2228;
-            --bg-input: #262b33;
-            --text-main: #ffffff;
-            --text-dim: #94a3b8;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --success: #10b981;
-            --success-hover: #059669;
-            --border: #2e3642;
-            --danger: #ef4444;
-        }
 
-        /* ==========================================
-           Base Layout & Typography
-           ================================---------- */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            margin: 0;
-            padding: 24px;
+<!-- Favicon: Clean SVG-based receiver icon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H4V8h16v8zM6 10h2v4H6zm10 0h2v4h-2zm-4 0h2v4h-2z'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+<style>
+    /* ==========================================
+       CSS Variables & Design System Token Setup
+       ================================---------- */
+    :root {
+        --bg-body: #16191d;
+        --bg-card: #1e2228;
+        --bg-input: #262b33;
+        --text-main: #ffffff;
+        --text-dim: #94a3b8;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #10b981;
+        --success-hover: #059669;
+        --border: #2e3642;
+        --danger: #ef4444;
+    }
+
+    /* ==========================================
+       Base Layout & Typography
+       ================================---------- */
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-body);
+        color: var(--text-main);
+        margin: 0;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    main { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; }
+
+    header {
+        width: 100%;
+        max-width: 1100px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    header h1 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        color: #ffffff;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ==========================================
+       Branding & Header Elements
+       ================================---------- */
+    .header-logo {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #262b33, #16191d);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--accent);
+        box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .header-logo .material-icons-outlined {
+        font-size: 18px;
+    }
+
+    .brand-title {
+        color: #cbd5e1;
+        font-weight: 600;
+        letter-spacing: -0.2px;
+    }
+    .brand-subtitle {
+        color: #3b82f6;
+        font-weight: 600;
+        letter-spacing: -0.2px;
+        text-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .header-meta {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .header-badge {
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 15px;
+        font-size: 0.76rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .header-badge span {
+        color: #fff;
+        font-weight: 500;
+    }
+
+    /* Sync status flash animation state */
+    .header-badge.success-flash {
+        background: rgba(16, 185, 129, 0.15);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #34d399;
+    }
+    .header-badge.success-flash span {
+        color: #34d399;
+    }
+
+    .badge {
+        font-size: 0.72rem;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        border-radius: 12px;
+        color: var(--text-dim);
+        font-weight: 500;
+    }
+
+    /* ==========================================
+       Cards & Component Layouts
+       ================================---------- */
+    .card { 
+        background-color: var(--bg-card); 
+        border-radius: 8px; 
+        padding: 24px; 
+        border: 1px solid var(--border); 
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    .card-header-wrapper { 
+        margin-bottom: 20px; 
+    }
+
+    /* Standardisierte Steuerung für Desktop vs. Mobile Layouts */
+    .desktop-view { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; }
+    .mobile-view { display: none; }
+
+    /* Toolbar View Switches */
+    .toolbar-desktop { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; }
+    .toolbar-mobile { display: none; }
+
+    .card-title-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .card-title { 
+        font-size: 1.1rem; 
+        font-weight: 600; 
+        margin: 0; 
+        color: #fff; 
+        white-space: nowrap; 
+    }
+
+    .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+    
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-dim); }
+    
+    .input-wrapper { position: relative; display: flex; align-items: center; height: 30px; }
+    .input-wrapper .material-icons-outlined { 
+        position: absolute; left: 8px; color: var(--text-dim); font-size: 16px; pointer-events: none;
+    }
+
+    /* Standardized 30px input elements */
+    .config-input {
+        width: 100%; height: 30px; padding: 0 10px 0 30px; border: 1px solid var(--border);
+        border-radius: 15px; font-size: 0.78rem; background: var(--bg-input); 
+        color: white; box-sizing: border-box; outline: none; transition: border-color 0.2s;
+    }
+    .config-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 12px;
+    }
+
+    /* Standardized button component variants */
+    .btn {
+        font-family: 'Inter', sans-serif; font-weight: 500; font-size: 0.78rem;
+        padding: 0 14px; height: 30px; border-radius: 15px; border: none; 
+        cursor: pointer; display: inline-flex; align-items: center; 
+        justify-content: center; gap: 6px; background-color: var(--accent); 
+        color: white; transition: background-color 0.2s; box-sizing: border-box;
+        box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+        white-space: nowrap;
+        margin-left: auto;
+    }
+    .btn:hover { background-color: var(--accent-hover); }
+
+    .btn-success {
+        background-color: var(--success);
+        height: 30px;
+        padding: 0 10px;
+        font-size: 0.76rem;
+        border-radius: 15px;
+        gap: 3px;
+        box-sizing: border-box;
+        box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+    }
+    .btn-success:hover { background-color: var(--success-hover); }
+
+    .btn-subtle {
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        height: 30px;
+        padding: 0 10px;
+        font-size: 0.76rem;
+        border-radius: 15px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        box-sizing: border-box;
+        transition: all 0.2s;
+    }
+    .btn-subtle:hover {
+        border-color: #444;
+        color: #fff;
+        background: #333;
+    }
+
+    /* Statusmeldung (Desktop: skaliert mit Inhalt, kein Vollstrecken) */
+    #statusMsg {
+        font-size: 0.72rem;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        height: 24px;
+        padding: 0 10px;
+        border-radius: 12px;
+        box-sizing: border-box;
+        border: 1px solid transparent;
+        font-weight: 500;
+        white-space: nowrap;
+        width: fit-content;
+        max-width: 70%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #statusMsg.info, #statusMsg.success, #statusMsg.error {
+        display: inline-flex;
+    }
+    #statusMsg.info { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--accent); }
+    #statusMsg.success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399; }
+    #statusMsg.error { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
+
+    /* ==========================================
+       Toolbar & Table Components
+       ================================---------- */
+    .table-toolbar {
+        margin-bottom: 16px;
+    }
+
+    .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .filter-group {
+        display: flex;
+        align-items: center;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        height: 30px;
+        padding: 0 3px;
+        border-radius: 15px;
+        gap: 2px;
+        box-sizing: border-box;
+    }
+
+    .filter-chip {
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        height: 22px;
+        padding: 0 9px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    .filter-chip:hover { color: #fff; }
+    .filter-chip.active { background: var(--accent); color: white; font-weight: 500; }
+
+    .search-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        height: 30px;
+    }
+
+    .search-input {
+        width: 178px;
+        height: 30px;
+        padding: 0 10px 0 28px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: 15px;
+        color: white;
+        font-size: 0.76rem;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+    }
+
+    .search-input::placeholder { color: var(--text-dim); font-size: 0.74rem; }
+    .search-container:hover .search-input { border-color: #444; }
+    .search-input:focus { border-color: var(--accent); }
+
+    .search-container .material-icons-outlined {
+        position: absolute;
+        left: 8px;
+        font-size: 14px;
+        color: var(--text-dim);
+        pointer-events: none;
+        transition: color 0.2s;
+    }
+
+    .search-input:focus ~ .material-icons-outlined {
+        color: var(--accent);
+    }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+    th { color: var(--text-dim); padding: 10px 14px; font-size: 0.78rem; text-align: left; border-bottom: 1px solid var(--border); }
+    td { padding: 10px 14px; font-size: 0.84rem; border-bottom: 1px solid var(--border); }
+
+    tr { transition: background-color 0.2s; }
+    tr.focused-row { background-color: rgba(59, 130, 246, 0.12); }
+
+    .id-input {
+        width: 90px;
+        height: 30px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 15px;
+        text-align: center;
+        background: var(--bg-input);
+        color: white;
+        font-size: 0.78rem;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+    }
+    .id-input:focus { border-color: var(--accent); }
+
+    .status-badge { 
+        font-size: 0.72rem; 
+        height: 24px;
+        padding: 0 10px; 
+        border-radius: 12px; 
+        font-weight: 500; 
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+    .status-mapped { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
+    .status-unmapped { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+
+    .model-badge {
+        font-size: 0.72rem; 
+        color: var(--accent); 
+        background: rgba(59, 130, 246, 0.1);
+        height: 24px;
+        padding: 0 10px; 
+        border-radius: 12px; 
+        font-weight: 500; 
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        white-space: nowrap;
+    }
+    .model-badge-pending {
+        color: #fbbf24; background: rgba(251, 191, 36, 0.1);
+        border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+
+    #toast-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 1000;
+    }
+    .toast {
+        background: var(--bg-card);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideIn 0.3s ease forwards;
+    }
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--danger); }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ==========================================
+       Responsive Media Queries for Mobile Devices
+       ================================---------- */
+    @media (max-width: 900px) {
+        body { padding: 12px; }
+        .form-grid { grid-template-columns: 1fr !important; gap: 12px; }
+        
+        .card { padding: 16px; }
+        header { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
+        
+        .desktop-view { display: none !important; }
+        .mobile-view { display: flex !important; flex-direction: column; gap: 12px; width: 100%; }
+
+        .toolbar-desktop { display: none !important; }
+        .toolbar-mobile { display: flex !important; flex-direction: column; width: 100%; gap: 12px; }
+
+        .mobile-row-1 {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        main { width: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 24px; }
-
-        header {
-            width: 100%;
-            max-width: 1100px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 24px;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        header h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            color: #ffffff;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-        }
-
-        /* ==========================================
-           Branding & Header Elements
-           ================================---------- */
-        .header-logo {
-            width: 28px;
-            height: 28px;
-            display: inline-flex;
-            align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #262b33, #16191d);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--accent);
-            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            text-align: center;
         }
 
-        .header-logo .material-icons-outlined {
-            font-size: 18px;
-        }
-
-        .brand-title {
-            color: #cbd5e1;
-            font-weight: 600;
-            letter-spacing: -0.2px;
-        }
-        .brand-subtitle {
-            color: #3b82f6;
-            font-weight: 600;
-            letter-spacing: -0.2px;
-            text-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
-        }
-
-        .header-meta {
+        .mobile-row-2 {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
+            width: 100%;
         }
-
-        .header-badge {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            height: 30px;
-            padding: 0 12px;
-            border-radius: 15px;
-            font-size: 0.76rem;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .header-badge span {
-            color: #fff;
-            font-weight: 500;
-        }
-
-        /* Sync status flash animation state */
-        .header-badge.success-flash {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: rgba(16, 185, 129, 0.3);
-            color: #34d399;
-        }
-        .header-badge.success-flash span {
-            color: #34d399;
-        }
-
-        .badge {
-            font-size: 0.72rem;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            padding: 2px 8px;
-            border-radius: 12px;
-            color: var(--text-dim);
-            font-weight: 500;
-        }
-
-        /* ==========================================
-           Cards & Component Layouts
-           ================================---------- */
-        .card { 
-            background-color: var(--bg-card); 
-            border-radius: 8px; 
-            padding: 24px; 
-            border: 1px solid var(--border); 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        .card-header-wrapper { 
-            margin-bottom: 20px; 
-        }
-
-        /* Standardisierte Steuerung für Desktop vs. Mobile Layouts */
-        .desktop-view { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; }
-        .mobile-view { display: none; }
-
-        /* Toolbar View Switches */
-        .toolbar-desktop { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; }
-        .toolbar-mobile { display: none; }
-
-        .card-title-group {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .card-title { 
-            font-size: 1.1rem; 
-            font-weight: 600; 
-            margin: 0; 
-            color: #fff; 
-            white-space: nowrap; 
-        }
-
-        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
-        
-        .input-group { display: flex; flex-direction: column; gap: 6px; }
-        .input-group label { font-size: 0.8rem; font-weight: 500; color: var(--text-dim); }
-        
-        .input-wrapper { position: relative; display: flex; align-items: center; height: 30px; }
-        .input-wrapper .material-icons-outlined { 
-            position: absolute; left: 8px; color: var(--text-dim); font-size: 16px; pointer-events: none;
-        }
-
-        /* Standardized 30px input elements */
-        .config-input {
-            width: 100%; height: 30px; padding: 0 10px 0 30px; border: 1px solid var(--border);
-            border-radius: 15px; font-size: 0.78rem; background: var(--bg-input); 
-            color: white; box-sizing: border-box; outline: none; transition: border-color 0.2s;
-        }
-        .config-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
 
         .form-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            gap: 12px;
+            flex-direction: row !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            width: 100% !important;
+            gap: 8px !important;
         }
 
-        /* Standardized button component variants */
-        .btn {
-            font-family: 'Inter', sans-serif; font-weight: 500; font-size: 0.78rem;
-            padding: 0 14px; height: 30px; border-radius: 15px; border: none; 
-            cursor: pointer; display: inline-flex; align-items: center; 
-            justify-content: center; gap: 6px; background-color: var(--accent); 
-            color: white; transition: background-color 0.2s; box-sizing: border-box;
-            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
-            white-space: nowrap;
-            margin-left: auto; /* Zwingt den Button immer nach rechts, auch wenn #statusMsg leer/hidden ist */
-        }
-        .btn:hover { background-color: var(--accent-hover); }
-
-        .btn-success {
-            background-color: var(--success);
-            height: 30px;
-            padding: 0 10px;
-            font-size: 0.76rem;
-            border-radius: 15px;
-            gap: 3px;
-            box-sizing: border-box;
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
-        }
-        .btn-success:hover { background-color: var(--success-hover); }
-
-        .btn-subtle {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            height: 30px;
-            padding: 0 10px;
-            font-size: 0.76rem;
-            border-radius: 15px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-sizing: border-box;
-            transition: all 0.2s;
-        }
-        .btn-subtle:hover {
-            border-color: #444;
-            color: #fff;
-            background: #333;
+        .form-actions .btn {
+            width: auto !important;
+            margin-left: auto !important;
         }
 
-        /* Einheitliche Kompakt-Größe für Status- & Statusmeldung-Badges */
+        /* Mobile-spezifische Anpassung für das Status-Badge (kompakter, sauberer Umbruch ohne Wortlücken) */
         #statusMsg {
-            font-size: 0.72rem;
-            display: none;
-            align-items: center;
-            gap: 6px;
-            height: 24px;
-            padding: 0 10px;
-            border-radius: 12px;
-            box-sizing: border-box;
-            border: 1px solid transparent;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            width: auto !important;
+            max-width: 65% !important;
+            font-size: 0.65rem !important;
+            height: auto !important;
+            min-height: 22px !important;
+            padding: 3px 8px !important;
+            white-space: normal !important;
+            word-break: normal !important;
+            overflow-wrap: break-word !important;
+            line-height: 1.2 !important;
+            justify-content: flex-start !important;
         }
-        #statusMsg.info, #statusMsg.success, #statusMsg.error {
-            display: inline-flex;
-        }
-        #statusMsg.info { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: var(--accent); }
-        #statusMsg.success { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); color: #34d399; }
-        #statusMsg.error { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
 
-        /* ==========================================
-           Toolbar & Table Components
-           ================================---------- */
         .table-toolbar {
-            margin-bottom: 16px;
+            align-items: stretch;
         }
-
-        .toolbar-right {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            height: 30px;
-            padding: 0 3px;
-            border-radius: 15px;
-            gap: 2px;
-            box-sizing: border-box;
-        }
-
-        .filter-chip {
-            background: transparent;
-            border: none;
-            color: var(--text-dim);
-            height: 22px;
-            padding: 0 9px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        .filter-chip:hover { color: #fff; }
-        .filter-chip.active { background: var(--accent); color: white; font-weight: 500; }
 
         .search-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-            height: 30px;
+            width: 100%;
         }
-
-        /* Fixed search input width matching filter-group container exactly (178px) */
         .search-input {
-            width: 178px;
-            height: 30px;
-            padding: 0 10px 0 28px;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 15px;
-            color: white;
-            font-size: 0.76rem;
-            outline: none;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
+            width: 100% !important;
         }
 
-        .search-input::placeholder { color: var(--text-dim); font-size: 0.74rem; }
-        .search-container:hover .search-input { border-color: #444; }
-        .search-input:focus {
-            border-color: var(--accent);
-        }
-
-        .search-container .material-icons-outlined {
-            position: absolute;
-            left: 8px;
-            font-size: 14px;
-            color: var(--text-dim);
-            pointer-events: none;
-            transition: color 0.2s;
-        }
-
-        .search-input:focus ~ .material-icons-outlined {
-            color: var(--accent);
-        }
-
-        /* Compact Data Table */
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        th { color: var(--text-dim); padding: 10px 14px; font-size: 0.78rem; text-align: left; border-bottom: 1px solid var(--border); }
-        td { padding: 10px 14px; font-size: 0.84rem; border-bottom: 1px solid var(--border); }
-
-        tr { transition: background-color 0.2s; }
-        tr.focused-row { background-color: rgba(59, 130, 246, 0.12); }
-
-        .id-input {
-            width: 90px;
-            height: 30px;
-            padding: 0 10px;
-            border: 1px solid var(--border);
-            border-radius: 15px;
-            text-align: center;
-            background: var(--bg-input);
-            color: white;
-            font-size: 0.78rem;
-            outline: none;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-        .id-input:focus { border-color: var(--accent); }
-
-        /* Unified Compact Status Badges (Mapped / Unmapped size baseline) */
-        .status-badge { 
-            font-size: 0.72rem; 
-            height: 24px;
-            padding: 0 10px; 
-            border-radius: 12px; 
-            font-weight: 500; 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
-        }
-        .status-mapped { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
-        .status-unmapped { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-
-        /* Einheitliche Badge-Größe für Modell-Badge (Desktop & Mobile identisch) */
-        .model-badge {
-            font-size: 0.72rem; 
-            color: var(--accent); 
-            background: rgba(59, 130, 246, 0.1);
-            height: 24px;
-            padding: 0 10px; 
-            border-radius: 12px; 
-            font-weight: 500; 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            white-space: nowrap;
-        }
-        .model-badge-pending {
-            color: #fbbf24; background: rgba(251, 191, 36, 0.1);
-            border: 1px solid rgba(251, 191, 36, 0.3);
-        }
-
-        /* ==========================================
-           Notifications & Toast System
-           ================================---------- */
-        #toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 1000;
-        }
-        .toast {
-            background: var(--bg-card);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: slideIn 0.3s ease forwards;
-        }
-        .toast.success { border-left: 4px solid var(--success); }
-        .toast.error { border-left: 4px solid var(--danger); }
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        /* ==========================================
-           Responsive Media Queries for Mobile Devices
-           ================================---------- */
-        @media (max-width: 900px) {
-            body { padding: 12px; }
-            .form-grid { grid-template-columns: 1fr !important; gap: 12px; }
-            
-            .card { padding: 16px; }
-            header { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
-            
-            /* Umschaltung auf das saubere Mobile-Layout (Getrennte Container) */
-            .desktop-view { display: none !important; }
-            .mobile-view { display: flex !important; flex-direction: column; gap: 12px; width: 100%; }
-
-            /* Toolbar Umschaltung für Mobile */
-            .toolbar-desktop { display: none !important; }
-            .toolbar-mobile { display: flex !important; flex-direction: column; width: 100%; gap: 12px; }
-
-            .mobile-row-1 {
-                display: flex;
-                justify-content: center;
-                width: 100%;
-                text-align: center;
-            }
-
-            .mobile-row-2 {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-            }
-
-            .form-actions {
-                flex-direction: row !important;
-                justify-content: space-between !important;
-                align-items: center !important;
-                width: 100% !important;
-                gap: 8px !important;
-            }
-
-            .form-actions .btn {
-                width: auto !important;
-                margin-left: auto !important; /* Button auch mobil immer rechts erzwingen */
-            }
-
-            #statusMsg {
-                width: auto !important;
-                justify-content: flex-start !important;
-            }
-
-            .table-toolbar {
-                align-items: stretch;
-            }
-
-            /* Mobile Search Field: Full width in dedicated top line */
-            .search-container {
-                width: 100%;
-            }
-            .search-input {
-                width: 100% !important;
-            }
-
-            th, td { padding: 8px 8px; font-size: 0.78rem; }
-            .id-input { width: 70px; }
-        }
-    </style>
+        th, td { padding: 8px 8px; font-size: 0.78rem; }
+        .id-input { width: 70px; }
+    }
+</style>
 </head>
-
 <body>
-    <!-- App Header Section -->
-    <header>
-        <h1>
-            <div class="header-logo" title="TechniSat Receiver Logo">
-                <span class="material-icons-outlined">settings_input_antenna</span>
-            </div>
-            <span class="brand-title">TechniMapper:</span> <span class="brand-subtitle">M3U Proxy</span> 
-            <span class="badge">v<span id="versionLabel">...</span></span>
-        </h1>
-        <div class="header-meta">
-            <div id="syncBadge" class="header-badge">
-                <span class="material-icons-outlined" style="font-size: 15px; color: var(--success);">sync</span>
-                <span>Last Sync:</span> <span id="last-sync-time">Loading...</span>
-            </div>
-            <button class="btn-subtle" onclick="copyM3uLink()" title="Copy M3U URL to clipboard">
-                <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> Copy M3U
-            </button>
+<header>
+    <h1>
+        <span class="header-logo"><span class="material-icons-outlined">settings_input_antenna</span></span>
+        <span><span class="brand-title">TechniMapper</span> <span class="brand-subtitle">M3U Proxy</span></span>
+        <span class="badge" id="versionLabel">v&hellip;</span>
+    </h1>
+    <div class="header-meta">
+        <div class="header-badge" id="syncBadge">
+            <span class="material-icons-outlined" style="font-size: 15px;">sync</span>
+            Last sync: <span id="last-sync-time">Loading...</span>
         </div>
-    </header>
+        <button class="btn-subtle" onclick="copyM3uLink()" title="Copy playlist URL">
+            <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> Copy M3U URL
+        </button>
+    </div>
+</header>
 
-    <main>
-        <!-- Configuration Card Component -->
-        <div class="card">
-            <div class="card-header-wrapper">
-                <!-- DESKTOP ANSICHT (Alles in einer Zeile) -->
-                <div class="desktop-view">
-                    <div class="card-title-group">
-                        <div class="card-title">Connection & Auto-Update Configuration</div>
-                        <div id="modelInfoDesktop" class="model-badge model-badge-pending">Not detected yet</div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+<main>
+    <!-- Configuration Card Component -->
+    <div class="card">
+        <div class="card-header-wrapper">
+            <div class="desktop-view">
+                <div class="card-title-group">
+                    <div class="card-title">Connection & Auto-Update Configuration</div>
+                    <div id="modelInfoDesktop" class="model-badge model-badge-pending">Not detected yet</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                    <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON">
+                        <span class="material-icons-outlined" style="font-size: 15px;">download</span> Export
+                    </button>
+                    <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON">
+                        <span class="material-icons-outlined" style="font-size: 15px;">upload</span> Import
+                    </button>
+                </div>
+            </div>
+
+            <div class="mobile-view">
+                <div class="mobile-row-1">
+                    <div class="card-title">Connection & Auto-Update Configuration</div>
+                </div>
+                <div class="mobile-row-2">
+                    <div id="modelInfoMobile" class="model-badge model-badge-pending">Not detected yet</div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
                         <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON">
                             <span class="material-icons-outlined" style="font-size: 15px;">download</span> Export
                         </button>
@@ -564,86 +585,90 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- MOBILE ANSICHT (Zeile 1: Titel zentriert, Zeile 2: Badge links, Buttons rechts) -->
-                <div class="mobile-view">
-                    <div class="mobile-row-1">
-                        <div class="card-title">Connection & Auto-Update Configuration</div>
-                    </div>
-                    <div class="mobile-row-2">
-                        <div id="modelInfoMobile" class="model-badge model-badge-pending">Not detected yet</div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON">
-                                <span class="material-icons-outlined" style="font-size: 15px;">download</span> Export
-                            </button>
-                            <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON">
-                                <span class="material-icons-outlined" style="font-size: 15px;">upload</span> Import
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Shared Hidden File Input for Import -->
-                <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
             </div>
-            <div class="form-grid">
-                <div class="input-group">
-                    <label>Receiver IP Address</label>
-                    <div class="input-wrapper">
-                        <span class="material-icons-outlined">settings_input_antenna</span>
-                        <input type="text" id="receiverIp" class="config-input" value="192.168.178.28">
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>UPnP Port</label>
-                    <div class="input-wrapper">
-                        <span class="material-icons-outlined">settings</span>
-                        <input type="text" id="receiverPort" class="config-input" value="9100">
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>Cron Schedule</label>
-                    <div class="input-wrapper">
-                        <span class="material-icons-outlined">schedule</span>
-                        <input type="text" id="cronExpression" class="config-input" value="*/5 * * * *">
-                    </div>
-                </div>
-                <div class="input-group">
-                    <label>Target Channel List</label>
-                    <div class="input-wrapper">
-                        <span class="material-icons-outlined">list</span>
-                        <!-- Automatically triggers fetchChannels on selection change -->
-                        <select id="selectedListName" class="config-input" style="padding-left: 30px; appearance: none;" onchange="fetchChannels()">
-                            <option value="TV-Liste">TV-Liste</option>
-                        </select>
-                    </div>
+
+            <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+        </div>
+        <div class="form-grid">
+            <div class="input-group">
+                <label for="receiverIp">Receiver IP Address</label>
+                <div class="input-wrapper">
+                    <span class="material-icons-outlined">settings_input_antenna</span>
+                    <input type="text" id="receiverIp" class="config-input" value="192.168.178.28">
                 </div>
             </div>
-            <!-- Statusmeldung links, Apply & Fetch Button standardmäßig rechts -->
-            <div class="form-actions">
-                <div id="statusMsg"></div>
-                <button class="btn" onclick="fetchChannels()">
-                    <span class="material-icons-outlined" style="font-size: 16px;">refresh</span> Apply & Fetch
-                </button>
+            <div class="input-group">
+                <label for="receiverPort">UPnP Port</label>
+                <div class="input-wrapper">
+                    <span class="material-icons-outlined">settings</span>
+                    <input type="text" id="receiverPort" class="config-input" value="9100">
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="cronExpression">Cron Schedule</label>
+                <div class="input-wrapper">
+                    <span class="material-icons-outlined">schedule</span>
+                    <input type="text" id="cronExpression" class="config-input" value="*/5 * * * *">
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="selectedListName">Target Channel List</label>
+                <div class="input-wrapper">
+                    <span class="material-icons-outlined">list</span>
+                    <select id="selectedListName" class="config-input" style="padding-left: 30px; appearance: none;" onchange="fetchChannels()">
+                        <option value="TV-Liste">TV-Liste</option>
+                    </select>
+                </div>
             </div>
         </div>
+        <div class="form-actions">
+            <div id="statusMsg" role="status" aria-live="polite"></div>
+            <button class="btn" id="applyBtn" onclick="fetchChannels()">
+                <span class="material-icons-outlined" style="font-size: 16px;">refresh</span> Apply & Fetch
+            </button>
+        </div>
+    </div>
 
-        <!-- Channel Mapping Card Component -->
-        <div class="card" id="listCard" style="display: none;">
-            <div class="table-toolbar">
-                <!-- DESKTOP TOOLBAR (Alles in einer sauberen Zeile) -->
-                <div class="toolbar-desktop">
-                    <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
-                    <div class="toolbar-right">
-                        <div class="search-container">
-                            <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="renderTable()">
-                            <span class="material-icons-outlined">search</span>
-                        </div>
-                        <div class="filter-group">
-                            <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-                            <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
-                            <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
-                        </div>
+    <!-- Channel Mapping Card Component -->
+    <div class="card" id="listCard" style="display: none;">
+        <div class="table-toolbar">
+            <div class="toolbar-desktop">
+                <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
+                <div class="toolbar-right">
+                    <div class="search-container">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)">
+                        <span class="material-icons-outlined">search</span>
+                    </div>
+                    <div class="filter-group">
+                        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+                        <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
+                        <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                    </div>
+                    <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
+                        <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
+                    </button>
+                    <button class="btn btn-success" onclick="saveMapping()">
+                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                    </button>
+                </div>
+            </div>
+
+            <div class="toolbar-mobile">
+                <div class="card-title" style="text-align: center; width: 100%; margin-bottom: 4px;">Channel ID Mapping</div>
+                
+                <div class="search-container" style="width: 100%;">
+                    <input type="text" id="searchInputMobile" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)" style="width: 100% !important;">
+                    <span class="material-icons-outlined">search</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
+                    <div class="filter-group">
+                        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
+                        <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
+                        <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px;">
                         <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
                             <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
                         </button>
@@ -652,413 +677,454 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- MOBILE TOOLBAR (Zeile 1: Titel, Zeile 2: Suche voll, Zeile 3: Filter links & Buttons rechts) -->
-                <div class="toolbar-mobile">
-                    <div class="card-title" style="text-align: center; width: 100%; margin-bottom: 4px;">Channel ID Mapping</div>
-                    
-                    <div class="search-container" style="width: 100%;">
-                        <input type="text" id="searchInputMobile" class="search-input" placeholder="Search" oninput="syncSearch(this.value)" style="width: 100% !important;">
-                        <span class="material-icons-outlined">search</span>
-                    </div>
-
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
-                        <div class="filter-group">
-                            <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-                            <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
-                            <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
-                        </div>
-
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
-                                <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
-                            </button>
-                            <button class="btn btn-success" onclick="saveMapping()">
-                                <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
-            <table>
-                <thead>
-                    <tr style="background: #16191d;">
-                        <th style="width: 75px;">Status</th>
-                        <th style="width: 100%;">Channel Name</th>
-                        <th style="width: 100px;">Channel ID</th>
-                    </tr>
-                </thead>
-                <tbody id="channelTableBody"></tbody>
-            </table>
         </div>
-    </main>
+        <table>
+            <thead>
+                <tr style="background: #16191d;">
+                    <th style="width: 75px;">Status</th>
+                    <th style="width: 100%;">Channel Name</th>
+                    <th style="width: 100px;">Channel ID</th>
+                </tr>
+            </thead>
+            <tbody id="channelTableBody"></tbody>
+        </table>
+    </div>
+</main>
 
-    <div id="toast-container"></div>
+<div id="toast-container"></div>
 
-    <!-- Application Script Logic -->
-    <script>
-        let currentMapping = {};
-        let detectedChannels = [];
-        let currentFilter = 'all';
-        const BACKEND_URL = window.location.origin;
+<!-- Application Script Logic -->
+<script>
+    let currentMapping = {};
+    let detectedChannels = [];
+    let currentFilter = 'all';
+    let searchTimeout = null;
+    const BACKEND_URL = window.location.origin;
 
-        /**
-         * Synchronizes search inputs between desktop and mobile views
-         */
-        function syncSearch(val) {
-            document.getElementById('searchInput').value = val;
-            if (document.getElementById('searchInputMobile')) {
-                document.getElementById('searchInputMobile').value = val;
-            }
+    /** Escapes text for safe use in HTML content and double-quoted attributes. */
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        }[c]));
+    }
+
+    /** Formats an ISO timestamp for display; falls back to "Never". */
+    function formatSync(iso) {
+        if (!iso) return 'Never';
+        const d = new Date(iso);
+        return isNaN(d) ? 'Never' : d.toLocaleString();
+    }
+
+    /**
+     * Synchronizes search inputs between desktop and mobile views and applies a 
+     * debounced delay to optimize rendering performance for large channel datasets.
+     * 
+     * @param {string} val - The current query string entered by the user.
+     */
+    function handleSearchInput(val) {
+        document.getElementById('searchInput').value = val;
+        if (document.getElementById('searchInputMobile')) {
+            document.getElementById('searchInputMobile').value = val;
+        }
+
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
             renderTable();
-        }
+        }, 150);
+    }
 
-        // Auch Desktop-Suche mit Mobile synchronisieren
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            if (document.getElementById('searchInputMobile')) {
-                document.getElementById('searchInputMobile').value = e.target.value;
+    /**
+     * Dynamically generates and displays a floating toast notification element in the bottom right corner.
+     * 
+     * @param {string} message - The notification text message to display.
+     * @param {string} [type='success'] - The category of the notification ('success' or 'error').
+     */
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icon = document.createElement('span');
+        icon.className = 'material-icons-outlined';
+        icon.style.color = type === 'success' ? 'var(--success)' : 'var(--danger)';
+        icon.textContent = type === 'success' ? 'check_circle' : 'error';
+        const text = document.createElement('span');
+        text.textContent = message;
+        toast.append(icon, text);
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    /**
+     * Automatically copies the generated M3U proxy stream endpoint URL to the system clipboard.
+     */
+    function copyM3uLink() {
+        const m3uUrl = BACKEND_URL + '/playlist.m3u';
+        const fallback = () => {
+            const ta = document.createElement('textarea');
+            ta.value = m3uUrl;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            ta.remove();
+            showToast(ok ? 'M3U URL copied to clipboard!' : 'Failed to copy URL', ok ? 'success' : 'error');
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(m3uUrl)
+                .then(() => showToast('M3U URL copied to clipboard!'))
+                .catch(fallback);
+        } else {
+            fallback();
+        }
+    }
+
+    /**
+     * Updates the receiver device detection status badge styling and text across both 
+     * desktop and mobile UI view containers.
+     * 
+     * @param {string} status - Connection status state ('pending', 'success', or 'error').
+     * @param {string} text - Description label or device model identifier.
+     */
+    function updateModelBadge(status, text) {
+        const badges = [document.getElementById('modelInfoDesktop'), document.getElementById('modelInfoMobile')];
+        
+        badges.forEach(badge => {
+            if (!badge) return;
+            badge.className = 'model-badge';
+            if (status === 'pending') {
+                badge.classList.add('model-badge-pending');
+                badge.innerText = text;
+            } else if (status === 'success') {
+                badge.innerText = "Detected: " + text;
+                badge.style.background = "rgba(59, 130, 246, 0.1)";
+                badge.style.color = "var(--accent)";
+                badge.style.borderColor = "rgba(59, 130, 246, 0.3)";
+            } else if (status === 'error') {
+                badge.innerText = "Not detected";
+                badge.style.background = "rgba(239, 68, 68, 0.1)";
+                badge.style.color = "#f87171";
+                badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
             }
-            renderTable();
         });
+    }
 
-        /**
-         * Renders floating toast notification elements dynamically
-         */
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <span class="material-icons-outlined" style="color: ${type === 'success' ? 'var(--success)' : 'var(--danger)'}">
-                    ${type === 'success' ? 'check_circle' : 'error'}
-                </span>
-                <span>${message}</span>
-            `;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+    /**
+     * Initializes application state and registers periodic background polling intervals 
+     * upon DOM content load completion.
+     */
+    document.addEventListener("DOMContentLoaded", () => {
+        updateModelBadge('pending', 'Not detected yet');
+        loadInitialConfig();
+        updateSyncTime();
+        setInterval(updateSyncTime, 30000);
+    });
 
-        /**
-         * Copies the generated M3U proxy stream link to system clipboard
-         */
-        function copyM3uLink() {
-            const m3uUrl = BACKEND_URL + '/playlist.m3u';
-            navigator.clipboard.writeText(m3uUrl).then(() => {
-                showToast('M3U URL copied to clipboard!');
-            }).catch(err => {
-                showToast('Failed to copy URL', 'error');
-            });
-        }
+    /**
+     * Asynchronously fetches initial server configuration parameters and populates input fields.
+     */
+    async function loadInitialConfig() {
+        try {
+            const res = await fetch(BACKEND_URL + '/api/get-config');
+            const config = await res.json();
+            const setValue = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
 
-        /**
-         * Updates receiver model detection status badge appearance in both desktop and mobile views
-         */
-        function updateModelBadge(status, text) {
-            const badges = [document.getElementById('modelInfoDesktop'), document.getElementById('modelInfoMobile')];
-            
-            badges.forEach(badge => {
-                if (!badge) return;
-                badge.className = 'model-badge';
-                if (status === 'pending') {
-                    badge.classList.add('model-badge-pending');
-                    badge.innerText = text;
-                } else if (status === 'success') {
-                    badge.innerText = "Detected: " + text;
-                    badge.style.background = "rgba(59, 130, 246, 0.1)";
-                    badge.style.color = "var(--accent)";
-                    badge.style.borderColor = "rgba(59, 130, 246, 0.3)";
-                } else if (status === 'error') {
-                    badge.innerText = "Not detected";
-                    badge.style.background = "rgba(239, 68, 68, 0.1)";
-                    badge.style.color = "#f87171";
-                    badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
-                }
-            });
-        }
+            const versionEl = document.getElementById('versionLabel');
+            if (versionEl && config.version) versionEl.textContent = 'v' + config.version;
+            setValue('receiverIp', config.ip);
+            setValue('receiverPort', config.port);
+            setValue('cronExpression', config.cronExpression);
 
-        // Initialize application state on DOM content load
-        document.addEventListener("DOMContentLoaded", () => {
-            updateModelBadge('pending', 'Not detected yet');
-            loadInitialConfig();
-            updateSyncTime();
-            setInterval(updateSyncTime, 30000);
-        });
+            if (config.selectedListName) {
+                const select = document.getElementById('selectedListName');
+                select.replaceChildren();
+                const opt = document.createElement('option');
+                opt.value = config.selectedListName;
+                opt.textContent = config.selectedListName;
+                select.appendChild(opt);
+            }
+        } catch (e) { console.error('Initial config load failed', e); }
+    }
 
-        /**
-         * Fetches initial backend configuration parameters
-         */
-        async function loadInitialConfig() {
-            try {
-                const res = await fetch(BACKEND_URL + '/api/get-config');
-                const config = await res.json();
-                if (config.version) document.getElementById('versionLabel').innerText = config.version;
-                if (config.ip) document.getElementById('receiverIp').value = config.ip;
-                if (config.port) document.getElementById('receiverPort').value = config.port;
-                if (config.cronExpression) document.getElementById('cronExpression').value = config.cronExpression;
-                
-                if (config.selectedListName) {
-                    const select = document.getElementById('selectedListName');
-                    select.innerHTML = `<option value="${config.selectedListName}">${config.selectedListName}</option>`;
-                }
-            } catch (e) { console.error("Initial config load failed"); }
-        }
-
-        /**
-         * Polls and updates last synchronization timestamp
-         */
-        async function updateSyncTime() {
-            try {
-                const res = await fetch(BACKEND_URL + '/api/get-config');
-                const data = await res.json();
-                const el = document.getElementById('last-sync-time');
-                const newTime = data.lastSync || "Never";
-                
-                if (el && el.innerText !== newTime && el.innerText !== "Loading...") {
-                    el.innerText = newTime;
-                    triggerSyncFlash();
-                } else if (el) {
-                    el.innerText = newTime;
-                }
-            } catch (e) {}
-        }
-
-        /**
-         * Triggers visual success flash effect on sync badge
-         */
-        function triggerSyncFlash() {
+    /**
+     * Polls the backend server for the latest playlist synchronization timestamp and updates the UI badge.
+     */
+    async function updateSyncTime() {
+        if (document.hidden) return;
+        try {
+            const res = await fetch(BACKEND_URL + '/api/get-config');
+            const data = await res.json();
+            const el = document.getElementById('last-sync-time');
             const badge = document.getElementById('syncBadge');
+            if (!el) return;
+
+            const newTime = formatSync(data.lastSync);
+            const changed = el.textContent !== newTime && el.textContent !== 'Loading...';
+            el.textContent = newTime;
             if (badge) {
-                badge.classList.add('success-flash');
-                setTimeout(() => {
-                    badge.classList.remove('success-flash');
-                }, 1500);
+                badge.title = data.lastError
+                    ? `Last sync failed (${data.consecutiveFailures}x): ${data.lastError}`
+                    : '';
             }
+            if (changed) triggerSyncFlash();
+        } catch (e) {}
+    }
+
+    /**
+     * Triggers a temporary visual success highlight flash animation on the synchronization status badge.
+     */
+    function triggerSyncFlash() {
+        const badge = document.getElementById('syncBadge');
+        if (badge) {
+            badge.classList.add('success-flash');
+            setTimeout(() => {
+                badge.classList.remove('success-flash');
+            }, 1500);
         }
+    }
 
-        /**
-         * Communicates with backend to fetch channel list from receiver device
-         */
-        async function fetchChannels() {
-            const statusMsg = document.getElementById('statusMsg');
-            const listCard = document.getElementById('listCard');
-            const ip = document.getElementById('receiverIp').value.trim();
-            const port = document.getElementById('receiverPort').value.trim();
-            const cronExpression = document.getElementById('cronExpression').value.trim();
-            const selectedListName = document.getElementById('selectedListName').value;
+    /**
+     * Communicates with the backend server to retrieve live TV channels and available lists from the TechniSat receiver.
+     */
+    async function fetchChannels() {
+        const applyBtn = document.getElementById('applyBtn');
+        if (applyBtn.disabled) return;
+        const statusMsg = document.getElementById('statusMsg');
+        const listCard = document.getElementById('listCard');
+        const ip = document.getElementById('receiverIp').value.trim();
+        const port = document.getElementById('receiverPort').value.trim();
+        const cronExpression = document.getElementById('cronExpression').value.trim();
+        const selectedListName = document.getElementById('selectedListName').value;
 
-            statusMsg.className = 'info';
-            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">sync</span> Connecting...`;
+        statusMsg.className = 'info';
+        statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">sync</span> Connecting...`;
 
-            try {
-                const res = await fetch(BACKEND_URL + '/api/fetch-channels', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ip, port, cronExpression, selectedListName })
-                });
-                const data = await res.json();
+        applyBtn.disabled = true;
+        try {
+            const res = await fetch(BACKEND_URL + '/api/fetch-channels', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip, port, cronExpression, selectedListName })
+            });
+            const data = await res.json();
 
-                if (data.error) throw new Error(data.error);
-                
-                if (data.availableLists && data.availableLists.length > 0) {
-                    const select = document.getElementById('selectedListName');
-                    const currentValues = Array.from(select.options).map(o => o.value);
-                    const newValues = data.availableLists;
-                    
-                    // Update dropdown lists only if data changed to prevent onChange loops
-                    if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
-                        select.innerHTML = '';
-                        data.availableLists.forEach(listName => {
-                            const opt = document.createElement('option');
-                            opt.value = listName;
-                            opt.innerText = listName;
-                            if (listName === data.selectedListName) opt.selected = true;
-                            select.appendChild(opt);
-                        });
-                    }
-                }
-
-                updateModelBadge('success', data.detectedModel);
-                detectedChannels = data.channels;
-                currentMapping = data.mapping || {};
-
-                statusMsg.className = 'success';
-                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">check_circle</span> Loaded <strong>${detectedChannels.length} channels</strong> (&ldquo;${data.selectedListName}&rdquo;)`;
-                
-                renderTable();
-                updateSyncTime();
-                triggerSyncFlash();
-                showToast(`${detectedChannels.length} channels loaded`);
-            } catch (err) {
-                updateModelBadge('error');
-                listCard.style.display = 'none';
-                
-                statusMsg.className = 'error';
-                statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">error</span> ${err.message}`;
-                
-                showToast(err.message, 'error');
-            }
-        }
-
-        /**
-         * Filters channel table rows (All, Mapped, Unmapped)
-         */
-        function setFilter(filterType, element) {
-            currentFilter = filterType;
-            const chipTexts = element.textContent.trim().toLowerCase();
+            if (data.error) throw new Error(data.error);
             
-            document.querySelectorAll('.filter-chip').forEach(el => {
-                if (el.textContent.trim().toLowerCase() === chipTexts) {
-                    el.classList.add('active');
-                } else {
-                    el.classList.remove('active');
+            if (data.availableLists && data.availableLists.length > 0) {
+                const select = document.getElementById('selectedListName');
+                const currentValues = Array.from(select.options).map(o => o.value);
+                const newValues = data.availableLists;
+                
+                if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
+                    select.innerHTML = '';
+                    data.availableLists.forEach(listName => {
+                        const opt = document.createElement('option');
+                        opt.value = listName;
+                        opt.innerText = listName;
+                        if (listName === data.selectedListName) opt.selected = true;
+                        select.appendChild(opt);
+                    });
                 }
-            });
-
-            renderTable();
-        }
-
-        /**
-         * Automatically parses channel numbers from channel string names
-         */
-        function autoFillFromName() {
-            let count = 0;
-            detectedChannels.forEach(name => {
-                if (!currentMapping[name]) {
-                    const match = name.match(/^(\d+)/);
-                    if (match) {
-                        currentMapping[name] = parseInt(match[1], 10);
-                        count++;
-                    }
-                }
-            });
-
-            renderTable();
-            showToast(count > 0 ? `Extracted ${count} channel IDs from names` : 'No new channel numbers found in names');
-        }
-
-        /**
-         * Renders the interactive channel mapping table rows dynamically (Optimized with array joining)
-         */
-        function renderTable() {
-            const tbody = document.getElementById('channelTableBody');
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const rows = [];
-
-            detectedChannels.forEach(name => {
-                const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
-                const isMapped = assignedId !== '';
-
-                if (currentFilter === 'mapped' && !isMapped) return;
-                if (currentFilter === 'unmapped' && isMapped) return;
-                if (searchTerm && !name.toLowerCase().includes(searchTerm)) return;
-
-                rows.push(`
-                    <tr>
-                        <td>
-                            <span class="status-badge ${isMapped ? 'status-mapped' : 'status-unmapped'}">
-                                ${isMapped ? 'Mapped' : 'Unmapped'}
-                            </span>
-                        </td>
-                        <td><strong>${name}</strong></td>
-                        <td>
-                            <input type="text" class="id-input" value="${assignedId}" 
-                                   onfocus="this.closest('tr').classList.add('focused-row')"
-                                   onblur="this.closest('tr').classList.remove('focused-row')"
-                                   onchange="updateId('${name.replace(/'/g, "\\'")}', this.value)" placeholder="-">
-                        </td>
-                    </tr>
-                `);
-            });
-
-            tbody.innerHTML = rows.join('');
-            document.getElementById('listCard').style.display = 'block';
-        }
-
-        /**
-         * Updates single channel ID value mapping state
-         */
-        function updateId(name, value) {
-            if (value === '') {
-                delete currentMapping[name];
-            } else {
-                const parsed = parseInt(value, 10);
-                currentMapping[name] = isNaN(parsed) ? value : parsed;
             }
-        }
 
-        /**
-         * Persists current channel ID mappings to backend storage
-         */
-        async function saveMapping() {
+            updateModelBadge('success', data.detectedModel);
+            detectedChannels = data.channels;
+            currentMapping = data.mapping || {};
+
+            statusMsg.className = 'success';
+            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">check_circle</span> Loaded <strong>${detectedChannels.length} channels</strong> (&ldquo;${escapeHtml(data.selectedListName)}&rdquo;)`;
+            
+            renderTable();
+            updateSyncTime();
+            triggerSyncFlash();
+            showToast(`${detectedChannels.length} channels loaded`);
+        } catch (err) {
+            updateModelBadge('error');
+            listCard.style.display = 'none';
+            
+            statusMsg.className = 'error';
+            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">error</span> ${escapeHtml(err.message)}`;
+            
+            showToast(err.message, 'error');
+        } finally {
+            applyBtn.disabled = false;
+        }
+    }
+
+    /**
+     * Sets the active channel filter mode ('all', 'mapped', or 'unmapped') and updates active button chip states.
+     * 
+     * @param {string} filterType - The filter identifier.
+     * @param {HTMLElement} element - The DOM button element that was clicked.
+     */
+    function setFilter(filterType, element) {
+        currentFilter = filterType;
+        const chipTexts = element.textContent.trim().toLowerCase();
+        
+        document.querySelectorAll('.filter-chip').forEach(el => {
+            if (el.textContent.trim().toLowerCase() === chipTexts) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+
+        renderTable();
+    }
+
+    /**
+     * Automatically extracts numeric channel IDs from matching channel string names.
+     */
+    function autoFillFromName() {
+        let count = 0;
+        detectedChannels.forEach(name => {
+            if (!currentMapping[name]) {
+                const match = name.match(/^(\d+)/);
+                if (match) {
+                    currentMapping[name] = parseInt(match[1], 10);
+                    count++;
+                }
+            }
+        });
+
+        renderTable();
+        showToast(count > 0 ? `Extracted ${count} channel IDs from names` : 'No new channel numbers found in names');
+    }
+
+    /**
+     * Dynamically renders the interactive channel mapping table rows based on filters and search queries.
+     */
+    function renderTable() {
+        const tbody = document.getElementById('channelTableBody');
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const rows = [];
+
+        detectedChannels.forEach(name => {
+            const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
+            const isMapped = assignedId !== '';
+
+            if (currentFilter === 'mapped' && !isMapped) return;
+            if (currentFilter === 'unmapped' && isMapped) return;
+            if (searchTerm && !name.toLowerCase().includes(searchTerm)) return;
+
+            rows.push(`
+                <tr>
+                    <td>
+                        <span class="status-badge ${isMapped ? 'status-mapped' : 'status-unmapped'}">
+                            ${isMapped ? 'Mapped' : 'Unmapped'}
+                        </span>
+                    </td>
+                    <td><strong>${escapeHtml(name)}</strong></td>
+                    <td>
+                        <input type="text" class="id-input" value="${escapeHtml(assignedId)}" 
+                               onfocus="this.closest('tr').classList.add('focused-row')"
+                               onblur="this.closest('tr').classList.remove('focused-row')"
+                               data-name="${escapeHtml(name)}" onchange="updateId(this.dataset.name, this.value)" placeholder="-">
+                    </td>
+                </tr>
+            `);
+        });
+
+        tbody.innerHTML = rows.join('');
+        document.getElementById('listCard').style.display = 'block';
+    }
+
+    /**
+     * Updates the mapping state for a single specific channel name.
+     * 
+     * @param {string} name - The original channel name.
+     * @param {string} value - The new assigned channel ID value.
+     */
+    function updateId(name, value) {
+        if (value === '') {
+            delete currentMapping[name];
+        } else {
+            const parsed = parseInt(value, 10);
+            currentMapping[name] = isNaN(parsed) ? value : parsed;
+        }
+    }
+
+    /**
+     * Asynchronously persists the current channel ID mapping state to the backend storage.
+     */
+    async function saveMapping() {
+        try {
+            const res = await fetch(BACKEND_URL + '/api/save-mapping', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mapping: currentMapping })
+            });
+            const result = await res.json().catch(() => ({}));
+            if (res.ok) {
+                showToast('Mappings saved successfully!');
+                if (result.duplicates && result.duplicates.length) {
+                    showToast('Duplicate channel IDs: ' + result.duplicates.join(', '), 'error');
+                }
+                renderTable();
+            } else {
+                throw new Error(result.error || 'Save failed');
+            }
+        } catch (err) {
+            showToast(err.message || 'Error saving data to backend.', 'error');
+        }
+    }
+
+    /**
+     * Triggers the server endpoint to export the current system configuration and mapping file as a JSON download.
+     */
+    function exportConfig() {
+        window.location.href = BACKEND_URL + '/api/export-config';
+        showToast('Exporting configuration...');
+    }
+
+    /**
+     * Programmatically opens the hidden file input dialog for uploading configuration JSON files.
+     */
+    function triggerImport() {
+        document.getElementById('importFileInput').click();
+    }
+
+    /**
+     * Handles the uploaded configuration file, reads its text content, and submits it to the backend.
+     * 
+     * @param {Event} event - The file input change event object.
+     */
+    async function handleImportFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
             try {
-                const res = await fetch(BACKEND_URL + '/api/save-mapping', {
+                const importedData = JSON.parse(e.target.result);
+
+                const res = await fetch(BACKEND_URL + '/api/import-config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mapping: currentMapping })
+                    body: JSON.stringify(importedData)
                 });
-                if (res.ok) {
-                    showToast('Mappings saved successfully!');
-                    renderTable();
+
+                const result = await res.json();
+                if (res.ok && result.success) {
+                    showToast('Configuration imported successfully!');
+                    await loadInitialConfig();
+                    await fetchChannels();
                 } else {
-                    throw new Error('Save failed');
+                    throw new Error(result.error || 'Import failed');
                 }
             } catch (err) {
-                showToast('Error saving data to backend.', 'error');
+                showToast('Import failed: ' + err.message, 'error');
+            } finally {
+                event.target.value = '';
             }
-        }
-
-        /**
-         * Triggers the download of the current configuration as a JSON file
-         */
-        function exportConfig() {
-            window.location.href = BACKEND_URL + '/api/export-config';
-            showToast('Exporting configuration...');
-        }
-
-        /**
-         * Triggers file picker dialog for importing JSON config
-         */
-        function triggerImport() {
-            document.getElementById('importFileInput').click();
-        }
-
-        /**
-         * Handles uploaded configuration file and sends it to backend
-         */
-        async function handleImportFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-
-                    const res = await fetch(BACKEND_URL + '/api/import-config', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(importedData)
-                    });
-
-                    const result = await res.json();
-                    if (res.ok && result.success) {
-                        showToast('Configuration imported successfully!');
-                        await loadInitialConfig();
-                        await fetchChannels(); // Reload channels & update mapping UI
-                    } else {
-                        throw new Error(result.error || 'Import failed');
-                    }
-                } catch (err) {
-                    showToast('Import failed: ' + err.message, 'error');
-                } finally {
-                    event.target.value = ''; // Reset input selection
-                }
-            };
-            reader.readAsText(file);
-        }
-    </script>
+        };
+        reader.readAsText(file);
+    }
+</script>
 </body>
 </html>

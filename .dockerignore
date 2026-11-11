@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+data
+.git
+.gitignore
+.github
+.env
+*.md
+!README.md
+Dockerfile
+.dockerignore
+docker-compose.yml
+assets
+mapping.json

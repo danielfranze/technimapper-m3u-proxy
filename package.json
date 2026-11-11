@@ -1,9 +1,18 @@
 {
   "name": "technisat-mapper",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "TechniSat IPTV Proxy",
   "main": "server.js",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
+    "compression": "^1.8.2",
     "express": "^4.19.2",
     "node-cron": "^4.6.0",
     "xml2js": "^0.6.2"
