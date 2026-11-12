@@ -12,6 +12,13 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
+# The runtime only needs the node binary. Remove the package managers that ship with the base image
+# (npm, corepack, yarn): they are never used at runtime and carry their own bundled dependencies,
+# which show up in vulnerability scans without being part of this application.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+           /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn-v*
+
 # Application source (see .dockerignore for what is excluded)
 COPY --chown=node:node . .
 

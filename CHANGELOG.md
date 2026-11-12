@@ -31,6 +31,7 @@ Hardening and quality release (includes all changes since 1.3.0; 1.4.0 was an in
 - UI: header with version and last-sync badge, "Copy M3U URL" button (with fallback for plain-HTTP origins).
 
 ### Changed
+- The runtime image no longer contains npm, corepack and yarn (not needed at runtime; keeps vulnerability scans free of findings in tooling that is not part of the application).
 - Validation and playlist generation moved to `lib/` (testable); a failed sync keeps the last known good playlist.
 - Syncs (cron and manual) can no longer overlap; configuration is only applied after a successful fetch.
 - Settings are validated strictly; invalid persisted values are repaired automatically on startup.
