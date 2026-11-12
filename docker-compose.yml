@@ -1,8 +1,8 @@
 services:
   technimapper-m3u-proxy:
     build: .
-    # Or use the published, signed image (pin a version, avoid :latest in production):
-    # image: ghcr.io/danielfranze/technimapper-m3u-proxy:1.5.0
+    # Or use the published, signed image (newest stable release; use a version tag like :1.5.0 to pin):
+    # image: ghcr.io/danielfranze/technimapper-m3u-proxy:latest
     container_name: technimapper-m3u-proxy
     ports:
       - "3000:3000"

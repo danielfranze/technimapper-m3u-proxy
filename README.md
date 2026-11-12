@@ -39,25 +39,25 @@ The receiver must be reachable from the container via a **private IPv4 address**
 
 ## Quick Start & Deployment
 
-The container runs as the unprivileged user `node` (**UID 1000**). A bind-mounted data directory must therefore be writable for that user:
+The container runs as the unprivileged user `node` (**UID 1000**). The examples below store `/app/data` in a **named volume**; Docker gives it the correct permissions automatically, so no setup is needed.
+
+If you prefer a **bind mount** (e.g. `./data:/app/data`), the directory must be writable for that user. Otherwise the container restarts in a loop (Portainer shows no IP and no ports) and the log says *"Data directory ... is not writable"*:
 
 ```bash
 mkdir -p data && chown -R 1000:1000 data
 ```
-
-Without this step the container exits at startup with *"Data directory ... is not writable"*.
 
 ### Option A: Docker Compose (Recommended)
 
 ```yaml
 services:
   technimapper-m3u-proxy:
-    image: ghcr.io/danielfranze/technimapper-m3u-proxy:1.5.0   # pin a version, avoid :latest in production
+    image: ghcr.io/danielfranze/technimapper-m3u-proxy:latest
     container_name: technimapper-m3u-proxy
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/data
+      - technimapper-data:/app/data
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=Europe/Berlin
@@ -71,7 +71,12 @@ services:
     security_opt:
       - no-new-privileges:true
     restart: unless-stopped
+
+volumes:
+  technimapper-data:
 ```
+
+`latest` always points to the newest stable release (pre-releases are excluded). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:1.5.0`.
 
 The repository also ships a ready-to-use `docker-compose.yml` (builds locally with `build: .`).
 
@@ -79,7 +84,7 @@ The repository also ships a ready-to-use `docker-compose.yml` (builds locally wi
 1. Open your **Portainer** dashboard → **Stacks** → **Add stack**.
 2. Give it a name (e.g., `technimapper-m3u-proxy`).
 3. Select the **Web editor** and paste the Compose snippet from Option A.
-4. Use an **absolute host path** or a **named volume** for the data directory (relative paths such as `./data` are unreliable in Portainer). With a named volume (`technimapper-data:/app/data`) no `chown` is needed.
+4. The snippet uses a **named volume** (`technimapper-data:/app/data`), which works in Portainer without any permission setup. Avoid relative bind mounts such as `./data` there: Docker creates them as `root` and the container cannot write to them. If you want a bind mount, use an **absolute host path** and run `chown -R 1000:1000 <path>` once.
 
 ### Option C: Docker CLI
 ```bash
@@ -90,14 +95,23 @@ docker run -d \
   -v /etc/localtime:/etc/localtime:ro \
   -e TZ=Europe/Berlin \
   --restart unless-stopped \
-  ghcr.io/danielfranze/technimapper-m3u-proxy:1.5.0
+  ghcr.io/danielfranze/technimapper-m3u-proxy:latest
 ```
+
+### Updating to a new release
+Your settings and mapping live in the volume and survive updates.
+
+* **Portainer:** *Stacks* → your stack → **Update the stack** with **Re-pull image** enabled.
+* **Docker Compose:** `docker compose pull && docker compose up -d`
+* **Docker CLI:** `docker pull ghcr.io/danielfranze/technimapper-m3u-proxy:latest`, then remove the container (`docker rm -f technimapper-m3u-proxy`) and run the command from Option C again.
+
+Check the [CHANGELOG](CHANGELOG.md) for breaking changes before you update.
 
 ### Upgrading from 1.3.x or older
 1. Stop the container.
 2. If you used a **single-file mount** (`./mapping.json:/app/data/mapping.json`), move the file into a directory: `mkdir -p data && mv mapping.json data/`.
-3. `chown -R 1000:1000 data`
-4. Switch the volume to `./data:/app/data` and start the new version.
+3. Either keep the bind mount and run `chown -R 1000:1000 data`, or switch to a named volume as in Option A (then re-import your settings with **Export**/**Import** in the UI).
+4. Start the new version.
 5. Check the logs: invalid persisted values (e.g. a broken cron expression) are repaired automatically and reported as warnings.
 
 Read the [CHANGELOG](CHANGELOG.md) for all breaking changes.
@@ -143,7 +157,7 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 Release images are multi-arch (`linux/amd64`, `linux/arm64`), include an SBOM and provenance attestation, and are signed with [cosign](https://github.com/sigstore/cosign) (keyless). Verify before deploying:
 
 ```bash
-cosign verify ghcr.io/danielfranze/technimapper-m3u-proxy:1.5.0 \
+cosign verify ghcr.io/danielfranze/technimapper-m3u-proxy:latest \
   --certificate-identity-regexp 'https://github.com/danielfranze/technimapper-m3u-proxy/\.github/workflows/release\.yml@.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
@@ -190,7 +204,7 @@ By following this 5-minute sync cycle with a 1-minute offset, your Dispatcharr w
 
 | Symptom | Likely cause / fix |
 |---|---|
-| Container exits: *Data directory ... is not writable* | `chown -R 1000:1000 ./data` (or use a named volume). |
+| Container restarts in a loop (`Restarting (1)`), Portainer shows no IP/ports, log: *Data directory ... is not writable* | The bind-mounted data directory is owned by `root`. Run `chown -R 1000:1000 <data-dir>` or use a named volume (`technimapper-data:/app/data`). |
 | `/playlist.m3u` returns `503` | No sync yet, or no channel has an ID. Click **Apply & Fetch**, then map channels and **Save**. |
 | *No TechniSat Live-TV containers found* | Wrong IP/port, receiver in standby/off, unsupported model, or no channel list configured on the receiver. |
 | *Invalid receiver IP* | Only private IPv4 addresses are allowed. Use `ALLOW_NON_PRIVATE_IP=true` for VPN/CGNAT. |
