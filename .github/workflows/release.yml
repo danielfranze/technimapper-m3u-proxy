@@ -19,7 +19,7 @@ jobs:
       packages: write
       id-token: write   # keyless image signing with cosign (OIDC)
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -94,7 +94,7 @@ jobs:
     permissions:
       contents: write   # only this job may create releases
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Create or update the release from CHANGELOG.md
         env:
