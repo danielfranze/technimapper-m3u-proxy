@@ -725,7 +725,7 @@
                         <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
                     </div>
                     <div class="search-container">
-                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)">
+                        <input type="text" id="searchInput" name="searchInput" class="search-input" placeholder="Search" aria-label="Search channels" autocomplete="off" oninput="handleSearchInput(this.value)">
                         <span class="material-icons-outlined">search</span>
                     </div>
                     <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
@@ -750,7 +750,7 @@
                         <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
                     </div>
                     <div class="search-container">
-                        <input type="text" id="searchInputMobile" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)" style="width: 100% !important;">
+                        <input type="text" id="searchInputMobile" name="searchInputMobile" class="search-input" placeholder="Search" aria-label="Search channels" autocomplete="off" oninput="handleSearchInput(this.value)" style="width: 100% !important;">
                         <span class="material-icons-outlined">search</span>
                     </div>
                 </div>
@@ -1157,7 +1157,7 @@
         const rows = [];
         const dupIds = new Set(getDuplicateGroups(getActiveMapping()).map(g => g.id));
 
-        detectedChannels.forEach(name => {
+        detectedChannels.forEach((name, index) => {
             const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
             const isMapped = assignedId !== '';
             const isDup = isMapped && dupIds.has(String(assignedId));
@@ -1175,7 +1175,8 @@
                     </td>
                     <td><strong>${escapeHtml(name)}</strong></td>
                     <td>
-                        <input type="text" class="id-input" value="${escapeHtml(assignedId)}" 
+                        <input type="text" id="channel-id-${index}" name="channel-id-${index}" class="id-input" value="${escapeHtml(assignedId)}" 
+                               autocomplete="off" aria-label="Channel ID for ${escapeHtml(name)}"
                                onfocus="this.closest('tr').classList.add('focused-row')"
                                onblur="this.closest('tr').classList.remove('focused-row')"
                                data-name="${escapeHtml(name)}" onchange="updateId(this.dataset.name, this.value)" placeholder="-">
