@@ -1,23 +1,26 @@
-# Dependency directories
+# Dependencies
 node_modules/
 jspm_packages/
 
-# Local data storage (Contains your private device IP and channel mappings)
+# Local data (contains your private device IP and channel mappings)
 data/
-*.json
-!package.json
-!package-lock.json
+mapping.json
 
-# Log files
+# Secrets / local environment
+.env
+.env.*
+!.env.example
+
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 logs/
 *.log
 
+# Test / tooling output
+coverage/
+
 # Operating system files
 .DS_Store
 Thumbs.db
-
-# Docker local overrides
-.dockerignore

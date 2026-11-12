@@ -1,19 +1,29 @@
 services:
   technimapper-m3u-proxy:
     build: .
+    # Or use the published, signed image (pin a version, avoid :latest in production):
+    # image: ghcr.io/danielfranze/technimapper-m3u-proxy:1.5.0
     container_name: technimapper-m3u-proxy
     ports:
       - "3000:3000"
     volumes:
-      # Directory mount (instead of a single file): allows atomic writes of mapping.json
+      # Directory mount (instead of a single file): allows atomic writes of mapping.json.
+      # The container runs as UID 1000 - run once: chown -R 1000:1000 ./data
       - ./data:/app/data
       # Incorporates the local system time into the container
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=Europe/Berlin
-      # Optional: protect UI and /api (the playlist and /health stay public)
+      # Optional: protect UI and /api (/playlist.m3u and /health stay public)
       # - ADMIN_USER=admin
       # - ADMIN_PASSWORD=change-me
+      # Optional: allow receiver IPs outside RFC1918 (VPN/CGNAT)
+      # - ALLOW_NON_PRIVATE_IP=true
+      # Optional: behind a reverse proxy (number of proxy hops)
+      # - TRUST_PROXY=1
+      # Optional logging (LOG_LEVEL: error|warn|info, LOG_FORMAT: text|json)
+      # - LOG_LEVEL=info
+      # - LOG_FORMAT=json
     read_only: true
     tmpfs:
       - /tmp

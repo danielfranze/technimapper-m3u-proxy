@@ -17,10 +17,56 @@
 
 <!-- Favicon: Clean SVG-based receiver icon -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'%3E%3Cpath d='M20 6H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H4V8h16v8zM6 10h2v4H6zm10 0h2v4h-2zm-4 0h2v4h-2z'/%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
 
 <style>
+    /* ==========================================
+       Self-hosted fonts (see public/fonts/NOTICE.md)
+       ================================---------- */
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('fonts/inter-latin-400.woff2') format('woff2');
+    }
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url('fonts/inter-latin-500.woff2') format('woff2');
+    }
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 600;
+        font-display: swap;
+        src: url('fonts/inter-latin-600.woff2') format('woff2');
+    }
+    @font-face {
+        font-family: 'Material Icons Outlined';
+        font-style: normal;
+        font-weight: 400;
+        font-display: block;
+        src: url('fonts/material-icons-outlined.woff2') format('woff2');
+    }
+    .material-icons-outlined {
+        font-family: 'Material Icons Outlined';
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        word-wrap: normal;
+        direction: ltr;
+        font-feature-settings: 'liga';
+        -webkit-font-feature-settings: 'liga';
+        -webkit-font-smoothing: antialiased;
+    }
+
     /* ==========================================
        CSS Variables & Design System Token Setup
        ================================---------- */
@@ -36,6 +82,7 @@
         --success-hover: #059669;
         --border: #2e3642;
         --danger: #ef4444;
+        --warning: #f59e0b;
     }
 
     /* ==========================================
@@ -454,6 +501,8 @@
     }
     .toast.success { border-left: 4px solid var(--success); }
     .toast.error { border-left: 4px solid var(--danger); }
+    .toast.warning { border-left: 4px solid var(--warning); }
+    tr.dup-row td { background-color: rgba(245, 158, 11, 0.14); }
     @keyframes slideIn {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
@@ -462,11 +511,19 @@
     /* ==========================================
        Responsive Media Queries for Mobile Devices
        ================================---------- */
+    @media (max-width: 360px) {
+        #statusMsg .material-icons-outlined { display: none; }
+    }
+    @media (max-width: 340px) {
+        #statusMsg .status-prefix { display: none; }
+    }
+
     @media (max-width: 900px) {
         body { padding: 12px; }
         .form-grid { grid-template-columns: 1fr !important; gap: 12px; }
         
         .card { padding: 16px; }
+        .card-title { white-space: normal; overflow-wrap: anywhere; }
         header { flex-direction: column; align-items: center; text-align: center; gap: 12px; }
         
         .desktop-view { display: none !important; }
@@ -502,20 +559,47 @@
             margin-left: auto !important;
         }
 
-        /* Mobile-spezifische Anpassung für das Status-Badge (kompakter, sauberer Umbruch ohne Wortlücken) */
-        #statusMsg {
+        /* Status badge: one line next to "Apply & Fetch". The list name is dropped on small screens. */
+        .form-actions #statusMsg {
             width: auto !important;
-            max-width: 65% !important;
-            font-size: 0.65rem !important;
-            height: auto !important;
-            min-height: 22px !important;
-            padding: 3px 8px !important;
-            white-space: normal !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            flex: 0 1 auto !important;
+            font-size: 0.72rem !important;
+            height: 24px !important;
+            min-height: 24px !important;
+            padding: 0 10px !important;
+            line-height: normal !important;
+            justify-content: flex-start !important;
             word-break: normal !important;
             overflow-wrap: break-word !important;
-            line-height: 1.2 !important;
-            justify-content: flex-start !important;
         }
+        #statusMsg.info, #statusMsg.success { white-space: nowrap !important; }
+        #statusMsg.error { white-space: normal !important; height: auto !important; padding: 3px 10px !important; }   /* error texts may need a second line */
+        #statusMsg .status-list { display: none; }
+        .form-actions .btn { flex: none !important; }
+
+        /* Row 1: filter chips left, search field takes the remaining width */
+        .mobile-filter-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        .mobile-filter-row .filter-group { flex: none; }
+        .mobile-filter-row .filter-chip { padding: 0 7px; font-size: 0.72rem; }
+        .mobile-filter-row .search-container { flex: 1 1 auto; min-width: 0; width: auto; }
+        .mobile-filter-row .search-input { min-width: 0; }
+
+        /* Row 2: Parse + Clean left, Save right */
+        .mobile-action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+        }
+        .mobile-action-left { display: flex; align-items: center; gap: 8px; }
 
         .table-toolbar {
             align-items: stretch;
@@ -635,17 +719,20 @@
             <div class="toolbar-desktop">
                 <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
                 <div class="toolbar-right">
-                    <div class="search-container">
-                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)">
-                        <span class="material-icons-outlined">search</span>
-                    </div>
                     <div class="filter-group">
                         <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
                         <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
                         <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
                     </div>
+                    <div class="search-container">
+                        <input type="text" id="searchInput" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)">
+                        <span class="material-icons-outlined">search</span>
+                    </div>
                     <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
                         <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
+                    </button>
+                    <button class="btn-subtle" onclick="removeStaleMappings()" title="Remove IDs of channels that are no longer on the receiver">
+                        <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="clean-count"></span>
                     </button>
                     <button class="btn btn-success" onclick="saveMapping()">
                         <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
@@ -655,27 +742,31 @@
 
             <div class="toolbar-mobile">
                 <div class="card-title" style="text-align: center; width: 100%; margin-bottom: 4px;">Channel ID Mapping</div>
-                
-                <div class="search-container" style="width: 100%;">
-                    <input type="text" id="searchInputMobile" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)" style="width: 100% !important;">
-                    <span class="material-icons-outlined">search</span>
-                </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 8px;">
+                <div class="mobile-filter-row">
                     <div class="filter-group">
                         <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
                         <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
                         <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
                     </div>
+                    <div class="search-container">
+                        <input type="text" id="searchInputMobile" class="search-input" placeholder="Search" oninput="handleSearchInput(this.value)" style="width: 100% !important;">
+                        <span class="material-icons-outlined">search</span>
+                    </div>
+                </div>
 
-                    <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="mobile-action-row">
+                    <div class="mobile-action-left">
                         <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
                             <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
                         </button>
-                        <button class="btn btn-success" onclick="saveMapping()">
-                            <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                        <button class="btn-subtle" onclick="removeStaleMappings()" title="Remove IDs of channels that are no longer on the receiver">
+                            <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="clean-count"></span>
                         </button>
                     </div>
+                    <button class="btn btn-success" onclick="saveMapping()">
+                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                    </button>
                 </div>
             </div>
         </div>
@@ -716,6 +807,50 @@
         return isNaN(d) ? 'Never' : d.toLocaleString();
     }
 
+    /** Groups channel names by assigned ID; returns only IDs used more than once. */
+    function getDuplicateGroups(mapping) {
+        const byId = new Map();
+        for (const [name, id] of Object.entries(mapping)) {
+            if (id === '' || id === null || id === undefined) continue;
+            const key = String(id);
+            if (!byId.has(key)) byId.set(key, []);
+            byId.get(key).push(name);
+        }
+        return [...byId].filter(([, names]) => names.length > 1).map(([id, channels]) => ({ id, channels }));
+    }
+
+    /** Mapping restricted to channels that currently exist on the receiver (only those can collide in the playlist). */
+    function getActiveMapping() {
+        if (detectedChannels.length === 0) return currentMapping;
+        const known = new Set(detectedChannels);
+        return Object.fromEntries(Object.entries(currentMapping).filter(([name]) => known.has(name)));
+    }
+
+    /** Names that have an ID but are no longer part of the channel list on the receiver. */
+    function getOrphans() {
+        if (detectedChannels.length === 0) return [];
+        const known = new Set(detectedChannels);
+        return Object.keys(currentMapping).filter(name => !known.has(name));
+    }
+
+    /** Removes IDs of channels that no longer exist and saves immediately (so "Apply & Fetch" cannot bring them back). */
+    async function removeStaleMappings() {
+        const orphans = getOrphans();
+        if (orphans.length === 0) {
+            showToast('No stale entries found');
+            return;
+        }
+        orphans.forEach(name => delete currentMapping[name]);
+        await saveMapping(orphans);
+    }
+
+    /** Short human-readable summary, e.g. "1 (Das Erste HD, Das Erste SD); 3 (3sat, Drei) ... +2 more". */
+    function describeDuplicates(groups, limit = 3) {
+        const shown = groups.slice(0, limit).map(g =>
+            `${g.id} (${g.channels.slice(0, 3).join(', ')}${g.channels.length > 3 ? ', …' : ''})`);
+        return shown.join('; ') + (groups.length > limit ? ` … +${groups.length - limit} more` : '');
+    }
+
     /**
      * Synchronizes search inputs between desktop and mobile views and applies a 
      * debounced delay to optimize rendering performance for large channel datasets.
@@ -740,14 +875,16 @@
      * @param {string} message - The notification text message to display.
      * @param {string} [type='success'] - The category of the notification ('success' or 'error').
      */
-    function showToast(message, type = 'success') {
+    function showToast(message, type = 'success', duration = 3000) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
+        const colors = { success: 'var(--success)', error: 'var(--danger)', warning: 'var(--warning)' };
+        const icons = { success: 'check_circle', error: 'error', warning: 'warning' };
         const icon = document.createElement('span');
         icon.className = 'material-icons-outlined';
-        icon.style.color = type === 'success' ? 'var(--success)' : 'var(--danger)';
-        icon.textContent = type === 'success' ? 'check_circle' : 'error';
+        icon.style.color = colors[type] || colors.error;
+        icon.textContent = icons[type] || icons.error;
         const text = document.createElement('span');
         text.textContent = message;
         toast.append(icon, text);
@@ -755,7 +892,7 @@
         setTimeout(() => {
             toast.style.opacity = '0';
             setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        }, duration);
     }
 
     /**
@@ -937,7 +1074,8 @@
             currentMapping = data.mapping || {};
 
             statusMsg.className = 'success';
-            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">check_circle</span> Loaded <strong>${detectedChannels.length} channels</strong> (&ldquo;${escapeHtml(data.selectedListName)}&rdquo;)`;
+            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">check_circle</span> <span class="status-prefix">Loaded</span> <strong>${detectedChannels.length} channels</strong><span class="status-list">&nbsp;(&ldquo;${escapeHtml(data.selectedListName)}&rdquo;)</span>`;
+            statusMsg.title = `Loaded ${detectedChannels.length} channels ("${data.selectedListName}")`;
             
             renderTable();
             updateSyncTime();
@@ -982,18 +1120,32 @@
      */
     function autoFillFromName() {
         let count = 0;
+        const skipped = [];
+        const used = new Set(Object.values(currentMapping).map(String));
+
         detectedChannels.forEach(name => {
             if (!currentMapping[name]) {
                 const match = name.match(/^(\d+)/);
                 if (match) {
-                    currentMapping[name] = parseInt(match[1], 10);
+                    const id = parseInt(match[1], 10);
+                    if (used.has(String(id))) {
+                        skipped.push(name);
+                        return;
+                    }
+                    currentMapping[name] = id;
+                    used.add(String(id));
                     count++;
                 }
             }
         });
 
         renderTable();
-        showToast(count > 0 ? `Extracted ${count} channel IDs from names` : 'No new channel numbers found in names');
+        if (skipped.length > 0) {
+            const sample = skipped.slice(0, 3).join(', ') + (skipped.length > 3 ? ', …' : '');
+            showToast(`Extracted ${count} channel IDs. Skipped ${skipped.length} because the ID is already in use: ${sample}`, 'warning', 10000);
+        } else {
+            showToast(count > 0 ? `Extracted ${count} channel IDs from names` : 'No new channel numbers found in names');
+        }
     }
 
     /**
@@ -1003,17 +1155,19 @@
         const tbody = document.getElementById('channelTableBody');
         const searchTerm = document.getElementById('searchInput').value.toLowerCase();
         const rows = [];
+        const dupIds = new Set(getDuplicateGroups(getActiveMapping()).map(g => g.id));
 
         detectedChannels.forEach(name => {
             const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
             const isMapped = assignedId !== '';
+            const isDup = isMapped && dupIds.has(String(assignedId));
 
             if (currentFilter === 'mapped' && !isMapped) return;
             if (currentFilter === 'unmapped' && isMapped) return;
             if (searchTerm && !name.toLowerCase().includes(searchTerm)) return;
 
             rows.push(`
-                <tr>
+                <tr class="${isDup ? 'dup-row' : ''}">
                     <td>
                         <span class="status-badge ${isMapped ? 'status-mapped' : 'status-unmapped'}">
                             ${isMapped ? 'Mapped' : 'Unmapped'}
@@ -1032,6 +1186,11 @@
 
         tbody.innerHTML = rows.join('');
         document.getElementById('listCard').style.display = 'block';
+
+        const staleCount = getOrphans().length;
+        document.querySelectorAll('.clean-count').forEach(el => {
+            el.textContent = staleCount > 0 ? ` (${staleCount})` : '';
+        });
     }
 
     /**
@@ -1052,7 +1211,8 @@
     /**
      * Asynchronously persists the current channel ID mapping state to the backend storage.
      */
-    async function saveMapping() {
+    async function saveMapping(removedStale = []) {
+        const summarize = (list) => list.slice(0, 3).join(', ') + (list.length > 3 ? ', …' : '');
         try {
             const res = await fetch(BACKEND_URL + '/api/save-mapping', {
                 method: 'POST',
@@ -1061,9 +1221,22 @@
             });
             const result = await res.json().catch(() => ({}));
             if (res.ok) {
-                showToast('Mappings saved successfully!');
-                if (result.duplicates && result.duplicates.length) {
-                    showToast('Duplicate channel IDs: ' + result.duplicates.join(', '), 'error');
+                const groups = result.duplicateGroups || getDuplicateGroups(getActiveMapping());
+                const orphans = result.orphans || getOrphans();
+                const head = removedStale.length > 0
+                    ? `Removed ${removedStale.length} stale entries (${summarize(removedStale)}) and saved.`
+                    : 'Saved.';
+                const parts = [];
+                if (groups.length > 0) {
+                    parts.push(`${groups.length} ID(s) are used by more than one channel: ${describeDuplicates(groups)}.`);
+                }
+                if (orphans.length > 0) {
+                    parts.push(`${orphans.length} stale entries for channels no longer on the receiver (${summarize(orphans)}) - use "Clean" to remove them.`);
+                }
+                if (parts.length > 0) {
+                    showToast(head + ' ' + parts.join(' '), 'warning', 14000);
+                } else {
+                    showToast(removedStale.length > 0 ? head : 'Mappings saved successfully!');
                 }
                 renderTable();
             } else {
@@ -1071,6 +1244,7 @@
             }
         } catch (err) {
             showToast(err.message || 'Error saving data to backend.', 'error');
+            renderTable();
         }
     }
 

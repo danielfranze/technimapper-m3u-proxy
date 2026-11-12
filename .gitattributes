@@ -1,0 +1,6 @@
+# Normalise line endings (avoids CRLF in Dockerfiles, YAML and shell snippets)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

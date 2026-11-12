@@ -9,6 +9,9 @@
  *   PORT                  HTTP port (default 3000)
  *   DATA_DIR              Directory for mapping.json (default ./data)
  *   REQUEST_TIMEOUT_MS    Idle timeout per SOAP request (default 5000)
+ *   LOG_LEVEL             error | warn | info (default info)
+ *   LOG_FORMAT            text | json (default text)
+ *   TRUST_PROXY           Reverse-proxy hops (number) or "true"; needed for correct client IPs
  *   ALLOW_NON_PRIVATE_IP  "true" to allow receiver IPs outside RFC1918 ranges
  *                         (e.g. VPN/CGNAT such as 100.64.0.0/10)
  *   ADMIN_USER / ADMIN_PASSWORD
@@ -29,6 +32,8 @@ const xml2js = require('xml2js');
 const cron = require('node-cron');
 const compression = require('compression');
 const packageJson = require('./package.json');
+const { HttpError, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } = require('./lib/validation');
+const { STREAM_URL_REGEX, buildM3u } = require('./lib/m3u');
 
 // ---------------------------------------------------------------------------
 // Constants & environment
@@ -43,21 +48,26 @@ const ALLOW_NON_PRIVATE_IP = process.env.ALLOW_NON_PRIVATE_IP === 'true';
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 const DEFAULT_CRON = '*/5 * * * *';
-const ID_REGEX = /^[A-Za-z0-9_.\-]{1,32}$/;
-const STREAM_URL_REGEX = /^https?:\/\/[^\s\x00-\x1f\x7f"<>]+$/;
+
+const LOG_LEVELS = { error: 0, warn: 1, info: 2 };
+const LOG_THRESHOLD = LOG_LEVELS[process.env.LOG_LEVEL] ?? LOG_LEVELS.info;
+const LOG_JSON = process.env.LOG_FORMAT === 'json';
+
+function writeLog(level, args) {
+    if (LOG_LEVELS[level] > LOG_THRESHOLD) return;
+    const text = args
+        .map(a => (a instanceof Error ? (a.stack || a.message) : typeof a === 'string' ? a : JSON.stringify(a)))
+        .join(' ');
+    const out = level === 'info' ? console.log : level === 'warn' ? console.warn : console.error;
+    if (LOG_JSON) out(JSON.stringify({ time: new Date().toISOString(), level, msg: text }));
+    else out(`[${level.toUpperCase()}]`, text);
+}
 
 const log = {
-    info: (...a) => console.log('[INFO]', ...a),
-    warn: (...a) => console.warn('[WARN]', ...a),
-    error: (...a) => console.error('[ERROR]', ...a)
+    info: (...a) => writeLog('info', a),
+    warn: (...a) => writeLog('warn', a),
+    error: (...a) => writeLog('error', a)
 };
-
-class HttpError extends Error {
-    constructor(status, message) {
-        super(message);
-        this.status = status;
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Application state
@@ -97,44 +107,13 @@ function withSyncLock(fn) {
 }
 
 // ---------------------------------------------------------------------------
-// Validation helpers
+// Validation helpers (implemented in lib/validation.js)
 // ---------------------------------------------------------------------------
 
-/** Receiver must be a valid IPv4; loopback/link-local/multicast are always rejected. */
-function isAllowedReceiverIp(ip) {
-    if (typeof ip !== 'string' || !net.isIPv4(ip)) return false;
-    const [a, b] = ip.split('.').map(Number);
-    if (a === 0 || a === 127 || a >= 224) return false;      // unspecified, loopback, multicast/reserved
-    if (a === 169 && b === 254) return false;                // link-local (incl. cloud metadata)
-    if (ALLOW_NON_PRIVATE_IP) return true;
-    return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
-}
-
-/** Validates a full settings object and returns a normalised copy. Throws HttpError(400). */
-function validateSettings(raw) {
-    const ip = String(raw.ip ?? '').trim();
-    if (!isAllowedReceiverIp(ip)) {
-        throw new HttpError(400, 'Invalid receiver IP. Use a private IPv4 address (10.x, 172.16-31.x, 192.168.x).');
-    }
-
-    const portStr = String(raw.port ?? '').trim();
-    const portNum = parseInt(portStr, 10);
-    if (!/^\d{1,5}$/.test(portStr) || portNum < 1 || portNum > 65535) {
-        throw new HttpError(400, 'Invalid port (1-65535).');
-    }
-
-    const cronExpression = String(raw.cronExpression ?? '').trim();
-    if (cronExpression.length > 100 || !cron.validate(cronExpression)) {
-        throw new HttpError(400, `Invalid cron expression "${cronExpression.slice(0, 40)}" (example: */5 * * * *).`);
-    }
-
-    const selectedListName = String(raw.selectedListName ?? '').trim();
-    if (!selectedListName || selectedListName.length > 200) {
-        throw new HttpError(400, 'Invalid channel list name.');
-    }
-
-    return { ip, port: String(portNum), cronExpression, selectedListName };
-}
+const { isAllowedReceiverIp, validateSettings, validateMapping } = createValidation({
+    cronValidate: (expr) => cron.validate(expr),
+    allowNonPrivateIp: ALLOW_NON_PRIVATE_IP
+});
 
 function currentSettings() {
     const { ip, port, cronExpression, selectedListName } = appConfig;
@@ -149,41 +128,6 @@ function mergeSettings(overrides = {}) {
         if ((typeof v === 'string' && v.trim() !== '') || typeof v === 'number') merged[key] = v;
     }
     return validateSettings(merged);
-}
-
-/**
- * Validates a channel-name -> ID mapping.
- * Returns { mapping, invalid } where invalid lists channel names with unusable IDs.
- */
-function validateMapping(input) {
-    const mapping = {};
-    const invalid = [];
-    if (!input || typeof input !== 'object' || Array.isArray(input)) return { mapping, invalid: ['<payload>'] };
-
-    for (const [name, value] of Object.entries(input)) {
-        if (value === '' || value === null || value === undefined) continue; // unmapped
-        if (!name || name.length > 200 || name === '__proto__') {
-            invalid.push(name);
-            continue;
-        }
-        const isValidNumber = typeof value === 'number' && Number.isInteger(value) && value >= 0;
-        const isValidString = typeof value === 'string' && ID_REGEX.test(value);
-        if (isValidNumber && String(value).length <= 32) mapping[name] = value;
-        else if (isValidString) mapping[name] = value;
-        else invalid.push(name);
-    }
-    return { mapping, invalid };
-}
-
-function findDuplicateIds(mapping) {
-    const seen = new Set();
-    const dups = new Set();
-    for (const v of Object.values(mapping)) {
-        const id = String(v);
-        if (seen.has(id)) dups.add(id);
-        seen.add(id);
-    }
-    return [...dups];
 }
 
 // ---------------------------------------------------------------------------
@@ -207,6 +151,8 @@ function ensureDataDir() {
  * in that case the file is written in place (not atomic, but works). Throws on real failures.
  */
 function saveConfigToDisk() {
+    // Keep mapping.json in the order of the receiver's channel list (cosmetic, makes diffs stable).
+    appConfig.mapping = sortMapping(appConfig.mapping, appConfig.channels.map(c => c.name));
     const json = JSON.stringify(appConfig, null, 2);
     const tempFile = CONFIG_FILE + '.tmp';
     const removeTemp = () => { try { fs.unlinkSync(tempFile); } catch (e) { /* ignore */ } };
@@ -279,7 +225,7 @@ function loadConfig() {
             cronExpression: typeof parsed.cronExpression === 'string' ? parsed.cronExpression : appConfig.cronExpression,
             selectedListName: typeof parsed.selectedListName === 'string' ? parsed.selectedListName : appConfig.selectedListName,
             lastSync: typeof parsed.lastSync === 'string' ? parsed.lastSync : null,
-            mapping,
+            mapping: sortMapping(mapping, channels.map(c => c.name)),
             channels
         };
         if (repairPersistedSettings()) trySaveConfig();
@@ -433,31 +379,12 @@ async function fetchFromTechniSat({ ip, port, selectedListName }) {
 // Playlist generation
 // ---------------------------------------------------------------------------
 
-/** Removes control characters and quotes so values can never break out of an M3U attribute/line. */
-function sanitizeM3uText(str) {
-    return String(str).replace(/[\u0000-\u001f\u007f"]/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
 /**
- * Builds the playlist from channels + mapping. If nothing is mapped, the cache is set to null
- * so /playlist.m3u answers 503 instead of an empty list (which would make Dispatcharr purge channels).
+ * Rebuilds the cached playlist from channels + mapping. If nothing is mapped, the cache is set to
+ * null so /playlist.m3u answers 503 instead of an empty list (which would make Dispatcharr purge channels).
  */
 function generateM3u() {
-    let m3u = '#EXTM3U\n';
-    let count = 0;
-
-    for (const ch of appConfig.channels) {
-        if (!Object.hasOwn(appConfig.mapping, ch.name)) continue;
-        const id = sanitizeM3uText(appConfig.mapping[ch.name]);
-        const url = String(ch.url).trim();
-        if (!id || !STREAM_URL_REGEX.test(url)) continue;
-
-        const name = sanitizeM3uText(ch.name);
-        const chNo = id.replace('ts-ch', '');
-        m3u += `#EXTINF:-1 tvg-id="${id}" tvg-name="${name}" tvg-chno="${chNo}" cuid="${id}" group-title="TechniSat",${name}\n${url}\n`;
-        count++;
-    }
-
+    const { m3u, count } = buildM3u(appConfig.channels, appConfig.mapping);
     cachedM3u = count > 0 ? m3u : null;
     if (count === 0) log.warn('No mapped channels - /playlist.m3u will answer 503 until channels are mapped.');
     return count;
@@ -533,14 +460,18 @@ function startBackgroundCron() {
 // ---------------------------------------------------------------------------
 const app = express();
 app.disable('x-powered-by');
+if (process.env.TRUST_PROXY) {
+    const tp = process.env.TRUST_PROXY;
+    app.set('trust proxy', /^\d+$/.test(tp) ? parseInt(tp, 10) : tp === 'true' ? true : tp);
+}
 
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; " +
+        "font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     next();
 });
 
@@ -595,7 +526,12 @@ function rateLimit({ windowMs, max }) {
 
 app.use(express.json({ limit: '1mb' }));
 app.post('/api/*', rateLimit({ windowMs: 60 * 1000, max: 60 }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+    setHeaders: (res, filePath) => {
+        // Bundled fonts rarely change: let browsers cache them for a week.
+        if (filePath.endsWith('.woff2')) res.setHeader('Cache-Control', 'public, max-age=604800');
+    }
+}));
 
 // ---------------------------------------------------------------------------
 // REST API
@@ -655,7 +591,16 @@ app.post('/api/save-mapping', (req, res) => {
     appConfig.mapping = mapping;
     generateM3u();
     saveConfigToDisk();
-    res.json({ success: true, mappedCount: Object.keys(mapping).length, duplicates: findDuplicateIds(mapping) });
+    // Only channels that currently exist on the receiver can collide in the playlist;
+    // entries of vanished channels are reported separately as "orphans".
+    const { active, orphans } = partitionMapping(mapping, appConfig.channels.map(c => c.name));
+    res.json({
+        success: true,
+        mappedCount: Object.keys(mapping).length,
+        duplicates: findDuplicateIds(active),
+        duplicateGroups: findDuplicateGroups(active),
+        orphans
+    });
 });
 
 app.get('/api/export-config', (req, res) => {
