@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.6.0]
+
+### Added
+- UI: protection against losing unsaved ID changes. A dot on "Save" shows pending changes, and "Apply & Fetch" (also when
+  switching the channel list) and "Import" ask whether to save, discard or cancel. The browser warns before closing the
+  tab with unsaved changes.
+
+### Changed
+- UI: "Clean" shows the number of stale entries as a small badge in the corner of the button instead of text in brackets.
+- UI: the channel ID and search fields have `id`, `name` and an accessible label (fixes the browser's form-field hint).
+- UI: the unsaved-changes dialog is centered on narrow screens; its buttons are stacked at full width with equal margins.
+- Docs: the quick start uses the `latest` image and a named volume (no permission setup needed), and the README has a new "Updating" section and a troubleshooting entry for the restart loop caused by a bind mount that is not writable.
+
 ## [1.5.0]
 
 Hardening and quality release (includes all changes since 1.3.0; 1.4.0 was an internal working version).

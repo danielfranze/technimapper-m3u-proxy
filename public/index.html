@@ -315,6 +315,46 @@
         background: #333;
     }
 
+    [hidden] { display: none !important; }
+    .btn-subtle, .btn-success { position: relative; }
+
+    /* Count badge in the top-right corner of a button (e.g. stale entries on "Clean") */
+    .count-badge {
+        position: absolute; top: -7px; right: -5px;
+        min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box;
+        border-radius: 9px; border: 2px solid var(--bg-card);
+        background: var(--warning); color: #1a1300;
+        font-size: 0.62rem; font-weight: 600; line-height: 14px; text-align: center;
+        pointer-events: none;
+    }
+    /* Plain dot: unsaved changes on "Save" */
+    .dot-badge {
+        position: absolute; top: -3px; right: -3px;
+        width: 8px; height: 8px; border-radius: 50%;
+        background: var(--warning); border: 2px solid var(--bg-card);
+        pointer-events: none;
+    }
+
+    /* Unsaved-changes dialog */
+    #unsavedDialog {
+        background: var(--bg-card); color: var(--text-main);
+        border: 1px solid var(--border); border-radius: 14px;
+        padding: 20px 22px; box-sizing: border-box; width: calc(100% - 32px); max-width: 440px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    }
+    #unsavedDialog::backdrop { background: rgba(0, 0, 0, 0.55); }
+    #unsavedDialog h3 { margin: 0 0 8px; font-size: 1rem; font-weight: 600; }
+    #unsavedDialog p { margin: 0 0 18px; color: var(--text-dim); font-size: 0.85rem; line-height: 1.5; }
+    #unsavedDialog .dialog-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    #unsavedDialog .btn { margin-left: 0; }
+
+    /* Narrow phones: centered text, buttons stacked at full width (primary action on top), equal margins left and right */
+    @media (max-width: 480px) {
+        #unsavedDialog { padding: 20px 16px; text-align: center; }
+        #unsavedDialog .dialog-actions { flex-direction: column-reverse; align-items: stretch; gap: 8px; }
+        #unsavedDialog .dialog-actions button { width: 100%; height: 40px; margin: 0; justify-content: center; font-size: 0.85rem; }
+    }
+
     /* Statusmeldung (Desktop: skaliert mit Inhalt, kein Vollstrecken) */
     #statusMsg {
         font-size: 0.72rem;
@@ -732,10 +772,10 @@
                         <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
                     </button>
                     <button class="btn-subtle" onclick="removeStaleMappings()" title="Remove IDs of channels that are no longer on the receiver">
-                        <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="clean-count"></span>
+                        <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="count-badge clean-count" hidden></span>
                     </button>
-                    <button class="btn btn-success" onclick="saveMapping()">
-                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                    <button class="btn btn-success save-btn" onclick="saveMapping()">
+                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save<span class="dot-badge save-dirty" hidden></span>
                     </button>
                 </div>
             </div>
@@ -761,11 +801,11 @@
                             <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
                         </button>
                         <button class="btn-subtle" onclick="removeStaleMappings()" title="Remove IDs of channels that are no longer on the receiver">
-                            <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="clean-count"></span>
+                            <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="count-badge clean-count" hidden></span>
                         </button>
                     </div>
-                    <button class="btn btn-success" onclick="saveMapping()">
-                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save
+                    <button class="btn btn-success save-btn" onclick="saveMapping()">
+                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save<span class="dot-badge save-dirty" hidden></span>
                     </button>
                 </div>
             </div>
@@ -785,9 +825,21 @@
 
 <div id="toast-container"></div>
 
+<dialog id="unsavedDialog" aria-labelledby="unsavedTitle">
+    <h3 id="unsavedTitle">Unsaved ID changes</h3>
+    <p id="unsavedText"></p>
+    <div class="dialog-actions">
+        <button class="btn-subtle" data-choice="cancel">Cancel</button>
+        <button class="btn-subtle" id="unsavedDiscard" data-choice="discard">Discard changes</button>
+        <button class="btn" id="unsavedSave" data-choice="save">Save and fetch</button>
+    </div>
+</dialog>
+
 <!-- Application Script Logic -->
 <script>
     let currentMapping = {};
+    let savedMapping = {};
+    let activeListName = '';
     let detectedChannels = [];
     let currentFilter = 'all';
     let searchTimeout = null;
@@ -818,6 +870,58 @@
         }
         return [...byId].filter(([, names]) => names.length > 1).map(([id, channels]) => ({ id, channels }));
     }
+
+    /** True if both mappings contain the same channel/ID pairs (order does not matter). */
+    function mappingsEqual(a, b) {
+        const keysA = Object.keys(a);
+        if (keysA.length !== Object.keys(b).length) return false;
+        return keysA.every(key => Object.hasOwn(b, key) && String(a[key]) === String(b[key]));
+    }
+
+    /** True while the mapping in the browser differs from the last saved/loaded state. */
+    function isDirty() {
+        return !mappingsEqual(currentMapping, savedMapping);
+    }
+
+    /** Shows the dot on both "Save" buttons while there are unsaved changes. */
+    function updateDirtyIndicator() {
+        const dirty = isDirty();
+        document.querySelectorAll('.save-dirty').forEach(el => { el.hidden = !dirty; });
+        document.querySelectorAll('.save-btn').forEach(btn => {
+            btn.title = dirty ? 'Save (unsaved changes)' : 'Save';
+            btn.setAttribute('aria-label', dirty ? 'Save, unsaved changes' : 'Save');
+        });
+    }
+
+    /**
+     * Asks what to do with unsaved changes. Resolves to 'save', 'discard' or 'cancel'.
+     * mode "import" has no save option (the import replaces the saved mapping anyway).
+     */
+    function askUnsaved(mode) {
+        const dialog = document.getElementById('unsavedDialog');
+        const isImport = mode === 'import';
+        document.getElementById('unsavedText').textContent = isImport
+            ? 'Importing replaces the saved mapping. Your unsaved changes will be lost.'
+            : 'Apply & Fetch reloads the mapping from the server. Save your changes first or they will be lost.';
+        document.getElementById('unsavedSave').hidden = isImport;
+        document.getElementById('unsavedDiscard').textContent = isImport ? 'Discard and import' : 'Discard changes';
+        return new Promise(resolve => {
+            dialog.returnValue = '';
+            dialog.addEventListener('close', () => resolve(dialog.returnValue || 'cancel'), { once: true });
+            dialog.showModal();
+        });
+    }
+
+    document.querySelectorAll('#unsavedDialog [data-choice]').forEach(btn => {
+        btn.addEventListener('click', () => document.getElementById('unsavedDialog').close(btn.dataset.choice));
+    });
+
+    window.addEventListener('beforeunload', (event) => {
+        if (isDirty()) {
+            event.preventDefault();
+            event.returnValue = '';
+        }
+    });
 
     /** Mapping restricted to channels that currently exist on the receiver (only those can collide in the playlist). */
     function getActiveMapping() {
@@ -978,6 +1082,7 @@
             setValue('cronExpression', config.cronExpression);
 
             if (config.selectedListName) {
+                activeListName = config.selectedListName;
                 const select = document.getElementById('selectedListName');
                 select.replaceChildren();
                 const opt = document.createElement('option');
@@ -1031,6 +1136,16 @@
     async function fetchChannels() {
         const applyBtn = document.getElementById('applyBtn');
         if (applyBtn.disabled) return;
+
+        if (isDirty()) {
+            const choice = await askUnsaved('fetch');
+            if (choice === 'cancel') {
+                if (activeListName) document.getElementById('selectedListName').value = activeListName;
+                return;
+            }
+            if (choice === 'save' && !(await saveMapping())) return;
+        }
+
         const statusMsg = document.getElementById('statusMsg');
         const listCard = document.getElementById('listCard');
         const ip = document.getElementById('receiverIp').value.trim();
@@ -1072,6 +1187,8 @@
             updateModelBadge('success', data.detectedModel);
             detectedChannels = data.channels;
             currentMapping = data.mapping || {};
+            savedMapping = { ...currentMapping };
+            activeListName = data.selectedListName || activeListName;
 
             statusMsg.className = 'success';
             statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">check_circle</span> <span class="status-prefix">Loaded</span> <strong>${detectedChannels.length} channels</strong><span class="status-list">&nbsp;(&ldquo;${escapeHtml(data.selectedListName)}&rdquo;)</span>`;
@@ -1190,8 +1307,15 @@
 
         const staleCount = getOrphans().length;
         document.querySelectorAll('.clean-count').forEach(el => {
-            el.textContent = staleCount > 0 ? ` (${staleCount})` : '';
+            el.textContent = staleCount > 99 ? '99+' : String(staleCount);
+            el.hidden = staleCount === 0;
+            const btn = el.closest('button');
+            btn.title = staleCount > 0
+                ? `Remove ${staleCount} stale ${staleCount === 1 ? 'entry' : 'entries'}`
+                : 'Remove IDs of channels that are no longer on the receiver';
+            btn.setAttribute('aria-label', staleCount > 0 ? `Clean, ${staleCount} stale ${staleCount === 1 ? 'entry' : 'entries'}` : 'Clean');
         });
+        updateDirtyIndicator();
     }
 
     /**
@@ -1207,6 +1331,7 @@
             const parsed = parseInt(value, 10);
             currentMapping[name] = isNaN(parsed) ? value : parsed;
         }
+        updateDirtyIndicator();
     }
 
     /**
@@ -1239,13 +1364,16 @@
                 } else {
                     showToast(removedStale.length > 0 ? head : 'Mappings saved successfully!');
                 }
+                savedMapping = { ...currentMapping };
                 renderTable();
+                return true;
             } else {
                 throw new Error(result.error || 'Save failed');
             }
         } catch (err) {
             showToast(err.message || 'Error saving data to backend.', 'error');
             renderTable();
+            return false;
         }
     }
 
@@ -1272,6 +1400,16 @@
     async function handleImportFile(event) {
         const file = event.target.files[0];
         if (!file) return;
+
+        if (isDirty()) {
+            const choice = await askUnsaved('import');
+            if (choice !== 'discard') {
+                event.target.value = '';
+                return;
+            }
+            currentMapping = { ...savedMapping };
+            updateDirtyIndicator();
+        }
 
         const reader = new FileReader();
         reader.onload = async (e) => {
