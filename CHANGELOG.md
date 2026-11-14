@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.6.1]
+
+### Changed
+- UI (header): "Last sync" shows the time without seconds, and a new sync is acknowledged by a calm pulse (the icon turns once,
+  a green ring fades out) instead of a green flash; it respects "reduce motion" and no longer shifts the layout. After
+  "Apply & Fetch" the badge updates immediately.
+- UI (header): if the version badge would wrap below the title (screens up to about 360 px), it becomes smaller and moves to the
+  top-right corner of the title; it returns to its normal place as soon as there is room again.
+- UI (header): "Last sync" and "Copy M3U URL" stay on one line. If there is not enough room, the button text is shortened
+  step by step and only as far as needed ("Copy M3U", "Copy", and finally the "Last sync:" label is dropped).
+- UI (mobile): the receiver badge drops the "Detected:" prefix only when there is not enough room (the gap to "Export" would be
+  smaller than the gap between "Export" and "Import"), and "Export"/"Import" show only their icons on very narrow screens, so
+  nothing touches or overflows on small phones such as the iPhone SE.
+
 ## [1.6.0]
 
 ### Added

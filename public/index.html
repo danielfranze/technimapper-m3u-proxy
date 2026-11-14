@@ -186,15 +186,30 @@
         font-weight: 500;
     }
 
-    /* Sync status flash animation state */
-    .header-badge.success-flash {
-        background: rgba(16, 185, 129, 0.15);
-        border-color: rgba(16, 185, 129, 0.3);
-        color: #34d399;
+    /* Sync pulse: when a new sync arrives the icon turns once and a green ring fades out.
+       Nothing changes in size or text color, so the header does not jump. */
+    .header-badge.sync-pulse { animation: syncRing 1s ease-out; }
+    .header-badge.sync-pulse > .material-icons-outlined:first-child { animation: syncSpin 0.8s ease-in-out; }
+    @keyframes syncRing {
+        0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5), 0 2px 4px rgba(0, 0, 0, 0.2); border-color: rgba(16, 185, 129, 0.7); }
+        100% { box-shadow: 0 0 0 9px rgba(16, 185, 129, 0), 0 2px 4px rgba(0, 0, 0, 0.2); border-color: var(--border); }
     }
-    .header-badge.success-flash span {
-        color: #34d399;
+    @keyframes syncSpin {
+        from { transform: rotate(0deg); color: #34d399; }
+        to   { transform: rotate(360deg); color: #fff; }
     }
+    @media (prefers-reduced-motion: reduce) {
+        .header-badge.sync-pulse,
+        .header-badge.sync-pulse > .material-icons-outlined:first-child { animation: none; }
+    }
+
+    /* The label keeps the badge text color (the rule above colors every span white) */
+    .header-badge span.sync-label { color: inherit; font-weight: inherit; }
+
+    /* Progressive shortening when the header is too narrow (set by fitHeaderMeta) */
+    .header-meta.hide-url .copy-url,
+    .header-meta.hide-m3u .copy-m3u,
+    .header-meta.hide-label .sync-label { display: none; }
 
     .badge {
         font-size: 0.72rem;
@@ -204,6 +219,22 @@
         border-radius: 12px;
         color: var(--text-dim);
         font-weight: 500;
+    }
+
+    /* Version badge when it would wrap below the title: smaller, in the top-right corner of the title text */
+    .brand-text { position: relative; }
+    .brand-text > #versionLabel {
+        position: absolute;
+        top: -13px;
+        right: -6px;
+        box-sizing: border-box;
+        height: 15px;
+        padding: 0 5px;
+        font-size: 0.6rem;
+        line-height: 13px;
+        border-radius: 8px;
+        text-shadow: none;
+        white-space: nowrap;
     }
 
     /* ==========================================
@@ -556,6 +587,7 @@
     }
     @media (max-width: 340px) {
         #statusMsg .status-prefix { display: none; }
+        .mobile-row-2 .btn-label { display: none; }
     }
 
     @media (max-width: 900px) {
@@ -583,6 +615,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
             width: 100%;
         }
 
@@ -661,16 +695,16 @@
 <header>
     <h1>
         <span class="header-logo"><span class="material-icons-outlined">settings_input_antenna</span></span>
-        <span><span class="brand-title">TechniMapper</span> <span class="brand-subtitle">M3U Proxy</span></span>
+        <span class="brand-text"><span class="brand-title">TechniMapper</span> <span class="brand-subtitle">M3U Proxy</span></span>
         <span class="badge" id="versionLabel">v&hellip;</span>
     </h1>
     <div class="header-meta">
-        <div class="header-badge" id="syncBadge">
+        <div class="header-badge" id="syncBadge" title="Last successful sync">
             <span class="material-icons-outlined" style="font-size: 15px;">sync</span>
-            Last sync: <span id="last-sync-time">Loading...</span>
+            <span class="sync-label">Last sync:</span> <span id="last-sync-time">Loading...</span>
         </div>
-        <button class="btn-subtle" onclick="copyM3uLink()" title="Copy playlist URL">
-            <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> Copy M3U URL
+        <button class="btn-subtle" onclick="copyM3uLink()" title="Copy playlist URL" aria-label="Copy playlist URL">
+            <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> <span class="copy-label">Copy<span class="copy-m3u"> M3U</span><span class="copy-url"> URL</span></span>
         </button>
     </div>
 </header>
@@ -700,12 +734,12 @@
                 </div>
                 <div class="mobile-row-2">
                     <div id="modelInfoMobile" class="model-badge model-badge-pending">Not detected yet</div>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON">
-                            <span class="material-icons-outlined" style="font-size: 15px;">download</span> Export
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+                        <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON" aria-label="Export configuration">
+                            <span class="material-icons-outlined" style="font-size: 15px;">download</span> <span class="btn-label">Export</span>
                         </button>
-                        <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON">
-                            <span class="material-icons-outlined" style="font-size: 15px;">upload</span> Import
+                        <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON" aria-label="Import configuration">
+                            <span class="material-icons-outlined" style="font-size: 15px;">upload</span> <span class="btn-label">Import</span>
                         </button>
                     </div>
                 </div>
@@ -840,6 +874,7 @@
     let currentMapping = {};
     let savedMapping = {};
     let activeListName = '';
+    let lastSyncSeen;   // undefined: not loaded yet, null: never synced
     let detectedChannels = [];
     let currentFilter = 'all';
     let searchTimeout = null;
@@ -853,10 +888,11 @@
     }
 
     /** Formats an ISO timestamp for display; falls back to "Never". */
-    function formatSync(iso) {
+    function formatSync(iso, locale) {
         if (!iso) return 'Never';
         const d = new Date(iso);
-        return isNaN(d) ? 'Never' : d.toLocaleString();
+        if (isNaN(d)) return 'Never';
+        return d.toLocaleString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
     /** Groups channel names by assigned ID; returns only IDs used more than once. */
@@ -1038,11 +1074,13 @@
         badges.forEach(badge => {
             if (!badge) return;
             badge.className = 'model-badge';
+            delete badge.dataset.model;
             if (status === 'pending') {
                 badge.classList.add('model-badge-pending');
                 badge.innerText = text;
             } else if (status === 'success') {
                 badge.innerText = "Detected: " + text;
+                if (badge.id === 'modelInfoMobile') badge.dataset.model = text;
                 badge.style.background = "rgba(59, 130, 246, 0.1)";
                 badge.style.color = "var(--accent)";
                 badge.style.borderColor = "rgba(59, 130, 246, 0.3)";
@@ -1053,7 +1091,80 @@
                 badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
             }
         });
+        fitModelBadge();
     }
+
+    /**
+     * Mobile badge: show "Detected: <model>" only if it leaves at least as much room before the Export button
+     * as there is between the Export and Import buttons. Otherwise show just the model name.
+     */
+    function fitModelBadge() {
+        const badge = document.getElementById('modelInfoMobile');
+        const exportBtn = document.querySelector('.mobile-row-2 button[aria-label^="Export"]');
+        const importBtn = document.querySelector('.mobile-row-2 button[aria-label^="Import"]');
+        if (!badge || !badge.dataset.model || !exportBtn || !importBtn || exportBtn.offsetParent === null) return;
+
+        badge.textContent = 'Detected: ' + badge.dataset.model;
+        const b = badge.getBoundingClientRect();
+        const e = exportBtn.getBoundingClientRect();
+        const i = importBtn.getBoundingClientRect();
+        const sameRow = Math.abs((b.top + b.height / 2) - (e.top + e.height / 2)) < b.height;
+        const badgeGap = e.left - b.right;
+        const buttonGap = i.left - e.right;
+        if (!sameRow || badgeGap < buttonGap) badge.textContent = badge.dataset.model;
+    }
+
+    /**
+     * Header: keep "Last sync" and "Copy M3U URL" on one line. Shortens step by step, only as far as needed:
+     * drop " URL", then " M3U", then the "Last sync:" label. A step is enough once both items share a row
+     * and the gap between them is not smaller than the normal gap of the header.
+     */
+    function fitHeaderMeta() {
+        const meta = document.querySelector('.header-meta');
+        const sync = document.getElementById('syncBadge');
+        const copy = meta ? meta.querySelector('button') : null;
+        if (!meta || !sync || !copy) return;
+
+        const minGap = parseFloat(getComputedStyle(meta).columnGap) || 0;
+        const steps = ['hide-url', 'hide-m3u', 'hide-label'];
+        meta.classList.remove(...steps);
+        for (let i = 0; i <= steps.length; i++) {
+            if (i > 0) meta.classList.add(steps[i - 1]);
+            const a = sync.getBoundingClientRect();
+            const c = copy.getBoundingClientRect();
+            const sameRow = Math.abs((a.top + a.height / 2) - (c.top + c.height / 2)) < a.height;
+            if (sameRow && c.left - a.right >= minGap - 0.5) return;
+        }
+    }
+
+    /**
+     * Version badge: normally it sits next to the title. If it would wrap into the next line, it moves into the
+     * top-right corner of the title text (smaller, see CSS) and goes back as soon as there is room again.
+     */
+    function fitVersionBadge() {
+        const h1 = document.querySelector('header h1');
+        const badge = document.getElementById('versionLabel');
+        const title = h1 ? h1.querySelector('.brand-text') : null;
+        if (!h1 || !badge || !title) return;
+
+        if (badge.parentElement !== h1) title.after(badge);     // back to the normal position, then measure
+        const b = badge.getBoundingClientRect();
+        const t = title.getBoundingClientRect();
+        if (b.top >= t.bottom - 2) title.appendChild(badge);     // wrapped below the title: corner badge
+    }
+
+    function fitLayout() {
+        fitVersionBadge();
+        fitHeaderMeta();
+        fitModelBadge();
+    }
+
+    let fitTimer = null;
+    window.addEventListener('resize', () => {
+        clearTimeout(fitTimer);
+        fitTimer = setTimeout(fitLayout, 100);
+    });
+    document.fonts.ready.then(fitLayout);
 
     /**
      * Initializes application state and registers periodic background polling intervals 
@@ -1076,7 +1187,10 @@
             const setValue = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
 
             const versionEl = document.getElementById('versionLabel');
-            if (versionEl && config.version) versionEl.textContent = 'v' + config.version;
+            if (versionEl && config.version) {
+                versionEl.textContent = 'v' + config.version;
+                fitVersionBadge();
+            }
             setValue('receiverIp', config.ip);
             setValue('receiverPort', config.port);
             setValue('cronExpression', config.cronExpression);
@@ -1106,28 +1220,34 @@
             if (!el) return;
 
             const newTime = formatSync(data.lastSync);
-            const changed = el.textContent !== newTime && el.textContent !== 'Loading...';
+            const changed = lastSyncSeen !== undefined && !!data.lastSync && data.lastSync !== lastSyncSeen;
+            lastSyncSeen = data.lastSync || null;
             el.textContent = newTime;
             if (badge) {
                 badge.title = data.lastError
                     ? `Last sync failed (${data.consecutiveFailures}x): ${data.lastError}`
-                    : '';
+                    : 'Last successful sync';
             }
-            if (changed) triggerSyncFlash();
+            fitHeaderMeta();
+            if (changed) triggerSyncPulse();
         } catch (e) {}
     }
 
-    /**
-     * Triggers a temporary visual success highlight flash animation on the synchronization status badge.
-     */
-    function triggerSyncFlash() {
+    /** Short, calm acknowledgement on the "Last sync" badge when a new sync has arrived. */
+    function triggerSyncPulse() {
         const badge = document.getElementById('syncBadge');
-        if (badge) {
-            badge.classList.add('success-flash');
-            setTimeout(() => {
-                badge.classList.remove('success-flash');
-            }, 1500);
-        }
+        if (!badge || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        badge.classList.remove('sync-pulse');
+        void badge.offsetWidth;                                  // restart the animation if it is still running
+        badge.classList.add('sync-pulse');
+        const done = (event) => {
+            if (event && event.target !== badge) return;         // ignore the icon's own animation
+            badge.classList.remove('sync-pulse');
+            badge.removeEventListener('animationend', done);
+        };
+        badge.addEventListener('animationend', done);
+        setTimeout(() => done(), 1500);                          // safety net (e.g. background tab)
     }
 
     /**
@@ -1196,7 +1316,6 @@
             
             renderTable();
             updateSyncTime();
-            triggerSyncFlash();
             showToast(`${detectedChannels.length} channels loaded`);
         } catch (err) {
             updateModelBadge('error');
