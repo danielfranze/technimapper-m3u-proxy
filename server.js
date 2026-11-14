@@ -12,6 +12,10 @@
  *   LOG_LEVEL             error | warn | info (default info)
  *   LOG_FORMAT            text | json (default text)
  *   TRUST_PROXY           Reverse-proxy hops (number) or "true"; needed for correct client IPs
+ *   HDHR_ENABLED          "false" disables the HDHomeRun emulation below /hdhr (default: enabled)
+ *   HDHR_FRIENDLY_NAME    Tuner name shown in Plex/Jellyfin (default "TechniSat HDHR Mapper")
+ *   HDHR_DEVICE_ID        8 hex digits, must be unique per tuner on your network (default 12345678)
+ *   HDHR_TUNER_COUNT      Number of tuners reported to the client, 1-16 (default 4)
  *   ALLOW_NON_PRIVATE_IP  "true" to allow receiver IPs outside RFC1918 ranges
  *                         (e.g. VPN/CGNAT such as 100.64.0.0/10)
  *   ADMIN_USER / ADMIN_PASSWORD
@@ -34,6 +38,7 @@ const compression = require('compression');
 const packageJson = require('./package.json');
 const { HttpError, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } = require('./lib/validation');
 const { STREAM_URL_REGEX, buildM3u } = require('./lib/m3u');
+const hdhr = require('./lib/hdhr');
 
 // ---------------------------------------------------------------------------
 // Constants & environment
@@ -85,6 +90,7 @@ let appConfig = {
 const syncStatus = { lastError: null, lastErrorAt: null, consecutiveFailures: 0 };
 
 let configured = false;  // true once a config exists on disk or was applied via UI
+let lineupEntries = []; // HDHomeRun lineup, rebuilt together with the playlist
 let cachedM3u = null;    // null = no usable playlist (served as 503, never as empty list)
 let cronTask = null;
 let shuttingDown = false;
@@ -386,6 +392,7 @@ async function fetchFromTechniSat({ ip, port, selectedListName }) {
 function generateM3u() {
     const { m3u, count } = buildM3u(appConfig.channels, appConfig.mapping);
     cachedM3u = count > 0 ? m3u : null;
+    lineupEntries = hdhr.buildLineup(appConfig.channels, appConfig.mapping);
     if (count === 0) log.warn('No mapped channels - /playlist.m3u will answer 503 until channels are mapped.');
     return count;
 }
@@ -483,10 +490,10 @@ function safeEqual(a, b) {
     return crypto.timingSafeEqual(ha, hb);
 }
 
-/** Optional HTTP Basic Auth. /playlist.m3u and /health stay public for Dispatcharr and Docker. */
+/** Optional HTTP Basic Auth. /playlist.m3u, /health and /hdhr/* stay public (Dispatcharr, Docker, Plex, Jellyfin). */
 function basicAuth(req, res, next) {
     if (!ADMIN_USER || !ADMIN_PASSWORD) return next();
-    if (req.path === '/health' || req.path === '/playlist.m3u') return next();
+    if (req.path === '/health' || req.path === '/playlist.m3u' || req.path.startsWith('/hdhr/')) return next();
 
     const [scheme, encoded] = (req.headers.authorization || '').split(' ');
     if (scheme === 'Basic' && encoded) {
@@ -646,6 +653,44 @@ app.get('/playlist.m3u', (req, res) => {
     res.type('audio/x-mpegurl; charset=utf-8').send(cachedM3u);
 });
 
+// ---------------------------------------------------------------------------
+// HDHomeRun emulation (Plex / Jellyfin): everything below /hdhr, unauthenticated by design.
+// Streams are not proxied: the client is redirected (302) to the receiver and reads the MPEG-TS stream from there.
+// ---------------------------------------------------------------------------
+const hdhrConfig = hdhr.resolveConfig(process.env);
+hdhrConfig.warnings.forEach(w => log.warn(w));
+
+if (hdhrConfig.enabled) {
+    const hdhrRouter = express.Router();
+
+    // Absolute URLs are built from the Host header of the request (works behind any port mapping).
+    const withBaseUrl = (handler) => (req, res) => {
+        const baseUrl = hdhr.baseUrlFrom(req.protocol, req.get('host'));
+        if (!baseUrl) return res.status(400).json({ error: 'Invalid Host header' });
+        return handler(req, res, baseUrl);
+    };
+
+    hdhrRouter.use((req, res, next) => {
+        res.setHeader('Cache-Control', 'no-store');
+        next();
+    });
+
+    hdhrRouter.get('/discover.json', withBaseUrl((req, res, baseUrl) => res.json(hdhr.discoverPayload(baseUrl, hdhrConfig))));
+    hdhrRouter.get('/lineup_status.json', (req, res) => res.json(hdhr.LINEUP_STATUS));
+    hdhrRouter.get('/lineup.json', withBaseUrl((req, res, baseUrl) => res.json(hdhr.lineupPayload(lineupEntries, baseUrl))));
+
+    // Clients call this to start a channel scan. The lineup comes from the mapping, so there is nothing to scan.
+    hdhrRouter.post('/lineup.post', (req, res) => res.sendStatus(200));
+
+    hdhrRouter.get('/stream/:id', (req, res) => {
+        const entry = lineupEntries.find(e => e.guideNumber === req.params.id);
+        if (!entry) return res.status(404).type('text/plain').send('Stream not found');
+        return res.redirect(302, entry.url);
+    });
+
+    app.use('/hdhr', hdhrRouter);
+}
+
 // 404 for unknown API routes, then central error handler
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
@@ -673,6 +718,7 @@ if ((ADMIN_USER && !ADMIN_PASSWORD) || (!ADMIN_USER && ADMIN_PASSWORD)) {
 
 const server = app.listen(PORT, () => {
     log.info(`TechniMapper v${APP_VERSION} listening on port ${PORT}`);
+    if (hdhrConfig.enabled) log.info(`HDHomeRun emulation enabled at /hdhr (device ${hdhrConfig.deviceId})`);
     if (configured) {
         startBackgroundCron();
         setTimeout(runScheduledSync, 500); // refresh possibly stale URLs right after (re)start

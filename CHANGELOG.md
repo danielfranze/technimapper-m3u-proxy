@@ -3,6 +3,15 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.0-rc.1]
+
+Release candidate for testing the HDHomeRun emulation with Plex and Jellyfin. It does not move the `latest` image tag; use the exact tag `1.7.0-rc.1` to try it.
+
+### Added
+- HDHomeRun emulation below `/hdhr` for Plex and Jellyfin: `discover.json`, `lineup_status.json`, `lineup.json` (built from the
+  mapping) and `stream/:id`, which redirects (HTTP 302) to the receiver's stream URL. Public like the playlist; can be disabled with
+  `HDHR_ENABLED=false`. New settings: `HDHR_FRIENDLY_NAME`, `HDHR_DEVICE_ID`, `HDHR_TUNER_COUNT`.
+
 ## [1.6.1]
 
 ### Changed
