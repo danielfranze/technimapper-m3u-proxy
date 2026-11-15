@@ -3,6 +3,22 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.0-rc.2]
+
+Second release candidate with the changes after the first Plex tests. It does not move the `latest` image tag; use the exact tag `1.7.0-rc.2` to try it.
+
+### Breaking changes
+- The server now listens on port **9191** by default (was 3000). The Dockerfile (`EXPOSE`, health check), the compose file, the CI
+  smoke test and all examples use `9191:9191`. If your stack publishes `3000:3000` and does not set `PORT`, change the mapping to
+  `9191:9191` or set `PORT=3000`. The health checks follow `PORT`.
+
+### Changed
+- HDHomeRun emulation: the default tuner count is now 2 (was 4). `HDHR_FRIENDLY_NAME` defaults to `-`: without a custom name the
+  tuner is called "TechniSat <detected model>" (e.g. "TechniSat DIGIT ISIO STC", just "TechniSat" before the first successful
+  sync). The detected model is stored in `mapping.json`.
+- Docs: the quick start uses `9191:9191`. Dispatcharr is no longer part of the documentation; Plex and Jellyfin are the documented
+  clients. The `/playlist.m3u` endpoint stays available for other M3U players.
+
 ## [1.7.0-rc.1]
 
 Release candidate for testing the HDHomeRun emulation with Plex and Jellyfin. It does not move the `latest` image tag; use the exact tag `1.7.0-rc.1` to try it.

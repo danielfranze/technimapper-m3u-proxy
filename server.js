@@ -6,16 +6,16 @@
  * reads the live TV channel list and serves it as a stable M3U playlist.
  *
  * Environment variables (all optional):
- *   PORT                  HTTP port (default 3000)
+ *   PORT                  HTTP port the server listens on (default 9191)
  *   DATA_DIR              Directory for mapping.json (default ./data)
  *   REQUEST_TIMEOUT_MS    Idle timeout per SOAP request (default 5000)
  *   LOG_LEVEL             error | warn | info (default info)
  *   LOG_FORMAT            text | json (default text)
  *   TRUST_PROXY           Reverse-proxy hops (number) or "true"; needed for correct client IPs
  *   HDHR_ENABLED          "false" disables the HDHomeRun emulation below /hdhr (default: enabled)
- *   HDHR_FRIENDLY_NAME    Tuner name shown in Plex/Jellyfin (default "TechniSat HDHR Mapper")
+ *   HDHR_FRIENDLY_NAME    Tuner name in Plex/Jellyfin. Default "-" = automatic: "TechniSat <detected model>"
  *   HDHR_DEVICE_ID        8 hex digits, must be unique per tuner on your network (default 12345678)
- *   HDHR_TUNER_COUNT      Number of tuners reported to the client, 1-16 (default 4)
+ *   HDHR_TUNER_COUNT      Number of tuners reported to the client, 1-16 (default 2)
  *   ALLOW_NON_PRIVATE_IP  "true" to allow receiver IPs outside RFC1918 ranges
  *                         (e.g. VPN/CGNAT such as 100.64.0.0/10)
  *   ADMIN_USER / ADMIN_PASSWORD
@@ -44,7 +44,7 @@ const hdhr = require('./lib/hdhr');
 // Constants & environment
 // ---------------------------------------------------------------------------
 const APP_VERSION = packageJson.version;
-const PORT = parseInt(process.env.PORT, 10) || 3000;
+const PORT = parseInt(process.env.PORT, 10) || 9191;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const CONFIG_FILE = path.join(DATA_DIR, 'mapping.json');
 const REQUEST_TIMEOUT_MS = parseInt(process.env.REQUEST_TIMEOUT_MS, 10) || 5000;
@@ -84,7 +84,8 @@ let appConfig = {
     selectedListName: 'TV-Liste',
     mapping: {},
     channels: [],
-    lastSync: null // ISO-8601 (UTC) of the last successful sync
+    lastSync: null, // ISO-8601 (UTC) of the last successful sync
+    detectedModel: null // e.g. "DIGIT ISIO STC"; used for the automatic tuner name
 };
 
 const syncStatus = { lastError: null, lastErrorAt: null, consecutiveFailures: 0 };
@@ -231,6 +232,7 @@ function loadConfig() {
             cronExpression: typeof parsed.cronExpression === 'string' ? parsed.cronExpression : appConfig.cronExpression,
             selectedListName: typeof parsed.selectedListName === 'string' ? parsed.selectedListName : appConfig.selectedListName,
             lastSync: typeof parsed.lastSync === 'string' ? parsed.lastSync : null,
+            detectedModel: hdhr.sanitizeModel(parsed.detectedModel),
             mapping: sortMapping(mapping, channels.map(c => c.name)),
             channels
         };
@@ -387,7 +389,7 @@ async function fetchFromTechniSat({ ip, port, selectedListName }) {
 
 /**
  * Rebuilds the cached playlist from channels + mapping. If nothing is mapped, the cache is set to
- * null so /playlist.m3u answers 503 instead of an empty list (which would make Dispatcharr purge channels).
+ * null so /playlist.m3u answers 503 instead of an empty list (some M3U clients purge channels that are missing from a playlist).
  */
 function generateM3u() {
     const { m3u, count } = buildM3u(appConfig.channels, appConfig.mapping);
@@ -412,6 +414,7 @@ async function performSync(candidate) {
             cronExpression: candidate.cronExpression,
             selectedListName: result.selectedListName,
             channels: result.channels,
+            detectedModel: hdhr.modelLabel(result.detectedModel),
             lastSync: new Date().toISOString()
         });
         configured = true;
@@ -490,7 +493,7 @@ function safeEqual(a, b) {
     return crypto.timingSafeEqual(ha, hb);
 }
 
-/** Optional HTTP Basic Auth. /playlist.m3u, /health and /hdhr/* stay public (Dispatcharr, Docker, Plex, Jellyfin). */
+/** Optional HTTP Basic Auth. /playlist.m3u, /health and /hdhr/* stay public (Plex, Jellyfin, M3U clients, Docker). */
 function basicAuth(req, res, next) {
     if (!ADMIN_USER || !ADMIN_PASSWORD) return next();
     if (req.path === '/health' || req.path === '/playlist.m3u' || req.path.startsWith('/hdhr/')) return next();
@@ -581,7 +584,7 @@ app.post('/api/fetch-channels', async (req, res, next) => {
             availableLists: result.availableLists,
             selectedListName: appConfig.selectedListName,
             mapping: appConfig.mapping,
-            detectedModel: result.detectedModel === 'STC' ? 'DIGIT ISIO STC' : 'DIGIT ISIO S/S1/S2'
+            detectedModel: hdhr.modelLabel(result.detectedModel)
         });
     } catch (err) {
         if (err instanceof HttpError) return next(err);
@@ -645,7 +648,7 @@ app.post('/api/import-config', (req, res) => {
 
 app.get('/playlist.m3u', (req, res) => {
     if (cachedM3u === null) {
-        // Never serve an empty playlist: Dispatcharr's orphan cleanup would delete all channels.
+        // Never serve an empty playlist: clients that clean up missing channels would delete all of them.
         res.set('Retry-After', '60');
         return res.status(503).type('text/plain').send('Playlist not available: no channels synced or mapped yet.');
     }
@@ -675,7 +678,7 @@ if (hdhrConfig.enabled) {
         next();
     });
 
-    hdhrRouter.get('/discover.json', withBaseUrl((req, res, baseUrl) => res.json(hdhr.discoverPayload(baseUrl, hdhrConfig))));
+    hdhrRouter.get('/discover.json', withBaseUrl((req, res, baseUrl) => res.json(hdhr.discoverPayload(baseUrl, hdhrConfig, appConfig.detectedModel))));
     hdhrRouter.get('/lineup_status.json', (req, res) => res.json(hdhr.LINEUP_STATUS));
     hdhrRouter.get('/lineup.json', withBaseUrl((req, res, baseUrl) => res.json(hdhr.lineupPayload(lineupEntries, baseUrl))));
 

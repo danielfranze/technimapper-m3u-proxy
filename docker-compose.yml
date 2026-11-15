@@ -5,7 +5,9 @@ services:
     # image: ghcr.io/danielfranze/technimapper-m3u-proxy:latest
     container_name: technimapper-m3u-proxy
     ports:
-      - "3000:3000"
+      # The server listens on 9191 by default. UI, playlist and /hdhr are reachable at http://<server-ip>:9191
+      # (use the same port in Plex/Jellyfin). If you set PORT, change this mapping accordingly.
+      - "9191:9191"
     volumes:
       # Directory mount (instead of a single file): allows atomic writes of mapping.json.
       # The container runs as UID 1000 - run once: chown -R 1000:1000 ./data
@@ -33,7 +35,7 @@ services:
       - no-new-privileges:true
     mem_limit: 256m
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:$${PORT:-9191}/health >/dev/null || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

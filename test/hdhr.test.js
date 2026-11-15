@@ -3,7 +3,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
-    DEFAULTS, LINEUP_STATUS, resolveConfig, guideName, buildLineup, baseUrlFrom, discoverPayload, lineupPayload
+    DEFAULTS, LINEUP_STATUS, resolveConfig, modelLabel, sanitizeModel, defaultFriendlyName,
+    guideName, buildLineup, baseUrlFrom, discoverPayload, lineupPayload
 } = require('../lib/hdhr');
 
 const channels = [
@@ -54,16 +55,40 @@ test('baseUrlFrom accepts normal Host headers and rejects anything else', () => 
     }
 });
 
-test('discover.json points BaseURL and LineupURL at /hdhr', () => {
-    const cfg = resolveConfig({});
-    const d = discoverPayload('http://192.168.178.11:9191', cfg);
+test('discover.json points BaseURL and LineupURL at /hdhr and defaults to 2 tuners', () => {
+    const d = discoverPayload('http://192.168.178.11:9191', resolveConfig({}), 'DIGIT ISIO STC');
     assert.equal(d.BaseURL, 'http://192.168.178.11:9191/hdhr');
     assert.equal(d.LineupURL, 'http://192.168.178.11:9191/hdhr/lineup.json');
-    assert.equal(d.FriendlyName, 'TechniSat HDHR Mapper');
     assert.equal(d.ModelNumber, 'HDHR4-2DT');
     assert.equal(d.DeviceID, '12345678');
-    assert.equal(d.TunerCount, 4);
+    assert.equal(d.TunerCount, 2);
     assert.equal(d.DeviceAuth, 'technisat123');
+});
+
+test('the tuner name is built from the detected model unless a custom name is set', () => {
+    const auto = resolveConfig({});
+    assert.equal(auto.friendlyName, null);
+    assert.equal(discoverPayload('http://h', auto, 'DIGIT ISIO STC').FriendlyName, 'TechniSat DIGIT ISIO STC');
+    assert.equal(discoverPayload('http://h', auto, 'DIGIT ISIO S/S1/S2').FriendlyName, 'TechniSat DIGIT ISIO S/S1/S2');
+    assert.equal(discoverPayload('http://h', auto, null).FriendlyName, 'TechniSat');
+    assert.equal(discoverPayload('http://h', resolveConfig({ HDHR_FRIENDLY_NAME: 'Wohnzimmer' }), 'DIGIT ISIO STC').FriendlyName, 'Wohnzimmer');
+    assert.equal(defaultFriendlyName(undefined), 'TechniSat');
+});
+
+test('"-" and an empty HDHR_FRIENDLY_NAME mean automatic naming', () => {
+    assert.equal(resolveConfig({ HDHR_FRIENDLY_NAME: '-' }).friendlyName, null);
+    assert.equal(resolveConfig({ HDHR_FRIENDLY_NAME: '' }).friendlyName, null);
+    assert.equal(resolveConfig({ HDHR_FRIENDLY_NAME: '   ' }).friendlyName, null);
+    assert.equal(resolveConfig({ HDHR_FRIENDLY_NAME: 'a\r\nb' }).friendlyName, 'a  b');
+});
+
+test('modelLabel maps the discovered device type, sanitizeModel only accepts plain short strings', () => {
+    assert.equal(modelLabel('STC'), 'DIGIT ISIO STC');
+    assert.equal(modelLabel('S_SERIES'), 'DIGIT ISIO S/S1/S2');
+    assert.equal(sanitizeModel('DIGIT ISIO STC'), 'DIGIT ISIO STC');
+    assert.equal(sanitizeModel('  x\ny  '), 'x y');
+    assert.equal(sanitizeModel('a'.repeat(100)).length, 60);
+    for (const bad of [null, undefined, 42, {}, '', '   ']) assert.equal(sanitizeModel(bad), null, String(bad));
 });
 
 test('lineup.json points every channel at the redirect endpoint below /hdhr/stream', () => {
@@ -78,12 +103,11 @@ test('lineup_status.json reports an idle tuner that cannot be scanned in progres
 });
 
 test('resolveConfig applies defaults, accepts valid overrides and warns about invalid ones', () => {
-    assert.deepEqual(resolveConfig({}), { enabled: true, friendlyName: DEFAULTS.friendlyName, deviceId: '12345678', tunerCount: 4, warnings: [] });
-    const ok = resolveConfig({ HDHR_ENABLED: 'false', HDHR_FRIENDLY_NAME: 'Wohnzimmer', HDHR_DEVICE_ID: 'abcdef12', HDHR_TUNER_COUNT: '2' });
-    assert.deepEqual([ok.enabled, ok.friendlyName, ok.deviceId, ok.tunerCount, ok.warnings.length], [false, 'Wohnzimmer', 'ABCDEF12', 2, 0]);
+    assert.deepEqual(resolveConfig({}), { enabled: true, friendlyName: null, deviceId: DEFAULTS.deviceId, tunerCount: 2, warnings: [] });
+    const ok = resolveConfig({ HDHR_ENABLED: 'false', HDHR_DEVICE_ID: 'abcdef12', HDHR_TUNER_COUNT: '3' });
+    assert.deepEqual([ok.enabled, ok.deviceId, ok.tunerCount, ok.warnings.length], [false, 'ABCDEF12', 3, 0]);
     const bad = resolveConfig({ HDHR_DEVICE_ID: 'xyz', HDHR_TUNER_COUNT: '99' });
     assert.equal(bad.deviceId, '12345678');
-    assert.equal(bad.tunerCount, 4);
+    assert.equal(bad.tunerCount, 2);
     assert.equal(bad.warnings.length, 2);
-    assert.equal(resolveConfig({ HDHR_FRIENDLY_NAME: 'a\r\nb' }).friendlyName, 'a  b');
 });

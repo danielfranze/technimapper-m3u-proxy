@@ -1,20 +1,19 @@
-# TechniMapper: M3U Channel Mapper & M3U Proxy
-A lightweight abstraction proxy that stabilizes shifting TechniSat UPnP streams into a permanent, static M3U playlist tailored exclusively for Dispatcharr.
+# TechniMapper: HDHomeRun Tuner Emulation for TechniSat Receivers
+Turns the live TV channel list of a TechniSat receiver into a stable **HDHomeRun network tuner** for **Plex** and **Jellyfin**. The same channels are also available as an optional M3U playlist.
 
 ## The Problem: Stream Instability
-TechniSat receivers frequently change internal stream URLs and session parameters due to channel rescans, background updates, or reboots. Linking these raw URLs directly into IPTV tools like Dispatcharr causes constant breakage, as the streams become dead ends as soon as the receiver refreshes its internal state.
+TechniSat receivers frequently change internal stream URLs and session parameters due to channel rescans, background updates, or reboots. Linking these raw URLs directly into a media center causes constant breakage, as the streams become dead ends as soon as the receiver refreshes its internal state.
 
 ## The Solution: TechniMapper
 TechniMapper acts as an abstraction layer to ensure your configuration remains stable:
 
+* **HDHomeRun Emulation:** Plex and Jellyfin use TechniMapper directly as a network tuner below `/hdhr`, no M3U file needed (see [below](#hdhomerun-emulation-plex--jellyfin)). The tuner name is built automatically from the detected receiver, e.g. `TechniSat DIGIT ISIO STC`.
 * **Dynamic Synchronization:** A background cron engine crawls the receiver’s shifting UPnP structure to fetch the latest, valid stream URLs.
-* **Static Mapping:** Maps volatile URLs to permanent, custom Channel IDs defined via the Web UI.
+* **Static Mapping:** Maps volatile URLs to permanent, custom Channel IDs defined via the Web UI. The ID becomes the channel number.
 * **Automated List Fetching:** Selecting a different target channel list automatically triggers an immediate *Apply & Fetch* cycle.
-* **Smart Parsing:** One-click extraction automatically parses channel numbers from stream names.
-* **One-Click Copy & Toast Notifications:** Copy the live `/playlist.m3u` proxy URL to your clipboard with clean UI feedback.
-* **Persistent, Safe Playlist:** Provides a consistent M3U endpoint. If the receiver is unreachable (e.g. in standby), the **last known good playlist** keeps being served. While nothing is synced or mapped yet, the endpoint answers `503` instead of an empty list, so Dispatcharr never purges your channels by accident.
-* **HDHomeRun Emulation:** Plex and Jellyfin can use TechniMapper directly as a network tuner below `/hdhr`, without any M3U file (see [below](#hdhomerun-emulation-plex--jellyfin)).
-* **Built-in Safeguards:** Strict input validation, optional Basic Auth, health endpoint, non-root container, signed multi-arch images.
+* **Smart Parsing:** One-click extraction automatically parses channel numbers from channel names.
+* **Safe by Default:** If the receiver is unreachable (e.g. in standby), the **last known channel list** keeps being served. Strict input validation, optional Basic Auth, health endpoint, non-root container, signed multi-arch images.
+* **Optional M3U Playlist:** The same mapped channels are available at `/playlist.m3u` for players such as VLC (see [below](#optional-m3u-playlist)).
 
 ## Compatibility Note
 TechniMapper is specifically developed and tested for the TechniSat DIGIT ISIO STC.
@@ -25,10 +24,7 @@ TechniMapper is specifically developed and tested for the TechniSat DIGIT ISIO S
 
 *Note: Models not listed as supported may use different SOAP service structures which are not currently implemented.*
 
-## Targeted Integration
-This tool is **specifically built and optimized to be utilized exclusively in tandem with Dispatcharr**. It serves as the dedicated translation bridge, eliminating formatting mismatches and URL instability natively, feeding your TechniSat tuner streams reliably into your automated **Dispatcharr** pipeline.
-
-![TechniMapper: M3U Channel Mapper Web UI](assets/screenshot.png)
+![TechniMapper Web UI](assets/screenshot.png)
 
 ## Prerequisites
 
@@ -36,7 +32,7 @@ This tool is **specifically built and optimized to be utilized exclusively in ta
 
 The receiver must be reachable from the container via a **private IPv4 address** (10.x, 172.16–31.x, 192.168.x). For VPN/CGNAT setups set `ALLOW_NON_PRIVATE_IP=true`.
 
-![TechniMapper: M3U Channel Mapper Web UI](assets/screenshot_vlc.png)
+![TechniMapper streams played in VLC](assets/screenshot_vlc.png)
 
 ## Quick Start & Deployment
 
@@ -48,6 +44,9 @@ If you prefer a **bind mount** (e.g. `./data:/app/data`), the directory must be 
 mkdir -p data && chown -R 1000:1000 data
 ```
 
+### Which port?
+TechniMapper listens on port **9191** by default (`PORT`), and the examples publish it unchanged (`9191:9191`). The Web UI and all endpoints are then reachable at `http://<YOUR-SERVER-IP>:9191`. Enter the port you publish in Plex and Jellyfin. If you change `PORT`, change the port mapping and the address in your media center accordingly.
+
 ### Option A: Docker Compose (Recommended)
 
 ```yaml
@@ -56,12 +55,13 @@ services:
     image: ghcr.io/danielfranze/technimapper-m3u-proxy:latest
     container_name: technimapper-m3u-proxy
     ports:
-      - "3000:3000"
+      - "9191:9191"
     volumes:
       - technimapper-data:/app/data
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=Europe/Berlin
+      # - HDHR_FRIENDLY_NAME=Living Room
       # - ADMIN_USER=admin
       # - ADMIN_PASSWORD=change-me
     read_only: true
@@ -77,7 +77,7 @@ volumes:
   technimapper-data:
 ```
 
-`latest` always points to the newest stable release (pre-releases such as `1.7.0-rc.1` never move `latest`, `1` or `1.7`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:1.5.0`.
+`latest` always points to the newest stable release (pre-releases such as `1.7.0-rc.1` never move `latest`, `1` or `1.7`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:1.6.1`.
 
 The repository also ships a ready-to-use `docker-compose.yml` (builds locally with `build: .`).
 
@@ -90,7 +90,7 @@ The repository also ships a ready-to-use `docker-compose.yml` (builds locally wi
 ### Option C: Docker CLI
 ```bash
 docker run -d \
-  -p 3000:3000 \
+  -p 9191:9191 \
   --name technimapper-m3u-proxy \
   -v technimapper-data:/app/data \
   -v /etc/localtime:/etc/localtime:ro \
@@ -108,6 +108,9 @@ Your settings and mapping live in the volume and survive updates.
 
 Check the [CHANGELOG](CHANGELOG.md) for breaking changes before you update.
 
+### Upgrading from 1.6.x or older: new default port
+The server now listens on port **9191** by default (it was 3000), and the examples use `9191:9191`. If your stack still publishes `3000:3000` and you do not set `PORT`, the container is no longer reachable on that port after the update. Either change the mapping to `9191:9191` (and use `http://<server>:9191` from now on) or keep your old port by setting the environment variable `PORT=3000`.
+
 ### Upgrading from 1.3.x or older
 1. Stop the container.
 2. If you used a **single-file mount** (`./mapping.json:/app/data/mapping.json`), move the file into a directory: `mkdir -p data && mv mapping.json data/`.
@@ -119,20 +122,20 @@ Read the [CHANGELOG](CHANGELOG.md) for all breaking changes.
 
 ## Configuration
 
-Everything related to the receiver (IP, port, cron schedule, channel list, mapping) is configured in the Web UI at `http://<YOUR-SERVER-IP>:3000`. Runtime behavior is controlled via environment variables:
+Everything related to the receiver (IP, port, cron schedule, channel list, mapping) is configured in the Web UI at `http://<YOUR-SERVER-IP>:9191`. A sync interval of `*/5 * * * *` (the default) keeps the stream URLs fresh without stressing the receiver. Runtime behavior is controlled via environment variables:
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `3000` | HTTP port inside the container. |
+| `PORT` | `9191` | Port the server listens on (inside the container). Publish the same port (`9191:9191`); if you change it, adjust the mapping and the address in Plex/Jellyfin. |
 | `DATA_DIR` | `/app/data` | Directory for `mapping.json`. Must be writable. |
 | `REQUEST_TIMEOUT_MS` | `5000` | Idle timeout per UPnP request (hard deadline: 3×). |
 | `ALLOW_NON_PRIVATE_IP` | `false` | Allow receiver IPs outside RFC1918 (VPN/CGNAT). Loopback and link-local stay blocked. |
 | `ADMIN_USER` / `ADMIN_PASSWORD` | – | Enables HTTP Basic Auth for the UI and `/api/*`. Set both. |
 | `TRUST_PROXY` | – | Number of reverse-proxy hops (or `true`) so rate limiting sees real client IPs. |
 | `HDHR_ENABLED` | `true` | Set to `false` to switch off the HDHomeRun emulation below `/hdhr`. |
-| `HDHR_FRIENDLY_NAME` | `TechniSat HDHR Mapper` | Tuner name shown in Plex/Jellyfin. |
+| `HDHR_FRIENDLY_NAME` | `-` | Tuner name in Plex/Jellyfin. `-` (or empty) means automatic: `TechniSat <detected model>`, e.g. `TechniSat DIGIT ISIO STC` (just `TechniSat` until the first successful sync). Set your own name to override it. |
 | `HDHR_DEVICE_ID` | `12345678` | 8 hex digits. Must be unique per tuner in your network; change it if you run more than one instance. |
-| `HDHR_TUNER_COUNT` | `4` | Number of tuners reported to the client (1-16). Informational only, see limitations below. |
+| `HDHR_TUNER_COUNT` | `2` | Number of tuners reported to the client (1-16). Informational only, see limitations below. |
 | `LOG_LEVEL` | `info` | `error`, `warn` or `info`. |
 | `LOG_FORMAT` | `text` | `text` or `json` (one JSON object per line, for log collectors). |
 | `TZ` | – | Time zone of the container. |
@@ -141,9 +144,9 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 
 | Endpoint | Auth | Description |
 |---|---|---|
-| `GET /playlist.m3u` | public | The M3U playlist. `503` + `Retry-After` while nothing is synced/mapped. |
-| `GET /health` | public | Liveness/status JSON (`ok` or `degraded`, last sync, last error). |
 | `GET /hdhr/discover.json`, `/hdhr/lineup_status.json`, `/hdhr/lineup.json`, `/hdhr/stream/:id` | public | HDHomeRun emulation, see below. |
+| `GET /playlist.m3u` | public | Optional M3U playlist. `503` + `Retry-After` while nothing is synced/mapped. |
+| `GET /health` | public | Liveness/status JSON (`ok` or `degraded`, last sync, last error). |
 | `GET /api/get-config` | Basic Auth¹ | Current settings, version, last sync, last error. |
 | `POST /api/fetch-channels` | Basic Auth¹ | Applies settings and syncs with the receiver. |
 | `POST /api/save-mapping` | Basic Auth¹ | Saves the channel-name → ID mapping. |
@@ -153,11 +156,11 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 
 ## HDHomeRun Emulation (Plex / Jellyfin)
 
-TechniMapper can present itself as an HDHomeRun network tuner. Plex and Jellyfin then read the channel list from the API instead of an M3U file. Which channels appear is decided by the same mapping as for the playlist: only channels with an ID are listed, and the ID becomes the channel number.
+TechniMapper presents itself as an HDHomeRun network tuner. Plex and Jellyfin read the channel list from the API. Which channels appear is decided by your mapping: only channels with an ID are listed, and the ID becomes the channel number.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /hdhr/discover.json` | Device description (name, tuner count, `BaseURL`, `LineupURL`). |
+| `GET /hdhr/discover.json` | Device description (name, tuner count, `BaseURL`, `LineupURL`). The name is `TechniSat <detected model>` unless you set `HDHR_FRIENDLY_NAME`. |
 | `GET /hdhr/lineup_status.json` | Tells the client that no scan is running. |
 | `GET /hdhr/lineup.json` | The channel list built from your mapping (`GuideNumber`, `GuideName`, `URL`). The leading number of the receiver's channel name is dropped (`001 Das Erste HD` becomes `Das Erste HD`). |
 | `GET /hdhr/stream/:id` | Answers with an HTTP 302 redirect to the receiver's stream URL, so the MPEG-TS stream flows directly from the receiver to the media center. |
@@ -165,7 +168,7 @@ TechniMapper can present itself as an HDHomeRun network tuner. Plex and Jellyfin
 
 The absolute URLs in the answers are built from the `Host` header of the request, so the emulation works with any port mapping.
 
-**Setup:** add the tuner by address in Plex (*Live TV & DVR*) or Jellyfin (*Live TV → Tuner devices → HDHomeRun*): `http://<server-ip>:<port>/hdhr`. After you change the mapping, refresh the channel list in the client.
+**Setup:** add the tuner by address in Plex (*Live TV & DVR*) or Jellyfin (*Live TV → Tuner devices → HDHomeRun*): `http://<server-ip>:9191/hdhr`. Check the address in a browser first: `http://<server-ip>:9191/hdhr/discover.json` must answer with JSON. After you change the mapping, refresh the channel list in the client.
 
 **Limitations**
 * No automatic discovery (SSDP/UDP): the tuner has to be added by address.
@@ -175,12 +178,16 @@ The absolute URLs in the answers are built from the `Host` header of the request
 * If two channels share the same ID, only the first one is listed.
 * Compatibility depends on the client version: whether it accepts an address with a path (`/hdhr`) and whether it follows the redirect for live streams is client behavior. This has not been verified against every Plex or Jellyfin version, so test your client first.
 
+## Optional M3U Playlist
+
+`http://<server-ip>:9191/playlist.m3u` serves the same mapped channels as an M3U playlist, for example for VLC or other IPTV players. Each entry carries `tvg-id`, `tvg-name` and `tvg-chno` (the channel ID). While nothing is synced or mapped yet, the endpoint answers `503` instead of an empty list, so clients that clean up missing channels never purge them by accident. The **Copy M3U URL** button in the Web UI copies this address.
+
 ## Security
 
 * TechniMapper is built for **trusted home/office networks**. **Do not expose it directly to the internet.**
 * Set `ADMIN_USER`/`ADMIN_PASSWORD` and run it behind a TLS-terminating reverse proxy (set `TRUST_PROXY`). Basic Auth over plain HTTP is not encrypted.
 * The web UI is self-contained: fonts and icons are bundled (`public/fonts/`), the browser makes no requests to external hosts.
-* `/playlist.m3u` and `/hdhr/*` are public on purpose (Dispatcharr, Plex, Jellyfin, container health checks) and expose your receiver's stream URLs. They are not covered by `ADMIN_USER`/`ADMIN_PASSWORD`.
+* `/hdhr/*` and `/playlist.m3u` are public on purpose (media centers, M3U clients, container health checks) and expose your receiver's stream URLs. They are not covered by `ADMIN_USER`/`ADMIN_PASSWORD`.
 * Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
 ### Supply chain
@@ -192,50 +199,14 @@ cosign verify ghcr.io/danielfranze/technimapper-m3u-proxy:latest \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
-## Dispatcharr Configuration
-
-### 1. M3U Account Settings
-Add a new M3U account in Dispatcharr using the playlist URL provided by your Mapper instance.
-
-* **URL:** `http://<YOUR-SERVER-IP>:3000/playlist.m3u`
-* **Account Type:** Standard
-* **Cron Expression:** A setting of `*/5 * * * *` is suggested to ensure regular checks for updates while maintaining receiver performance.
-
-![Dispatcharr M3U Configuration](assets/screenshot_dispatcahrr_config_m3u.png)
-
-#### 1.1 M3U Group & Auto-Sync Settings
-To fully automate your channel management, configure the Group settings within your M3U account. This ensures that Dispatcharr automatically adopts any channel changes detected by the Mapper.
-
-* **Auto Channel Sync:** Enable this for the "TechniSat" group. This allows Dispatcharr to automatically create or remove channels based on the current M3U list.
-* **Channel Numbering Mode:** Set this to *Provider*. Since the Mapper provides the `tvg-chno` attribute, Dispatcharr will automatically respect the channel numbering defined on your TechniSat receiver.
-* **Auto-sync orphan cleanup:** The *Always remove* setting is recommended to maintain a clean channel list by automatically purging streams that are no longer available on the receiver (e.g., following a channel rescan). TechniMapper never serves an empty playlist, so a temporarily unreachable receiver or an unmapped installation cannot trigger a mass deletion.
-
-![Dispatcharr M3U Configuration](assets/screenshot_dispatcahrr_config_m3u_groups.png)
-
-### 2. Stream Settings
-For best compatibility with TechniSat streams, configure your system-wide stream settings as follows:
-
-* **Default User Agent:** Set to `VLC`. This often helps with handshake issues on older receiver firmware.
-* **Default Stream Profile:** Use `Redirect`. This allows the receiver to push the stream directly to your player/client.
-* **Default Output Format:** `MPEG-TS` is the native format for DVB streams and provides the highest compatibility.
-* **M3U Hash Key:** Set this to `TVG-ID`. This ensures that Dispatcharr correctly tracks your channels based on the static IDs you defined in the Mapper UI.
-
-![Dispatcharr Stream Settings Configuration](assets/screenshot_dispatcahrr_config_stream_settings.png)
-
-### ℹ️ Pro-Tip:
-*Note: To keep your setup perfectly synchronized and prevent any "dead links," align your cron schedules to ensure the Mapper has updated data before Dispatcharr requests it:*
-
-* **TechniMapper Cron:** Set this to `*/5 * * * *` (every 5 minutes). This ensures the Mapper proactively fetches fresh stream URLs from your receiver and updates the playlist.
-* **Dispatcharr Cron:** Set this to `1-59/5 * * * *` (every 5 minutes, starting 1 minute past). This slight offset ensures that Dispatcharr always pulls the "freshly baked" playlist from your Mapper.
-
-By following this 5-minute sync cycle with a 1-minute offset, your Dispatcharr will always have the most current and valid stream URLs available.
-
 ## Troubleshooting
 
 | Symptom | Likely cause / fix |
 |---|---|
 | Container restarts in a loop (`Restarting (1)`), Portainer shows no IP/ports, log: *Data directory ... is not writable* | The bind-mounted data directory is owned by `root`. Run `chown -R 1000:1000 <data-dir>` or use a named volume (`technimapper-data:/app/data`). |
-| Plex/Jellyfin shows no channels | Only channels with an ID are listed. Check `http://<server>:<port>/hdhr/lineup.json` in the browser; an empty list `[]` means nothing is mapped yet. |
+| Plex does not find the tuner | Open `http://<server>:9191/hdhr/discover.json` in a browser first; it must answer with JSON. Make sure the published port matches the server port (`9191:9191` with the default `PORT`) and that you enter exactly this port in Plex. |
+| Plex/Jellyfin shows no channels | Only channels with an ID are listed. Check `http://<server>:9191/hdhr/lineup.json` in the browser; an empty list `[]` means nothing is mapped yet. |
+| The tuner name does not change | The name is `TechniSat <detected model>` until you set `HDHR_FRIENDLY_NAME`. The model is detected on the first successful sync; the client may cache the old name, so remove and re-add the tuner. |
 | `/playlist.m3u` returns `503` | No sync yet, or no channel has an ID. Click **Apply & Fetch**, then map channels and **Save**. |
 | *No TechniSat Live-TV containers found* | Wrong IP/port, receiver in standby/off, unsupported model, or no channel list configured on the receiver. |
 | *Invalid receiver IP* | Only private IPv4 addresses are allowed. Use `ALLOW_NON_PRIVATE_IP=true` for VPN/CGNAT. |
@@ -248,17 +219,18 @@ By following this 5-minute sync cycle with a 1-minute offset, your Dispatcharr w
 npm ci
 npm test          # unit tests (Node's built-in test runner)
 npm run check     # syntax check
-npm start         # http://localhost:3000
+npm start         # http://localhost:9191
 ```
 
 * `server.js` – HTTP API, scheduler and receiver sync
 * `lib/validation.js` – input validation (settings, mapping)
 * `lib/m3u.js` – playlist generation and sanitizing
+* `lib/hdhr.js` – HDHomeRun emulation (lineup, tuner name, host handling)
 * `test/` – unit tests
 * `public/index.html` – Web UI
 * `public/fonts/` – bundled fonts (Inter, Material Icons Outlined), see `NOTICE.md`
 
-CI (GitHub Actions) runs tests, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.6.0-rc1`) become pre-releases and do not move the `latest` image tag.
+CI (GitHub Actions) runs tests, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.7.0-rc.1`) become pre-releases and do not move the `latest` image tag.
 
 ## Third-party fonts
 

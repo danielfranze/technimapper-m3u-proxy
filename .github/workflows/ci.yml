@@ -49,17 +49,17 @@ jobs:
 
       - name: Smoke test (health, 503 without playlist, HDHomeRun endpoints)
         run: |
-          docker run -d --name tm -p 3000:3000 technimapper:ci
+          docker run -d --name tm -p 9191:9191 technimapper:ci
           for i in $(seq 1 30); do
-            curl -fsS http://127.0.0.1:3000/health >/dev/null 2>&1 && break
+            curl -fsS http://127.0.0.1:9191/health >/dev/null 2>&1 && break
             sleep 1
           done
-          curl -fsS http://127.0.0.1:3000/health | grep -q '"status"'
-          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/playlist.m3u)
+          curl -fsS http://127.0.0.1:9191/health | grep -q '"status"'
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9191/playlist.m3u)
           test "$code" = "503"
-          curl -fsS http://127.0.0.1:3000/hdhr/discover.json | grep -q '"BaseURL":"http://127.0.0.1:3000/hdhr"'
-          test "$(curl -fsS http://127.0.0.1:3000/hdhr/lineup.json)" = "[]"
-          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/hdhr/stream/1)
+          curl -fsS http://127.0.0.1:9191/hdhr/discover.json | grep -q '"BaseURL":"http://127.0.0.1:9191/hdhr"'
+          test "$(curl -fsS http://127.0.0.1:9191/hdhr/lineup.json)" = "[]"
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:9191/hdhr/stream/1)
           test "$code" = "404"
 
       - name: Show container logs on failure
