@@ -77,7 +77,7 @@ volumes:
   technimapper-data:
 ```
 
-`latest` always points to the newest stable release (pre-releases such as `1.7.0-rc.1` never move `latest`, `1` or `1.7`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:1.6.1`.
+`latest` always points to the newest stable release (pre-releases such as `1.8.0-rc.1` never move `latest`, `1` or `1.7`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:1.7.0`.
 
 The repository also ships a ready-to-use `docker-compose.yml` (builds locally with `build: .`).
 
@@ -168,7 +168,7 @@ TechniMapper presents itself as an HDHomeRun network tuner. Plex and Jellyfin re
 
 The absolute URLs in the answers are built from the `Host` header of the request, so the emulation works with any port mapping.
 
-**Setup:** add the tuner by address in Plex (*Live TV & DVR*) or Jellyfin (*Live TV → Tuner devices → HDHomeRun*): `http://<server-ip>:9191/hdhr`. Check the address in a browser first: `http://<server-ip>:9191/hdhr/discover.json` must answer with JSON. After you change the mapping, refresh the channel list in the client.
+**Setup:** add the tuner by address in Plex (*Live TV & DVR*) or Jellyfin (*Live TV → Tuner devices → HDHomeRun*): `http://<server-ip>:9191/hdhr`. Check the address in a browser first: `http://<server-ip>:9191/hdhr/discover.json` must answer with JSON. The copy button in the header of the Web UI copies this address (the default); its menu switches between the tuner address and the M3U playlist URL and remembers your choice. After you change the mapping, refresh the channel list in the client.
 
 **Limitations**
 * No automatic discovery (SSDP/UDP): the tuner has to be added by address.
@@ -180,7 +180,7 @@ The absolute URLs in the answers are built from the `Host` header of the request
 
 ## Optional M3U Playlist
 
-`http://<server-ip>:9191/playlist.m3u` serves the same mapped channels as an M3U playlist, for example for VLC or other IPTV players. Each entry carries `tvg-id`, `tvg-name` and `tvg-chno` (the channel ID). While nothing is synced or mapped yet, the endpoint answers `503` instead of an empty list, so clients that clean up missing channels never purge them by accident. The **Copy M3U URL** button in the Web UI copies this address.
+`http://<server-ip>:9191/playlist.m3u` serves the same mapped channels as an M3U playlist, for example for VLC or other IPTV players. Each entry carries `tvg-id`, `tvg-name` and `tvg-chno` (the channel ID). While nothing is synced or mapped yet, the endpoint answers `503` instead of an empty list, so clients that clean up missing channels never purge them by accident. The copy button in the header of the Web UI copies this address when you choose **M3U playlist** in its menu.
 
 ## Security
 
@@ -230,7 +230,7 @@ npm start         # http://localhost:9191
 * `public/index.html` – Web UI
 * `public/fonts/` – bundled fonts (Inter, Material Icons Outlined), see `NOTICE.md`
 
-CI (GitHub Actions) runs tests, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.7.0-rc.1`) become pre-releases and do not move the `latest` image tag.
+CI (GitHub Actions) runs tests, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
 
 ## Third-party fonts
 

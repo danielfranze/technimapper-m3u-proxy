@@ -3,6 +3,30 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.0]
+
+First stable release with the HDHomeRun emulation. It contains everything from the release candidates 1.7.0-rc.1 and 1.7.0-rc.2.
+
+### Breaking changes
+- The server now listens on port **9191** by default (was 3000). The Dockerfile (`EXPOSE`, health check), the compose file, the CI
+  smoke test and all examples use `9191:9191`. If your stack publishes `3000:3000` and does not set `PORT`, change the mapping to
+  `9191:9191` or set `PORT=3000`. The health checks follow `PORT`.
+
+### Added
+- HDHomeRun emulation below `/hdhr` for Plex and Jellyfin: `discover.json`, `lineup_status.json`, `lineup.json` (built from the
+  mapping) and `stream/:id`, which redirects (HTTP 302) to the receiver's stream URL. Public like the playlist; can be disabled with
+  `HDHR_ENABLED=false`. Settings: `HDHR_FRIENDLY_NAME`, `HDHR_DEVICE_ID`, `HDHR_TUNER_COUNT`.
+- The tuner is named after the detected receiver ("TechniSat DIGIT ISIO STC") unless `HDHR_FRIENDLY_NAME` is set; the default tuner
+  count is 2. The detected model is stored in `mapping.json`.
+- UI (header): the "Copy M3U URL" button is now a split button. The left part copies the selected URL, the menu on the right
+  switches between the HDHomeRun tuner address (default) and the M3U playlist URL, shows both addresses and remembers the choice.
+  Choosing an entry copies it right away. The menu works with the keyboard and offers only the M3U URL if `HDHR_ENABLED=false`.
+
+### Changed
+- Docs: Dispatcharr is no longer part of the documentation; Plex and Jellyfin are the documented clients. The `/playlist.m3u`
+  endpoint stays available for other M3U players.
+- `GET /api/get-config` also reports `hdhrEnabled`.
+
 ## [1.7.0-rc.2]
 
 Second release candidate with the changes after the first Plex tests. It does not move the `latest` image tag; use the exact tag `1.7.0-rc.2` to try it.

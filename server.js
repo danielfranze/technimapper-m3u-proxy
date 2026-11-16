@@ -569,7 +569,8 @@ app.get('/api/get-config', (req, res) => {
         selectedListName: appConfig.selectedListName,
         lastSync: appConfig.lastSync,
         lastError: syncStatus.lastError,
-        consecutiveFailures: syncStatus.consecutiveFailures
+        consecutiveFailures: syncStatus.consecutiveFailures,
+        hdhrEnabled: hdhrConfig.enabled
     });
 });
 

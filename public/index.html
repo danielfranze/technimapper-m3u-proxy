@@ -208,8 +208,48 @@
 
     /* Progressive shortening when the header is too narrow (set by fitHeaderMeta) */
     .header-meta.hide-url .copy-url,
-    .header-meta.hide-m3u .copy-m3u,
+    .header-meta.hide-source .copy-source,
     .header-meta.hide-label .sync-label { display: none; }
+
+    /* Split button: copy the selected URL (left), choose the source in a menu (right) */
+    .split-btn { position: relative; display: inline-flex; }
+    .split-btn .split-main { border-top-right-radius: 0; border-bottom-right-radius: 0; padding: 0 7px 0 9px; }
+    .split-btn .split-toggle {
+        width: 24px; padding: 0; justify-content: center; margin-left: -1px;
+        border-top-left-radius: 0; border-bottom-left-radius: 0;
+    }
+    .split-btn .split-toggle:hover, .split-btn .split-main:hover { z-index: 1; }
+    .split-btn .split-toggle[aria-expanded="true"] { background: #333; color: #fff; border-color: #444; }
+    .split-btn .btn-subtle:focus-visible, .split-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .split-menu {
+        position: absolute; right: 0; top: calc(100% + 8px); z-index: 50;
+        min-width: 280px; max-width: calc(100vw - 24px); box-sizing: border-box;
+        background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+        padding: 6px; text-align: left; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+        animation: splitMenuIn 0.12s ease-out;
+    }
+    @keyframes splitMenuIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .split-menu { animation: none; } }
+    .split-menu-title {
+        padding: 8px 10px 6px; font-size: 0.62rem; font-weight: 600;
+        letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+    }
+    .split-item {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        width: 100%; padding: 8px 10px; box-sizing: border-box;
+        background: transparent; border: 0; border-radius: 8px; cursor: pointer;
+        color: var(--text-main); font: inherit; text-align: left;
+    }
+    .split-item:hover { background: var(--bg-input); }
+    .split-item-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .split-item-name { font-size: 0.8rem; font-weight: 500; }
+    .split-item-url {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.66rem;
+        color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .split-check { font-size: 18px; color: var(--accent); visibility: hidden; flex: none; }
+    .split-item[aria-checked="true"] .split-check { visibility: visible; }
 
     .badge {
         font-size: 0.72rem;
@@ -703,9 +743,31 @@
             <span class="material-icons-outlined" style="font-size: 15px;">sync</span>
             <span class="sync-label">Last sync:</span> <span id="last-sync-time">Loading...</span>
         </div>
-        <button class="btn-subtle" onclick="copyM3uLink()" title="Copy playlist URL" aria-label="Copy playlist URL">
-            <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> <span class="copy-label">Copy<span class="copy-m3u"> M3U</span><span class="copy-url"> URL</span></span>
-        </button>
+        <div class="split-btn" id="copySplit">
+            <button type="button" class="btn-subtle split-main" id="copyMain" onclick="copySelectedUrl()" title="Copy the HDHomeRun tuner address (Plex / Jellyfin)" aria-label="Copy the HDHomeRun tuner address (Plex / Jellyfin)">
+                <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> <span class="copy-label">Copy<span class="copy-source"> HDHR</span><span class="copy-url"> URL</span></span>
+            </button>
+            <button type="button" class="btn-subtle split-toggle" id="copyToggle" aria-haspopup="menu" aria-expanded="false" aria-controls="copyMenu" title="Choose which URL to copy" aria-label="Choose which URL to copy">
+                <span class="material-icons-outlined" style="font-size: 18px;">expand_more</span>
+            </button>
+            <div class="split-menu" id="copyMenu" role="menu" aria-label="URL to copy" hidden>
+                <div class="split-menu-title" role="presentation">Select URL source</div>
+                <button type="button" class="split-item" role="menuitemradio" aria-checked="true" data-source="hdhr">
+                    <span class="split-item-text">
+                        <span class="split-item-name">HDHomeRun (Plex / Jellyfin)</span>
+                        <span class="split-item-url" data-url-for="hdhr"></span>
+                    </span>
+                    <span class="material-icons-outlined split-check" aria-hidden="true">check</span>
+                </button>
+                <button type="button" class="split-item" role="menuitemradio" aria-checked="false" data-source="m3u">
+                    <span class="split-item-text">
+                        <span class="split-item-name">M3U playlist</span>
+                        <span class="split-item-url" data-url-for="m3u"></span>
+                    </span>
+                    <span class="material-icons-outlined split-check" aria-hidden="true">check</span>
+                </button>
+            </div>
+        </div>
     </div>
 </header>
 
@@ -1038,11 +1100,33 @@
     /**
      * Automatically copies the generated M3U proxy stream endpoint URL to the system clipboard.
      */
-    function copyM3uLink() {
-        const m3uUrl = BACKEND_URL + '/playlist.m3u';
+    // ---- Copy button with a source menu (HDHomeRun tuner address or M3U playlist URL) ----
+    const COPY_SOURCES = {
+        hdhr: { label: 'HDHR', path: '/hdhr', done: 'HDHomeRun address copied to clipboard!', tip: 'Copy the HDHomeRun tuner address (Plex / Jellyfin)' },
+        m3u: { label: 'M3U', path: '/playlist.m3u', done: 'M3U URL copied to clipboard!', tip: 'Copy the M3U playlist URL' }
+    };
+    const COPY_SOURCE_KEY = 'technimapper.copySource';
+    let hdhrEnabled = true;
+
+    /** The remembered choice (browser storage may be unavailable); the tuner address is the default. */
+    function loadCopySource() {
+        try {
+            const stored = localStorage.getItem(COPY_SOURCE_KEY);
+            if (stored === 'hdhr' || stored === 'm3u') return stored;
+        } catch (e) { /* storage unavailable */ }
+        return 'hdhr';
+    }
+    let copySource = loadCopySource();
+
+    function copyUrlFor(source) {
+        return BACKEND_URL + COPY_SOURCES[source].path;
+    }
+
+    /** Copies text; falls back to a hidden textarea on plain-HTTP origins where the Clipboard API is unavailable. */
+    function copyText(text, doneMessage) {
         const fallback = () => {
             const ta = document.createElement('textarea');
-            ta.value = m3uUrl;
+            ta.value = text;
             ta.style.position = 'fixed';
             ta.style.opacity = '0';
             document.body.appendChild(ta);
@@ -1050,16 +1134,109 @@
             let ok = false;
             try { ok = document.execCommand('copy'); } catch (e) {}
             ta.remove();
-            showToast(ok ? 'M3U URL copied to clipboard!' : 'Failed to copy URL', ok ? 'success' : 'error');
+            showToast(ok ? doneMessage : 'Failed to copy URL', ok ? 'success' : 'error');
         };
         if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(m3uUrl)
-                .then(() => showToast('M3U URL copied to clipboard!'))
-                .catch(fallback);
+            navigator.clipboard.writeText(text).then(() => showToast(doneMessage)).catch(fallback);
         } else {
             fallback();
         }
     }
+
+    function copySelectedUrl() {
+        copyText(copyUrlFor(copySource), COPY_SOURCES[copySource].done);
+    }
+
+    function copyMenuItems() {
+        return [...document.querySelectorAll('#copyMenu .split-item')].filter(item => !item.hidden);
+    }
+
+    /** Updates label, tooltips, check mark and URL previews of the copy button and its menu. */
+    function renderCopyButton() {
+        const main = document.getElementById('copyMain');
+        if (!main) return;
+        if (!hdhrEnabled && copySource === 'hdhr') copySource = 'm3u';
+        const source = COPY_SOURCES[copySource];
+        main.querySelector('.copy-source').textContent = ' ' + source.label;
+        main.title = source.tip;
+        main.setAttribute('aria-label', source.tip);
+        document.querySelectorAll('#copyMenu .split-item').forEach(item => {
+            const key = item.dataset.source;
+            item.hidden = key === 'hdhr' && !hdhrEnabled;
+            item.setAttribute('aria-checked', key === copySource ? 'true' : 'false');
+            item.querySelector('.split-item-url').textContent = copyUrlFor(key);
+        });
+        fitHeaderMeta();
+    }
+
+    function openCopyMenu() {
+        const menu = document.getElementById('copyMenu');
+        menu.hidden = false;
+        document.getElementById('copyToggle').setAttribute('aria-expanded', 'true');
+        menu.style.right = '';
+        const rect = menu.getBoundingClientRect();
+        if (rect.left < 8) menu.style.right = (rect.left - 8) + 'px';      // keep the menu inside the screen
+        const items = copyMenuItems();
+        const current = items.find(item => item.getAttribute('aria-checked') === 'true') || items[0];
+        if (current) current.focus();
+    }
+
+    function closeCopyMenu(returnFocus) {
+        const menu = document.getElementById('copyMenu');
+        if (!menu || menu.hidden) return;
+        menu.hidden = true;
+        const toggle = document.getElementById('copyToggle');
+        toggle.setAttribute('aria-expanded', 'false');
+        if (returnFocus) toggle.focus();
+    }
+
+    function toggleCopyMenu() {
+        if (document.getElementById('copyMenu').hidden) openCopyMenu();
+        else closeCopyMenu(true);
+    }
+
+    /** Choosing an entry makes it the default for the main button and copies it right away. */
+    function chooseCopySource(source) {
+        if (!COPY_SOURCES[source] || (source === 'hdhr' && !hdhrEnabled)) return;
+        copySource = source;
+        try { localStorage.setItem(COPY_SOURCE_KEY, source); } catch (e) { /* storage unavailable */ }
+        renderCopyButton();
+        closeCopyMenu(true);
+        copySelectedUrl();
+    }
+
+    (function initCopyMenu() {
+        const split = document.getElementById('copySplit');
+        if (!split) return;
+        document.getElementById('copyToggle').addEventListener('click', toggleCopyMenu);
+        split.querySelectorAll('.split-item').forEach(item => {
+            item.addEventListener('click', () => chooseCopySource(item.dataset.source));
+        });
+        document.addEventListener('click', (event) => {
+            if (!split.contains(event.target)) closeCopyMenu(false);
+        });
+        split.addEventListener('keydown', (event) => {
+            const menu = document.getElementById('copyMenu');
+            if (event.key === 'Escape' && !menu.hidden) {
+                event.preventDefault();
+                closeCopyMenu(true);
+            } else if (event.target.id === 'copyToggle' && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+                event.preventDefault();
+                if (menu.hidden) openCopyMenu();
+            } else if (!menu.hidden && event.target.classList.contains('split-item')) {
+                const items = copyMenuItems();
+                const i = items.indexOf(event.target);
+                const move = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[event.key];
+                if (move !== undefined) {
+                    event.preventDefault();
+                    items[move].focus();
+                } else if (event.key === 'Tab') {
+                    closeCopyMenu(false);
+                }
+            }
+        });
+        renderCopyButton();
+    })();
 
     /**
      * Updates the receiver device detection status badge styling and text across both 
@@ -1116,17 +1293,17 @@
 
     /**
      * Header: keep "Last sync" and "Copy M3U URL" on one line. Shortens step by step, only as far as needed:
-     * drop " URL", then " M3U", then the "Last sync:" label. A step is enough once both items share a row
+     * drop " URL", then the source word (" HDHR"/" M3U"), then the "Last sync:" label. A step is enough once both items share a row
      * and the gap between them is not smaller than the normal gap of the header.
      */
     function fitHeaderMeta() {
         const meta = document.querySelector('.header-meta');
         const sync = document.getElementById('syncBadge');
-        const copy = meta ? meta.querySelector('button') : null;
+        const copy = meta ? meta.querySelector('.split-btn') : null;
         if (!meta || !sync || !copy) return;
 
         const minGap = parseFloat(getComputedStyle(meta).columnGap) || 0;
-        const steps = ['hide-url', 'hide-m3u', 'hide-label'];
+        const steps = ['hide-url', 'hide-source', 'hide-label'];
         meta.classList.remove(...steps);
         for (let i = 0; i <= steps.length; i++) {
             if (i > 0) meta.classList.add(steps[i - 1]);
@@ -1190,6 +1367,10 @@
             if (versionEl && config.version) {
                 versionEl.textContent = 'v' + config.version;
                 fitVersionBadge();
+            }
+            if (typeof config.hdhrEnabled === 'boolean') {
+                hdhrEnabled = config.hdhrEnabled;
+                renderCopyButton();
             }
             setValue('receiverIp', config.ip);
             setValue('receiverPort', config.port);
