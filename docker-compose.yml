@@ -16,7 +16,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
     environment:
       - TZ=Europe/Berlin
-      # Optional: protect UI and /api (/playlist.m3u and /health stay public)
+      # Optional: protect UI and /api (/playlist.m3u8, /hdhr and /health stay public)
       # - ADMIN_USER=admin
       # - ADMIN_PASSWORD=change-me
       # Optional: allow receiver IPs outside RFC1918 (VPN/CGNAT)

@@ -7,8 +7,8 @@
      Global Document Head & Metadata
      Architecture: Enterprise Web Standards
      ========================================================================== -->
-<title>TechniMapper: M3U Proxy & Channel Mapping Dashboard</title>
-<meta name="description" content="Maps volatile TechniSat UPnP stream URLs to stable channel IDs and serves them as an M3U playlist.">
+<title>TechniMapper: M3U8 Proxy & Channel Mapping Dashboard</title>
+<meta name="description" content="Maps volatile TechniSat UPnP stream URLs to stable channel IDs and serves them as an M3U8 playlist.">
 <meta name="author" content="Daniel Franze">
 <meta name="robots" content="noindex, nofollow">
 <meta name="application-name" content="TechniMapper">
@@ -208,7 +208,7 @@
 
     /* Progressive shortening when the header is too narrow (set by fitHeaderMeta) */
     .header-meta.hide-url .copy-url,
-    .header-meta.hide-source .copy-source,
+    .header-meta.hide-word .copy-word,
     .header-meta.hide-label .sync-label { display: none; }
 
     /* Split button: copy the selected URL (left), choose the source in a menu (right) */
@@ -220,9 +220,9 @@
     }
     .split-btn .split-toggle:hover, .split-btn .split-main:hover { z-index: 1; }
     .split-btn .split-toggle[aria-expanded="true"] { background: #333; color: #fff; border-color: #444; }
-    .split-btn .btn-subtle:focus-visible, .split-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .split-btn .btn-subtle:focus-visible, .dd-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-    .split-menu {
+    .dd-menu {
         position: absolute; right: 0; top: calc(100% + 8px); z-index: 50;
         min-width: 280px; max-width: calc(100vw - 24px); box-sizing: border-box;
         background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
@@ -230,26 +230,28 @@
         animation: splitMenuIn 0.12s ease-out;
     }
     @keyframes splitMenuIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-    @media (prefers-reduced-motion: reduce) { .split-menu { animation: none; } }
-    .split-menu-title {
+    @media (prefers-reduced-motion: reduce) { .dd-menu { animation: none; } }
+    .dd-title {
         padding: 8px 10px 6px; font-size: 0.62rem; font-weight: 600;
         letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
     }
-    .split-item {
+    .dd-item {
         display: flex; align-items: center; justify-content: space-between; gap: 12px;
         width: 100%; padding: 8px 10px; box-sizing: border-box;
         background: transparent; border: 0; border-radius: 8px; cursor: pointer;
         color: var(--text-main); font: inherit; text-align: left;
     }
-    .split-item:hover { background: var(--bg-input); }
-    .split-item-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-    .split-item-name { font-size: 0.8rem; font-weight: 500; }
-    .split-item-url {
+    .dd-item:hover { background: var(--bg-input); }
+    .dd-item-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .dd-item-name { font-size: 0.8rem; font-weight: 500; }
+    .dd-item-url {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.66rem;
         color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .split-check { font-size: 18px; color: var(--accent); visibility: hidden; flex: none; }
-    .split-item[aria-checked="true"] .split-check { visibility: visible; }
+    .dd-check { font-size: 18px; color: var(--accent); visibility: hidden; flex: none; }
+    .dd-menu-list { left: 0; right: 0; min-width: 0; max-height: 50vh; overflow-y: auto; }
+    .dd-item[aria-checked="true"] .dd-check,
+    .dd-item[aria-selected="true"] .dd-check { visibility: visible; }
 
     .badge {
         font-size: 0.72rem;
@@ -331,6 +333,27 @@
         color: white; box-sizing: border-box; outline: none; transition: border-color 0.2s;
     }
     .config-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+
+    /* Custom dropdown for the channel list: replaces the native <select> so it looks the same in every browser */
+    .input-group { min-width: 0; }
+    .dd { position: relative; height: 30px; min-width: 0; }
+    .dd-trigger {
+        position: relative; display: flex; align-items: center; width: 100%; height: 30px;
+        padding: 0 30px; box-sizing: border-box; text-align: left; cursor: pointer;
+        border: 1px solid var(--border); border-radius: 15px; background: var(--bg-input);
+        color: white; font-family: inherit; font-size: 0.78rem; transition: border-color 0.2s;
+    }
+    .dd-trigger:hover { border-color: #444; }
+    .dd-trigger:focus-visible, .dd-trigger[aria-expanded="true"] {
+        border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); outline: none;
+    }
+    .dd-trigger-icon, .dd-trigger-chevron {
+        position: absolute; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none;
+    }
+    .dd-trigger-icon { left: 8px; font-size: 16px; }
+    .dd-trigger-chevron { right: 6px; font-size: 18px; }
+    .dd-trigger[aria-expanded="true"] .dd-trigger-chevron { transform: translateY(-50%) rotate(180deg); }
+    .dd-trigger-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .form-actions {
         display: flex;
@@ -735,7 +758,7 @@
 <header>
     <h1>
         <span class="header-logo"><span class="material-icons-outlined">settings_input_antenna</span></span>
-        <span class="brand-text"><span class="brand-title">TechniMapper</span> <span class="brand-subtitle">M3U Proxy</span></span>
+        <span class="brand-text"><span class="brand-title">TechniMapper</span> <span class="brand-subtitle">M3U8 Proxy</span></span>
         <span class="badge" id="versionLabel">v&hellip;</span>
     </h1>
     <div class="header-meta">
@@ -745,26 +768,26 @@
         </div>
         <div class="split-btn" id="copySplit">
             <button type="button" class="btn-subtle split-main" id="copyMain" onclick="copySelectedUrl()" title="Copy the HDHomeRun tuner address (Plex / Jellyfin)" aria-label="Copy the HDHomeRun tuner address (Plex / Jellyfin)">
-                <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> <span class="copy-label">Copy<span class="copy-source"> HDHR</span><span class="copy-url"> URL</span></span>
+                <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> <span class="copy-label"><span class="copy-word">Copy</span><span class="copy-source"> HDHR</span><span class="copy-url"> URL</span></span>
             </button>
             <button type="button" class="btn-subtle split-toggle" id="copyToggle" aria-haspopup="menu" aria-expanded="false" aria-controls="copyMenu" title="Choose which URL to copy" aria-label="Choose which URL to copy">
                 <span class="material-icons-outlined" style="font-size: 18px;">expand_more</span>
             </button>
-            <div class="split-menu" id="copyMenu" role="menu" aria-label="URL to copy" hidden>
-                <div class="split-menu-title" role="presentation">Select URL source</div>
-                <button type="button" class="split-item" role="menuitemradio" aria-checked="true" data-source="hdhr">
-                    <span class="split-item-text">
-                        <span class="split-item-name">HDHomeRun (Plex / Jellyfin)</span>
-                        <span class="split-item-url" data-url-for="hdhr"></span>
+            <div class="dd-menu" id="copyMenu" role="menu" aria-label="URL to copy" hidden>
+                <div class="dd-title" role="presentation">Select URL source</div>
+                <button type="button" class="dd-item" role="menuitemradio" aria-checked="true" data-source="hdhr">
+                    <span class="dd-item-text">
+                        <span class="dd-item-name">HDHomeRun (Plex / Jellyfin)</span>
+                        <span class="dd-item-url" data-url-for="hdhr"></span>
                     </span>
-                    <span class="material-icons-outlined split-check" aria-hidden="true">check</span>
+                    <span class="material-icons-outlined dd-check" aria-hidden="true">check</span>
                 </button>
-                <button type="button" class="split-item" role="menuitemradio" aria-checked="false" data-source="m3u">
-                    <span class="split-item-text">
-                        <span class="split-item-name">M3U playlist</span>
-                        <span class="split-item-url" data-url-for="m3u"></span>
+                <button type="button" class="dd-item" role="menuitemradio" aria-checked="false" data-source="m3u8">
+                    <span class="dd-item-text">
+                        <span class="dd-item-name">M3U8 playlist</span>
+                        <span class="dd-item-url" data-url-for="m3u8"></span>
                     </span>
-                    <span class="material-icons-outlined split-check" aria-hidden="true">check</span>
+                    <span class="material-icons-outlined dd-check" aria-hidden="true">check</span>
                 </button>
             </div>
         </div>
@@ -832,10 +855,17 @@
                 </div>
             </div>
             <div class="input-group">
-                <label for="selectedListName">Target Channel List</label>
-                <div class="input-wrapper">
-                    <span class="material-icons-outlined">list</span>
-                    <select id="selectedListName" class="config-input" style="padding-left: 30px; appearance: none;" onchange="fetchChannels()">
+                <label id="listLabel" for="listToggle">Target Channel List</label>
+                <div class="dd" id="listDropdown">
+                    <button type="button" class="dd-trigger" id="listToggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="listMenu" aria-labelledby="listLabel listCurrent">
+                        <span class="material-icons-outlined dd-trigger-icon" aria-hidden="true">list</span>
+                        <span class="dd-trigger-text" id="listCurrent">TV-Liste</span>
+                        <span class="material-icons-outlined dd-trigger-chevron" aria-hidden="true">expand_more</span>
+                    </button>
+                    <div class="dd-menu dd-menu-list" id="listMenu" role="listbox" aria-labelledby="listLabel" hidden>
+                        <div class="dd-title" role="presentation">Select channel list</div>
+                    </div>
+                    <select id="selectedListName" hidden tabindex="-1" aria-hidden="true">
                         <option value="TV-Liste">TV-Liste</option>
                     </select>
                 </div>
@@ -1098,12 +1128,12 @@
     }
 
     /**
-     * Automatically copies the generated M3U proxy stream endpoint URL to the system clipboard.
+     * Copy button: copies the HDHomeRun tuner address or the M3U8 playlist URL to the clipboard.
      */
-    // ---- Copy button with a source menu (HDHomeRun tuner address or M3U playlist URL) ----
+    // ---- Copy button with a source menu (HDHomeRun tuner address or M3U8 playlist URL) ----
     const COPY_SOURCES = {
         hdhr: { label: 'HDHR', path: '/hdhr', done: 'HDHomeRun address copied to clipboard!', tip: 'Copy the HDHomeRun tuner address (Plex / Jellyfin)' },
-        m3u: { label: 'M3U', path: '/playlist.m3u', done: 'M3U URL copied to clipboard!', tip: 'Copy the M3U playlist URL' }
+        m3u8: { label: 'M3U8', path: '/playlist.m3u8', done: 'M3U8 URL copied to clipboard!', tip: 'Copy the M3U8 playlist URL' }
     };
     const COPY_SOURCE_KEY = 'technimapper.copySource';
     let hdhrEnabled = true;
@@ -1112,7 +1142,8 @@
     function loadCopySource() {
         try {
             const stored = localStorage.getItem(COPY_SOURCE_KEY);
-            if (stored === 'hdhr' || stored === 'm3u') return stored;
+            if (stored === 'hdhr' || stored === 'm3u8') return stored;
+            if (stored === 'm3u') return 'm3u8';      // value saved by earlier versions
         } catch (e) { /* storage unavailable */ }
         return 'hdhr';
     }
@@ -1148,23 +1179,23 @@
     }
 
     function copyMenuItems() {
-        return [...document.querySelectorAll('#copyMenu .split-item')].filter(item => !item.hidden);
+        return [...document.querySelectorAll('#copyMenu .dd-item')].filter(item => !item.hidden);
     }
 
     /** Updates label, tooltips, check mark and URL previews of the copy button and its menu. */
     function renderCopyButton() {
         const main = document.getElementById('copyMain');
         if (!main) return;
-        if (!hdhrEnabled && copySource === 'hdhr') copySource = 'm3u';
+        if (!hdhrEnabled && copySource === 'hdhr') copySource = 'm3u8';
         const source = COPY_SOURCES[copySource];
         main.querySelector('.copy-source').textContent = ' ' + source.label;
         main.title = source.tip;
         main.setAttribute('aria-label', source.tip);
-        document.querySelectorAll('#copyMenu .split-item').forEach(item => {
+        document.querySelectorAll('#copyMenu .dd-item').forEach(item => {
             const key = item.dataset.source;
             item.hidden = key === 'hdhr' && !hdhrEnabled;
             item.setAttribute('aria-checked', key === copySource ? 'true' : 'false');
-            item.querySelector('.split-item-url').textContent = copyUrlFor(key);
+            item.querySelector('.dd-item-url').textContent = copyUrlFor(key);
         });
         fitHeaderMeta();
     }
@@ -1205,11 +1236,137 @@
         copySelectedUrl();
     }
 
+    // ---- Target channel list dropdown ----
+    // The hidden <select id="selectedListName"> stays the single source of truth (read by "Apply & Fetch");
+    // the visible dropdown mirrors it so it looks identical in every browser.
+    function listSelect() { return document.getElementById('selectedListName'); }
+    function getSelectedList() { return listSelect().value; }
+    function listMenuItems() { return [...document.querySelectorAll('#listMenu .dd-item')]; }
+
+    function renderListDropdown() {
+        const select = listSelect();
+        const menu = document.getElementById('listMenu');
+        document.getElementById('listCurrent').textContent = select.value;
+        menu.querySelectorAll('.dd-item').forEach(item => item.remove());
+        [...select.options].forEach(option => {
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'dd-item';
+            item.setAttribute('role', 'option');
+            item.setAttribute('aria-selected', option.value === select.value ? 'true' : 'false');
+            item.dataset.value = option.value;
+            const name = document.createElement('span');
+            name.className = 'dd-item-name';
+            name.textContent = option.value;
+            const check = document.createElement('span');
+            check.className = 'material-icons-outlined dd-check';
+            check.setAttribute('aria-hidden', 'true');
+            check.textContent = 'check';
+            item.append(name, check);
+            menu.appendChild(item);
+        });
+    }
+
+    /** Replaces the available lists and selects one (falls back to the first list). */
+    function setListOptions(names, selected) {
+        const select = listSelect();
+        const list = names && names.length > 0 ? names : [selected];
+        select.replaceChildren(...list.map(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            return option;
+        }));
+        select.value = list.includes(selected) ? selected : list[0];
+        renderListDropdown();
+    }
+
+    function setSelectedList(name) {
+        const select = listSelect();
+        if ([...select.options].some(option => option.value === name)) select.value = name;
+        renderListDropdown();
+    }
+
+    function openListMenu() {
+        document.getElementById('listMenu').hidden = false;
+        document.getElementById('listToggle').setAttribute('aria-expanded', 'true');
+        const items = listMenuItems();
+        const current = items.find(item => item.getAttribute('aria-selected') === 'true') || items[0];
+        if (current) current.focus();
+    }
+
+    function closeListMenu(returnFocus) {
+        const menu = document.getElementById('listMenu');
+        if (!menu || menu.hidden) return;
+        menu.hidden = true;
+        const toggle = document.getElementById('listToggle');
+        toggle.setAttribute('aria-expanded', 'false');
+        if (returnFocus) toggle.focus();
+    }
+
+    /** Picking another list behaves like the former native "change": it starts "Apply & Fetch". */
+    function chooseList(name) {
+        const changed = name !== getSelectedList();
+        closeListMenu(true);
+        if (!changed) return;
+        setSelectedList(name);
+        fetchChannels();
+    }
+
+    (function initListDropdown() {
+        const root = document.getElementById('listDropdown');
+        if (!root) return;
+        const menu = document.getElementById('listMenu');
+        let typed = '';
+        let typedTimer = null;
+
+        document.getElementById('listToggle').addEventListener('click', () => {
+            if (menu.hidden) openListMenu();
+            else closeListMenu(true);
+        });
+        menu.addEventListener('click', (event) => {
+            const item = event.target.closest('.dd-item');
+            if (item) chooseList(item.dataset.value);
+        });
+        document.addEventListener('click', (event) => {
+            if (!root.contains(event.target)) closeListMenu(false);
+        });
+        root.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !menu.hidden) {
+                event.preventDefault();
+                closeListMenu(true);
+            } else if (event.target.id === 'listToggle' && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+                event.preventDefault();
+                if (menu.hidden) openListMenu();
+            } else if (!menu.hidden && event.target.classList.contains('dd-item')) {
+                const items = listMenuItems();
+                const i = items.indexOf(event.target);
+                const move = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[event.key];
+                if (move !== undefined) {
+                    event.preventDefault();
+                    items[move].focus();
+                } else if (event.key === 'Tab') {
+                    closeListMenu(false);
+                } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && event.key !== ' ') {
+                    // type-ahead: jump to the next list that starts with the typed letters
+                    clearTimeout(typedTimer);
+                    typed += event.key.toLowerCase();
+                    typedTimer = setTimeout(() => { typed = ''; }, 600);
+                    const start = typed.length === 1 ? i + 1 : i;
+                    const ordered = [...items.slice(start), ...items.slice(0, start)];
+                    const match = ordered.find(item => item.dataset.value.toLowerCase().startsWith(typed));
+                    if (match) match.focus();
+                }
+            }
+        });
+        renderListDropdown();
+    })();
+
     (function initCopyMenu() {
         const split = document.getElementById('copySplit');
         if (!split) return;
         document.getElementById('copyToggle').addEventListener('click', toggleCopyMenu);
-        split.querySelectorAll('.split-item').forEach(item => {
+        split.querySelectorAll('.dd-item').forEach(item => {
             item.addEventListener('click', () => chooseCopySource(item.dataset.source));
         });
         document.addEventListener('click', (event) => {
@@ -1223,7 +1380,7 @@
             } else if (event.target.id === 'copyToggle' && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
                 event.preventDefault();
                 if (menu.hidden) openCopyMenu();
-            } else if (!menu.hidden && event.target.classList.contains('split-item')) {
+            } else if (!menu.hidden && event.target.classList.contains('dd-item')) {
                 const items = copyMenuItems();
                 const i = items.indexOf(event.target);
                 const move = { ArrowDown: (i + 1) % items.length, ArrowUp: (i - 1 + items.length) % items.length, Home: 0, End: items.length - 1 }[event.key];
@@ -1292,8 +1449,8 @@
     }
 
     /**
-     * Header: keep "Last sync" and "Copy M3U URL" on one line. Shortens step by step, only as far as needed:
-     * drop " URL", then the source word (" HDHR"/" M3U"), then the "Last sync:" label. A step is enough once both items share a row
+     * Header: keep "Last sync" and "Copy M3U8 URL" on one line. Shortens step by step, only as far as needed:
+     * drop " URL", then the word "Copy" (the source word HDHR/M3U8 stays), then the "Last sync:" label. A step is enough once both items share a row
      * and the gap between them is not smaller than the normal gap of the header.
      */
     function fitHeaderMeta() {
@@ -1303,7 +1460,7 @@
         if (!meta || !sync || !copy) return;
 
         const minGap = parseFloat(getComputedStyle(meta).columnGap) || 0;
-        const steps = ['hide-url', 'hide-source', 'hide-label'];
+        const steps = ['hide-url', 'hide-word', 'hide-label'];
         meta.classList.remove(...steps);
         for (let i = 0; i <= steps.length; i++) {
             if (i > 0) meta.classList.add(steps[i - 1]);
@@ -1378,12 +1535,7 @@
 
             if (config.selectedListName) {
                 activeListName = config.selectedListName;
-                const select = document.getElementById('selectedListName');
-                select.replaceChildren();
-                const opt = document.createElement('option');
-                opt.value = config.selectedListName;
-                opt.textContent = config.selectedListName;
-                select.appendChild(opt);
+                setListOptions([config.selectedListName], config.selectedListName);
             }
         } catch (e) { console.error('Initial config load failed', e); }
     }
@@ -1441,7 +1593,7 @@
         if (isDirty()) {
             const choice = await askUnsaved('fetch');
             if (choice === 'cancel') {
-                if (activeListName) document.getElementById('selectedListName').value = activeListName;
+                if (activeListName) setSelectedList(activeListName);
                 return;
             }
             if (choice === 'save' && !(await saveMapping())) return;
@@ -1452,7 +1604,7 @@
         const ip = document.getElementById('receiverIp').value.trim();
         const port = document.getElementById('receiverPort').value.trim();
         const cronExpression = document.getElementById('cronExpression').value.trim();
-        const selectedListName = document.getElementById('selectedListName').value;
+        const selectedListName = getSelectedList();
 
         statusMsg.className = 'info';
         statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">sync</span> Connecting...`;
@@ -1469,20 +1621,7 @@
             if (data.error) throw new Error(data.error);
             
             if (data.availableLists && data.availableLists.length > 0) {
-                const select = document.getElementById('selectedListName');
-                const currentValues = Array.from(select.options).map(o => o.value);
-                const newValues = data.availableLists;
-                
-                if (JSON.stringify(currentValues) !== JSON.stringify(newValues)) {
-                    select.innerHTML = '';
-                    data.availableLists.forEach(listName => {
-                        const opt = document.createElement('option');
-                        opt.value = listName;
-                        opt.innerText = listName;
-                        if (listName === data.selectedListName) opt.selected = true;
-                        select.appendChild(opt);
-                    });
-                }
+                setListOptions(data.availableLists, data.selectedListName);
             }
 
             updateModelBadge('success', data.detectedModel);

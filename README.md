@@ -1,5 +1,5 @@
 # TechniMapper: HDHomeRun Tuner Emulation for TechniSat Receivers
-Turns the live TV channel list of a TechniSat receiver into a stable **HDHomeRun network tuner** for **Plex** and **Jellyfin**. The same channels are also available as an optional M3U playlist.
+Turns the live TV channel list of a TechniSat receiver into a stable **HDHomeRun network tuner** for **Plex** and **Jellyfin**. The same channels are also available as an optional M3U8 playlist.
 
 ## The Problem: Stream Instability
 TechniSat receivers frequently change internal stream URLs and session parameters due to channel rescans, background updates, or reboots. Linking these raw URLs directly into a media center causes constant breakage, as the streams become dead ends as soon as the receiver refreshes its internal state.
@@ -7,13 +7,13 @@ TechniSat receivers frequently change internal stream URLs and session parameter
 ## The Solution: TechniMapper
 TechniMapper acts as an abstraction layer to ensure your configuration remains stable:
 
-* **HDHomeRun Emulation:** Plex and Jellyfin use TechniMapper directly as a network tuner below `/hdhr`, no M3U file needed (see [below](#hdhomerun-emulation-plex--jellyfin)). The tuner name is built automatically from the detected receiver, e.g. `TechniSat DIGIT ISIO STC`.
+* **HDHomeRun Emulation:** Plex and Jellyfin use TechniMapper directly as a network tuner below `/hdhr`, no M3U8 file needed (see [below](#hdhomerun-emulation-plex--jellyfin)). The tuner name is built automatically from the detected receiver, e.g. `TechniSat DIGIT ISIO STC`.
 * **Dynamic Synchronization:** A background cron engine crawls the receiver’s shifting UPnP structure to fetch the latest, valid stream URLs.
 * **Static Mapping:** Maps volatile URLs to permanent, custom Channel IDs defined via the Web UI. The ID becomes the channel number.
 * **Automated List Fetching:** Selecting a different target channel list automatically triggers an immediate *Apply & Fetch* cycle.
 * **Smart Parsing:** One-click extraction automatically parses channel numbers from channel names.
 * **Safe by Default:** If the receiver is unreachable (e.g. in standby), the **last known channel list** keeps being served. Strict input validation, optional Basic Auth, health endpoint, non-root container, signed multi-arch images.
-* **Optional M3U Playlist:** The same mapped channels are available at `/playlist.m3u` for players such as VLC (see [below](#optional-m3u-playlist)).
+* **Optional M3U8 Playlist:** The same mapped channels are available at `/playlist.m3u8` for players such as VLC (see [below](#optional-m3u8-playlist)).
 
 ## Compatibility Note
 TechniMapper is specifically developed and tested for the TechniSat DIGIT ISIO STC.
@@ -145,7 +145,7 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 | Endpoint | Auth | Description |
 |---|---|---|
 | `GET /hdhr/discover.json`, `/hdhr/lineup_status.json`, `/hdhr/lineup.json`, `/hdhr/stream/:id` | public | HDHomeRun emulation, see below. |
-| `GET /playlist.m3u` | public | Optional M3U playlist. `503` + `Retry-After` while nothing is synced/mapped. |
+| `GET /playlist.m3u8` | public | Optional M3U8 playlist. `503` + `Retry-After` while nothing is synced/mapped. |
 | `GET /health` | public | Liveness/status JSON (`ok` or `degraded`, last sync, last error). |
 | `GET /api/get-config` | Basic Auth¹ | Current settings, version, last sync, last error. |
 | `POST /api/fetch-channels` | Basic Auth¹ | Applies settings and syncs with the receiver. |
@@ -168,7 +168,7 @@ TechniMapper presents itself as an HDHomeRun network tuner. Plex and Jellyfin re
 
 The absolute URLs in the answers are built from the `Host` header of the request, so the emulation works with any port mapping.
 
-**Setup:** add the tuner by address in Plex (*Live TV & DVR*) or Jellyfin (*Live TV → Tuner devices → HDHomeRun*): `http://<server-ip>:9191/hdhr`. Check the address in a browser first: `http://<server-ip>:9191/hdhr/discover.json` must answer with JSON. The copy button in the header of the Web UI copies this address (the default); its menu switches between the tuner address and the M3U playlist URL and remembers your choice. After you change the mapping, refresh the channel list in the client.
+**Setup:** add the tuner by address in Plex (*Live TV & DVR*) or Jellyfin (*Live TV → Tuner devices → HDHomeRun*): `http://<server-ip>:9191/hdhr`. Check the address in a browser first: `http://<server-ip>:9191/hdhr/discover.json` must answer with JSON. The copy button in the header of the Web UI copies this address (the default); its menu switches between the tuner address and the M3U8 playlist URL and remembers your choice. After you change the mapping, refresh the channel list in the client.
 
 **Limitations**
 * No automatic discovery (SSDP/UDP): the tuner has to be added by address.
@@ -178,16 +178,16 @@ The absolute URLs in the answers are built from the `Host` header of the request
 * If two channels share the same ID, only the first one is listed.
 * Compatibility depends on the client version: whether it accepts an address with a path (`/hdhr`) and whether it follows the redirect for live streams is client behavior. This has not been verified against every Plex or Jellyfin version, so test your client first.
 
-## Optional M3U Playlist
+## Optional M3U8 Playlist
 
-`http://<server-ip>:9191/playlist.m3u` serves the same mapped channels as an M3U playlist, for example for VLC or other IPTV players. Each entry carries `tvg-id`, `tvg-name` and `tvg-chno` (the channel ID). While nothing is synced or mapped yet, the endpoint answers `503` instead of an empty list, so clients that clean up missing channels never purge them by accident. The copy button in the header of the Web UI copies this address when you choose **M3U playlist** in its menu.
+`http://<server-ip>:9191/playlist.m3u8` serves the same mapped channels as an M3U8 playlist, for example for VLC or other IPTV players. The former address `/playlist.m3u` keeps working. Each entry carries `tvg-id`, `tvg-name` and `tvg-chno` (the channel ID). While nothing is synced or mapped yet, the endpoint answers `503` instead of an empty list, so clients that clean up missing channels never purge them by accident. The copy button in the header of the Web UI copies this address when you choose **M3U8 playlist** in its menu.
 
 ## Security
 
 * TechniMapper is built for **trusted home/office networks**. **Do not expose it directly to the internet.**
 * Set `ADMIN_USER`/`ADMIN_PASSWORD` and run it behind a TLS-terminating reverse proxy (set `TRUST_PROXY`). Basic Auth over plain HTTP is not encrypted.
 * The web UI is self-contained: fonts and icons are bundled (`public/fonts/`), the browser makes no requests to external hosts.
-* `/hdhr/*` and `/playlist.m3u` are public on purpose (media centers, M3U clients, container health checks) and expose your receiver's stream URLs. They are not covered by `ADMIN_USER`/`ADMIN_PASSWORD`.
+* `/hdhr/*` and `/playlist.m3u8` are public on purpose (media centers, M3U8 clients, container health checks) and expose your receiver's stream URLs. They are not covered by `ADMIN_USER`/`ADMIN_PASSWORD`.
 * Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
 ### Supply chain
@@ -207,7 +207,7 @@ cosign verify ghcr.io/danielfranze/technimapper-m3u-proxy:latest \
 | Plex does not find the tuner | Open `http://<server>:9191/hdhr/discover.json` in a browser first; it must answer with JSON. Make sure the published port matches the server port (`9191:9191` with the default `PORT`) and that you enter exactly this port in Plex. |
 | Plex/Jellyfin shows no channels | Only channels with an ID are listed. Check `http://<server>:9191/hdhr/lineup.json` in the browser; an empty list `[]` means nothing is mapped yet. |
 | The tuner name does not change | The name is `TechniSat <detected model>` until you set `HDHR_FRIENDLY_NAME`. The model is detected on the first successful sync; the client may cache the old name, so remove and re-add the tuner. |
-| `/playlist.m3u` returns `503` | No sync yet, or no channel has an ID. Click **Apply & Fetch**, then map channels and **Save**. |
+| `/playlist.m3u8` returns `503` | No sync yet, or no channel has an ID. Click **Apply & Fetch**, then map channels and **Save**. |
 | *No TechniSat Live-TV containers found* | Wrong IP/port, receiver in standby/off, unsupported model, or no channel list configured on the receiver. |
 | *Invalid receiver IP* | Only private IPv4 addresses are allowed. Use `ALLOW_NON_PRIVATE_IP=true` for VPN/CGNAT. |
 | *Invalid channel ID for ...* | IDs may only contain letters, digits, `_`, `-`, `.` (max. 32 characters). |

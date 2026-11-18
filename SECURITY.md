@@ -23,7 +23,7 @@ You will get an initial response as soon as possible. Fixes are published as a n
 - TechniMapper is built for **trusted home/office networks**. Do not expose it directly to the internet.
 - Set `ADMIN_USER` / `ADMIN_PASSWORD` and put it behind a TLS-terminating reverse proxy
   (set `TRUST_PROXY` accordingly). Basic Auth over plain HTTP sends credentials unencrypted.
-- `/playlist.m3u`, `/hdhr/*` and `/health` are intentionally public (media centers such as Plex and Jellyfin, M3U clients and container health checks).
+- `/playlist.m3u8`, `/hdhr/*` and `/health` are intentionally public (media centers such as Plex and Jellyfin, M3U8 clients and container health checks).
   The playlist contains the stream URLs of your receiver.
 - Receiver IPs are restricted to private IPv4 ranges (SSRF protection); loopback and link-local
   addresses are always rejected.

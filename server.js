@@ -1,9 +1,9 @@
 /**
  * ============================================================================
- * TechniMapper - M3U Proxy & Channel Mapping Server
+ * TechniMapper - M3U8 Proxy & Channel Mapping Server
  * ============================================================================
  * Node.js Express backend that talks to TechniSat receivers via UPnP/SOAP,
- * reads the live TV channel list and serves it as a stable M3U playlist.
+ * reads the live TV channel list and serves it as a stable M3U8 playlist and as an HDHomeRun tuner.
  *
  * Environment variables (all optional):
  *   PORT                  HTTP port the server listens on (default 9191)
@@ -20,7 +20,7 @@
  *                         (e.g. VPN/CGNAT such as 100.64.0.0/10)
  *   ADMIN_USER / ADMIN_PASSWORD
  *                         Enables HTTP Basic Auth for the UI and /api/*.
- *                         /playlist.m3u and /health stay public.
+ *                         /playlist.m3u8 and /health stay public.
  * ============================================================================
  */
 
@@ -37,7 +37,7 @@ const cron = require('node-cron');
 const compression = require('compression');
 const packageJson = require('./package.json');
 const { HttpError, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } = require('./lib/validation');
-const { STREAM_URL_REGEX, buildM3u } = require('./lib/m3u');
+const { STREAM_URL_REGEX, buildM3u8 } = require('./lib/m3u8');
 const hdhr = require('./lib/hdhr');
 
 // ---------------------------------------------------------------------------
@@ -52,6 +52,8 @@ const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 const ALLOW_NON_PRIVATE_IP = process.env.ALLOW_NON_PRIVATE_IP === 'true';
 const ADMIN_USER = process.env.ADMIN_USER || '';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+// The canonical playlist address is /playlist.m3u8; the former /playlist.m3u keeps working.
+const PLAYLIST_PATHS = ['/playlist.m3u8', '/playlist.m3u'];
 const DEFAULT_CRON = '*/5 * * * *';
 
 const LOG_LEVELS = { error: 0, warn: 1, info: 2 };
@@ -92,7 +94,7 @@ const syncStatus = { lastError: null, lastErrorAt: null, consecutiveFailures: 0 
 
 let configured = false;  // true once a config exists on disk or was applied via UI
 let lineupEntries = []; // HDHomeRun lineup, rebuilt together with the playlist
-let cachedM3u = null;    // null = no usable playlist (served as 503, never as empty list)
+let cachedM3u8 = null;    // null = no usable playlist (served as 503, never as empty list)
 let cronTask = null;
 let shuttingDown = false;
 
@@ -389,13 +391,13 @@ async function fetchFromTechniSat({ ip, port, selectedListName }) {
 
 /**
  * Rebuilds the cached playlist from channels + mapping. If nothing is mapped, the cache is set to
- * null so /playlist.m3u answers 503 instead of an empty list (some M3U clients purge channels that are missing from a playlist).
+ * null so /playlist.m3u8 answers 503 instead of an empty list (some M3U8 clients purge channels that are missing from a playlist).
  */
-function generateM3u() {
-    const { m3u, count } = buildM3u(appConfig.channels, appConfig.mapping);
-    cachedM3u = count > 0 ? m3u : null;
+function generateM3u8() {
+    const { m3u8, count } = buildM3u8(appConfig.channels, appConfig.mapping);
+    cachedM3u8 = count > 0 ? m3u8 : null;
     lineupEntries = hdhr.buildLineup(appConfig.channels, appConfig.mapping);
-    if (count === 0) log.warn('No mapped channels - /playlist.m3u will answer 503 until channels are mapped.');
+    if (count === 0) log.warn('No mapped channels - /playlist.m3u8 will answer 503 until channels are mapped.');
     return count;
 }
 
@@ -422,14 +424,14 @@ async function performSync(candidate) {
         syncStatus.lastErrorAt = null;
         syncStatus.consecutiveFailures = 0;
 
-        generateM3u();
+        generateM3u8();
         trySaveConfig();
         return result;
     } catch (err) {
         syncStatus.lastError = err.message;
         syncStatus.lastErrorAt = new Date().toISOString();
         syncStatus.consecutiveFailures++;
-        // Last-known-good: cachedM3u and appConfig.channels stay untouched.
+        // Last-known-good: cachedM3u8 and appConfig.channels stay untouched.
         throw err;
     }
 }
@@ -493,10 +495,10 @@ function safeEqual(a, b) {
     return crypto.timingSafeEqual(ha, hb);
 }
 
-/** Optional HTTP Basic Auth. /playlist.m3u, /health and /hdhr/* stay public (Plex, Jellyfin, M3U clients, Docker). */
+/** Optional HTTP Basic Auth. The playlist, /health and /hdhr/* stay public (Plex, Jellyfin, M3U8 clients, Docker). */
 function basicAuth(req, res, next) {
     if (!ADMIN_USER || !ADMIN_PASSWORD) return next();
-    if (req.path === '/health' || req.path === '/playlist.m3u' || req.path.startsWith('/hdhr/')) return next();
+    if (req.path === '/health' || PLAYLIST_PATHS.includes(req.path) || req.path.startsWith('/hdhr/')) return next();
 
     const [scheme, encoded] = (req.headers.authorization || '').split(' ');
     if (scheme === 'Basic' && encoded) {
@@ -548,7 +550,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 // ---------------------------------------------------------------------------
 
 app.get('/health', (req, res) => {
-    const hasPlaylist = cachedM3u !== null;
+    const hasPlaylist = cachedM3u8 !== null;
     res.json({
         status: !configured || (hasPlaylist && syncStatus.consecutiveFailures < 3) ? 'ok' : 'degraded',
         version: APP_VERSION,
@@ -600,7 +602,7 @@ app.post('/api/save-mapping', (req, res) => {
         throw new HttpError(400, `Invalid channel ID for: ${invalid.slice(0, 5).join(', ')}${invalid.length > 5 ? ', ...' : ''}. Allowed: letters, digits, "_", "-", "." (max. 32 chars).`);
     }
     appConfig.mapping = mapping;
-    generateM3u();
+    generateM3u8();
     saveConfigToDisk();
     // Only channels that currently exist on the receiver can collide in the playlist;
     // entries of vanished channels are reported separately as "orphans".
@@ -641,21 +643,22 @@ app.post('/api/import-config', (req, res) => {
     if (mapping) appConfig.mapping = mapping;
     configured = true;
 
-    generateM3u();
+    generateM3u8();
     saveConfigToDisk();
     startBackgroundCron();
     res.json({ success: true, message: 'Configuration imported successfully' });
 });
 
-app.get('/playlist.m3u', (req, res) => {
-    if (cachedM3u === null) {
+const servePlaylist = (req, res) => {
+    if (cachedM3u8 === null) {
         // Never serve an empty playlist: clients that clean up missing channels would delete all of them.
         res.set('Retry-After', '60');
         return res.status(503).type('text/plain').send('Playlist not available: no channels synced or mapped yet.');
     }
     res.set('Cache-Control', 'no-cache');
-    res.type('audio/x-mpegurl; charset=utf-8').send(cachedM3u);
-});
+    res.type('audio/x-mpegurl; charset=utf-8').send(cachedM3u8);
+};
+PLAYLIST_PATHS.forEach(route => app.get(route, servePlaylist));
 
 // ---------------------------------------------------------------------------
 // HDHomeRun emulation (Plex / Jellyfin): everything below /hdhr, unauthenticated by design.
@@ -712,7 +715,7 @@ app.use((err, req, res, next) => {
 // ---------------------------------------------------------------------------
 ensureDataDir();
 configured = loadConfig();
-if (configured) generateM3u(); // serve last known playlist immediately
+if (configured) generateM3u8(); // serve last known playlist immediately
 
 if ((ADMIN_USER && !ADMIN_PASSWORD) || (!ADMIN_USER && ADMIN_PASSWORD)) {
     log.warn('Only one of ADMIN_USER / ADMIN_PASSWORD is set - authentication is DISABLED.');

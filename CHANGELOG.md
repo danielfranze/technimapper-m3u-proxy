@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- The playlist is now called M3U8 everywhere: it is served at `/playlist.m3u8` (the former `/playlist.m3u` keeps working as an
+  alias), and the UI, README, tests and modules say M3U8. The `#EXTM3U` header line stays, as the format requires. The image and
+  container name `technimapper-m3u-proxy` is unchanged.
+- UI (header): when space runs out, the copy button first drops " URL", then the word "Copy" (the source name HDHR/M3U8 always
+  stays), and only then the "Last sync:" label.
+- UI: "Target Channel List" is now a custom dropdown that looks like the copy menu, instead of the native select, which looked
+  different in every browser. It works with the keyboard (arrows, Home/End, type-ahead, Esc), shortens long names, and choosing a
+  list still starts "Apply & Fetch" (including the unsaved-changes prompt).
+- The copy button remembers its source as `hdhr` or `m3u8`; the value `m3u` saved by earlier versions is converted automatically.
+
 ## [1.7.0]
 
 First stable release with the HDHomeRun emulation. It contains everything from the release candidates 1.7.0-rc.1 and 1.7.0-rc.2.
