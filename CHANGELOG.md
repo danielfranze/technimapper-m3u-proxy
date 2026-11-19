@@ -3,7 +3,7 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [1.7.1]
 
 ### Changed
 - The playlist is now called M3U8 everywhere: it is served at `/playlist.m3u8` (the former `/playlist.m3u` keeps working as an
@@ -14,6 +14,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - UI: "Target Channel List" is now a custom dropdown that looks like the copy menu, instead of the native select, which looked
   different in every browser. It works with the keyboard (arrows, Home/End, type-ahead, Esc), shortens long names, and choosing a
   list still starts "Apply & Fetch" (including the unsaved-changes prompt).
+- UI: the arrow of the copy button turns upwards while its menu is open (like the channel list dropdown), and the arrow part is
+  wider (36 px, 42 px on phones and tablets) so it is easier to hit. On narrow screens the button text shortens a bit earlier.
 - The copy button remembers its source as `hdhr` or `m3u8`; the value `m3u` saved by earlier versions is converted automatically.
 
 ## [1.7.0]

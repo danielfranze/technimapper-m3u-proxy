@@ -215,11 +215,19 @@
     .split-btn { position: relative; display: inline-flex; }
     .split-btn .split-main { border-top-right-radius: 0; border-bottom-right-radius: 0; padding: 0 7px 0 9px; }
     .split-btn .split-toggle {
-        width: 24px; padding: 0; justify-content: center; margin-left: -1px;
+        width: 36px; padding: 0; justify-content: center; margin-left: -1px;
         border-top-left-radius: 0; border-bottom-left-radius: 0;
     }
     .split-btn .split-toggle:hover, .split-btn .split-main:hover { z-index: 1; }
     .split-btn .split-toggle[aria-expanded="true"] { background: #333; color: #fff; border-color: #444; }
+    /* The arrow turns upwards while the menu is open (same as in the channel list dropdown) */
+    .split-btn .split-toggle .material-icons-outlined { transition: transform 0.15s ease; }
+    .split-btn .split-toggle[aria-expanded="true"] .material-icons-outlined { transform: rotate(180deg); }
+    /* Larger tap target for the arrow on phones and tablets */
+    @media (max-width: 900px), (pointer: coarse) { .split-btn .split-toggle { width: 42px; } }
+    @media (prefers-reduced-motion: reduce) {
+        .split-btn .split-toggle .material-icons-outlined, .dd-trigger-chevron { transition: none; }
+    }
     .split-btn .btn-subtle:focus-visible, .dd-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
     .dd-menu {
@@ -351,7 +359,7 @@
         position: absolute; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none;
     }
     .dd-trigger-icon { left: 8px; font-size: 16px; }
-    .dd-trigger-chevron { right: 6px; font-size: 18px; }
+    .dd-trigger-chevron { right: 6px; font-size: 18px; transition: transform 0.15s ease; }
     .dd-trigger[aria-expanded="true"] .dd-trigger-chevron { transform: translateY(-50%) rotate(180deg); }
     .dd-trigger-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
