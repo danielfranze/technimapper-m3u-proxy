@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.9.0]
+
+### Added
+- Immutable application state store (`lib/state-store.js`) with deep-frozen snapshots and copy-on-write updates.
+- Sync coordinator (`lib/sync-coordinator.js`) with single-flight execution, bounded queue, backoff and idle waiting.
+- Request context with `X-Request-Id`, request logging and a Prometheus-style `/metrics` endpoint.
+- Sync queue length and backoff information in `/health`.
+- Tests for the state store and sync coordinator.
+
+### Changed
+- `createApp()` now uses the state store instead of mutating global state directly.
+- Persistence is applied to a mutable draft before being committed.
+- Graceful shutdown waits for the sync coordinator to become idle.
+
 ## [1.8.0]
 
 ### Added
