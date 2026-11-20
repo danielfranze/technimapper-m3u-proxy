@@ -82,7 +82,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - uses: sigstore/cosign-installer@v4
+      - uses: sigstore/cosign-installer@v4.1.3
 
       - name: Sign image (keyless)
         run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
