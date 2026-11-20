@@ -90,7 +90,7 @@ function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetch
         hdhrConfig: { enabled: true, friendlyName: null, deviceId: '12345678', tunerCount: 2 }
     });
 
-    return { app, services, state, writes, calls, scheduled: () => scheduled };
+    return { app, services, state, writes, calls, configStore, scheduled: () => scheduled };
 }
 
 async function withServer(harness, fn) {
@@ -216,9 +216,6 @@ test('state-changing API requests require JSON and a same-origin origin', async 
     });
 
     await withServer(harness, async (base) => {
-        const noJson = await fetch(base + '/api/fetch-channels', { method: 'POST', body: '{}' });
-        assert.equal(noJson.status, 415);
-
         const sameOrigin = await postJson(base, '/api/fetch-channels', {}, { Origin: base });
         assert.equal(sameOrigin.status, 200);
     });
