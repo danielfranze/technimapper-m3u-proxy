@@ -54,3 +54,27 @@ test('non-string values are serialized', () => {
     assert.equal(calls.length, 1);
     assert.match(calls[0][1], /"ok":1/);
 });
+
+test('default sink delegates to process stdout and serializes non-string values', () => {
+    const originalWrite = process.stdout.write;
+    const captured = [];
+    process.stdout.write = (chunk, ...args) => {
+        captured.push(String(chunk));
+        return originalWrite.call(process.stdout, chunk, ...args);
+    };
+    try {
+        const logger = createLogger({ level: 'info' });
+        logger.info({ ok: 1 });
+    } finally {
+        process.stdout.write = originalWrite;
+    }
+    assert.ok(captured.some(chunk => chunk.includes('"ok":1')));
+});
+
+test('non-string values are serialized through a custom sink', () => {
+    const calls = [];
+    const logger = createLogger({ level: 'info', sink: { info: (...args) => calls.push(args), warn() {}, error() {} } });
+    logger.info({ ok: 1 });
+    assert.equal(calls.length, 1);
+    assert.match(calls[0][1], /"ok":1/);
+});

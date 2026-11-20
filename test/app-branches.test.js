@@ -58,6 +58,25 @@ function createHarness({ runtime: runtimeOverrides, cron, syncCoordinator, fetch
     return { app, services, state };
 }
 
+async function withServer(harness, fn) {
+    const server = harness.app.listen(0, '127.0.0.1');
+    await new Promise((resolve, reject) => {
+        server.once('error', reject);
+        server.once('listening', resolve);
+    });
+
+    const base = `http://127.0.0.1:${server.address().port}`;
+    try {
+        return await fn(base, harness);
+    } finally {
+        await new Promise(resolve => {
+            if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
+            server.close(resolve);
+        });
+        harness.services.dispose();
+    }
+}
+
 test('runScheduledSync returns early when shutting down', async () => {
     const harness = createHarness({});
     harness.services.beginShutdown();
@@ -109,4 +128,34 @@ test('runScheduledSync handles a sync coordinator that rejects', async () => {
         }
     });
     await harness.services.runScheduledSync();
+});
+
+test('HDHomeRun routes are disabled when hdhrConfig.enabled is false', async () => {
+    const harness = createHarness({ hdhrConfig: { enabled: false } });
+    await withServer(harness, async (base) => {
+        const res = await fetch(base + '/hdhr/discover.json');
+        assert.equal(res.status, 404);
+    });
+});
+
+test('rebuildViews handles a mapping with no mapped channels', () => {
+    const harness = createHarness({});
+    harness.state.update(s => { s.config.mapping = {}; });
+    const count = harness.services.rebuildViews();
+    assert.equal(count, 0);
+    assert.equal(harness.state.get().cachedM3u8, null);
+});
+
+test('runScheduledSync skips while a sync is active', async () => {
+    const harness = createHarness({
+        syncCoordinator: { active: true, backoffRemainingMs: () => 0, request: async () => {}, queueLength: 0, consecutiveFailures: 0, waitForIdle: async () => {} }
+    });
+    await harness.services.runScheduledSync();
+});
+
+test('runScheduledSync skips during backoff after a failure', async () => {
+    const harness = createHarness({ fetchChannels: async () => { throw new Error('boom'); } });
+    await harness.services.runScheduledSync();
+    await harness.services.runScheduledSync();
+    assert.equal(harness.state.get().sync.consecutiveFailures, 1);
 });
