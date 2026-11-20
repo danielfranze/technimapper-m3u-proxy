@@ -34,12 +34,15 @@ test('sync coordinator serializes work and reports backoff after failures', asyn
 
 test('sync coordinator rejects when the queue is full', async () => {
     const coordinator = createSyncCoordinator({ maxQueue: 1 });
-    const pending = coordinator.request(() => new Promise(() => {})); // never resolves
-    await assert.rejects(coordinator.request(() => 'second'), /Sync queue is full/);
-    // Avoid hanging the test process.
-    coordinator.reset();
-    await Promise.resolve();
+    let resolveFirst;
+    const first = coordinator.request(() => new Promise(resolve => { resolveFirst = resolve; }));
+    const second = coordinator.request(() => new Promise(resolve => setTimeout(() => resolve('queued done'), 0)));
+    await assert.rejects(coordinator.request(() => 'third'), /Sync queue is full/);
+    resolveFirst('done');
+    assert.equal(await first, 'done');
+    assert.equal(await second, 'queued done');
 });
+
 test('sync coordinator waits for idle work', async () => {
     const coordinator = createSyncCoordinator();
     const done = coordinator.request(async () => {
