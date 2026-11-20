@@ -4,6 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createApp } = require('../lib/app');
 const { createState } = require('../lib/state');
+const { createStateStore } = require('../lib/state-store');
 const { createValidation } = require('../lib/validation');
 const { createLogger } = require('../lib/logger');
 
@@ -44,7 +45,7 @@ function baseRuntime(overrides = {}) {
 }
 
 function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetchChannels } = {}) {
-    const state = createState(stateOverrides || {});
+    const state = createStateStore(createState(stateOverrides || {}));
     const writes = [];
     const calls = [];
     let scheduled = 0;
@@ -236,7 +237,7 @@ test('the receiver target is changed through settings, not through a sync', asyn
 
         const saved = await postJson(base, '/api/save-settings', { ...BASE_CONFIG, ip: '192.168.1.99' });
         assert.equal(saved.status, 200);
-        assert.equal(harness.state.config.ip, '192.168.1.99');
+        assert.equal(harness.state.get().config.ip, '192.168.1.99');
 
         const fetched = await postJson(base, '/api/fetch-channels', { ...BASE_CONFIG, ip: '192.168.1.99' });
         assert.equal(fetched.status, 200);
@@ -282,7 +283,7 @@ test('invalid mapping IDs are rejected without changing state', async () => {
         const res = await postJson(base, '/api/save-mapping', { mapping: { A: 'bad id' } });
         assert.equal(res.status, 400);
         assert.match((await res.json()).error, /Invalid channel ID/);
-        assert.deepEqual(harness.state.config.mapping, { A: 1 });
+        assert.deepEqual(harness.state.get().config.mapping, { A: 1 });
         assert.equal(harness.writes.length, 0);
     });
 });
@@ -302,14 +303,14 @@ test('export and import round-trip settings and mapping', async () => {
             mapping: { A: 2 }
         });
         assert.equal(imported.status, 200);
-        assert.equal(harness.state.config.ip, '192.168.1.30');
-        assert.equal(harness.state.config.selectedListName, 'Radio');
-        assert.deepEqual(harness.state.config.mapping, { A: 2 });
+        assert.equal(harness.state.get().config.ip, '192.168.1.30');
+        assert.equal(harness.state.get().config.selectedListName, 'Radio');
+        assert.deepEqual(harness.state.get().config.mapping, { A: 2 });
         assert.equal(harness.writes.length, 1);
 
         const invalid = await postJson(base, '/api/import-config', { mapping: { A: 'bad id' } });
         assert.equal(invalid.status, 400);
-        assert.deepEqual(harness.state.config.mapping, { A: 2 });
+        assert.deepEqual(harness.state.get().config.mapping, { A: 2 });
     });
 });
 
@@ -319,16 +320,16 @@ test('a failed sync keeps the last known playlist and records the error', async 
         fetchChannels: async () => { throw new Error('receiver unreachable'); }
     });
     harness.services.rebuildViews();
-    const before = harness.state.cachedM3u8;
+    const before = harness.state.get().cachedM3u8;
 
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/fetch-channels', {});
         assert.equal(res.status, 502);
         assert.match((await res.json()).error, /receiver unreachable/);
-        assert.equal(harness.state.cachedM3u8, before, 'the last known playlist must survive a failed sync');
-        assert.equal(harness.state.sync.consecutiveFailures, 1);
-        assert.match(harness.state.sync.lastError, /receiver unreachable/);
-        assert.equal(harness.state.config.mapping.A, 1);
+        assert.equal(harness.state.get().cachedM3u8, before, 'the last known playlist must survive a failed sync');
+        assert.equal(harness.state.get().sync.consecutiveFailures, 1);
+        assert.match(harness.state.get().sync.lastError, /receiver unreachable/);
+        assert.equal(harness.state.get().config.mapping.A, 1);
     });
 });
 

@@ -40,6 +40,7 @@ const { loadRuntimeConfig } = require('./lib/runtime-config');
 const { createJsonConfigStore } = require('./lib/config-store');
 const { createSoapReceiver } = require('./lib/receiver');
 const { createState, applyPersistedState, persistedSnapshot } = require('./lib/state');
+const { createStateStore } = require('./lib/state-store');
 const { createValidation, sortMapping } = require('./lib/validation');
 const hdhr = require('./lib/hdhr');
 const { createApp } = require('./lib/app');
@@ -71,11 +72,12 @@ function main() {
     });
     const { validateMapping, validateSettings, isAllowedReceiverIp } = validation;
 
-    const state = createState();
+    const stateStore = createStateStore(createState());
     try {
         const parsed = configStore.read();
         if (parsed) {
-            const result = applyPersistedState(state, parsed, {
+            const draft = structuredClone(stateStore.get());
+            const result = applyPersistedState(draft, parsed, {
                 validateMapping,
                 sortMapping,
                 sanitizeModel: hdhr.sanitizeModel,
@@ -84,9 +86,10 @@ function main() {
                 defaultCron: runtime.defaultCron,
                 logger
             });
+            stateStore.commit(draft);
             if (result.changed) {
                 try {
-                    configStore.write(persistedSnapshot(state));
+                    configStore.write(persistedSnapshot(stateStore.get()));
                 } catch (err) {
                     logger.error('Failed to persist repaired mapping.json:', err.message);
                 }
@@ -109,7 +112,7 @@ function main() {
     const { app, services } = createApp({
         runtime,
         logger,
-        state,
+        state: stateStore,
         configStore,
         receiver,
         validation: { validateSettings, validateMapping },
@@ -118,12 +121,12 @@ function main() {
         hdhrConfig
     });
 
-    if (state.configured) services.rebuildViews(); // serve the last known playlist immediately
+    if (stateStore.get().configured) services.rebuildViews(); // serve the last known playlist immediately
 
     const server = app.listen(runtime.port, () => {
         logger.info(`TechniMapper v${APP_VERSION} listening on port ${runtime.port}`);
         if (hdhrConfig.enabled) logger.info(`HDHomeRun emulation enabled at /hdhr (device ${hdhrConfig.deviceId})`);
-        if (state.configured) {
+        if (stateStore.get().configured) {
             services.startBackgroundCron();
             setTimeout(() => services.runScheduledSync(), 500); // refresh possibly stale URLs right after (re)start
         }
