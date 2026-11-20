@@ -154,3 +154,29 @@ test('runScheduledSync handles a failed sync', async () => {
     assert.equal(harness.state.get().sync.consecutiveFailures, 1);
     assert.match(harness.state.get().sync.lastError, /boom/);
 });
+
+test('playlist endpoint returns 304 for a matching ETag', async () => {
+    const state = {
+        configured: true,
+        config: {
+            ip: '192.168.1.10',
+            port: '9100',
+            cronExpression: '*/5 * * * *',
+            selectedListName: 'TV-Liste',
+            channels: [{ name: 'A', url: 'http://192.168.1.20/a' }],
+            mapping: { A: 1 },
+            detectedModel: 'DIGIT ISIO STC'
+        }
+    };
+    const harness = createHarness({ state });
+    harness.services.rebuildViews();
+    await withServer(harness, async (base) => {
+        const first = await fetch(base + '/playlist.m3u8');
+        assert.equal(first.status, 200);
+        const etag = first.headers.get('etag');
+        assert.ok(etag);
+
+        const second = await fetch(base + '/playlist.m3u8', { headers: { 'If-None-Match': etag } });
+        assert.equal(second.status, 304);
+    });
+});

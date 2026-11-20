@@ -47,7 +47,7 @@ const { createApp } = require('./lib/app');
 
 const APP_VERSION = packageJson.version;
 
-function main() {
+async function main() {
     const runtime = loadRuntimeConfig(process.env);
     const logger = createLogger({ level: runtime.logLevel, format: runtime.logFormat });
     runtime.warnings.forEach(warning => logger.warn(warning));
@@ -89,7 +89,7 @@ function main() {
             stateStore.commit(draft);
             if (result.changed) {
                 try {
-                    configStore.write(persistedSnapshot(stateStore.get()));
+                    await configStore.write(persistedSnapshot(stateStore.get()));
                 } catch (err) {
                     logger.error('Failed to persist repaired mapping.json:', err.message);
                 }

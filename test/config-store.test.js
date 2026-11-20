@@ -9,7 +9,7 @@ const { createJsonConfigStore } = require('../lib/config-store');
 
 const logger = { warn() {}, error() {} };
 
-test('config store creates the data directory and writes/reads JSON atomically', () => {
+test('config store creates the data directory and writes/reads JSON atomically', async () => {
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'technimapper-'));
     const configFile = path.join(dataDir, 'mapping.json');
     const store = createJsonConfigStore({ dataDir, configFile, logger });
@@ -19,7 +19,7 @@ test('config store creates the data directory and writes/reads JSON atomically',
         assert.equal(store.exists(), false);
         assert.equal(store.read(), null);
 
-        store.write({ ip: '192.168.1.10', mapping: { A: 1 } });
+        await store.write({ ip: "192.168.1.10", mapping: { A: 1 } });
         assert.equal(store.exists(), true);
         assert.deepEqual(store.read(), { ip: '192.168.1.10', mapping: { A: 1 } });
         assert.equal(fs.existsSync(`${configFile}.tmp`), false, 'the temporary file must be renamed');

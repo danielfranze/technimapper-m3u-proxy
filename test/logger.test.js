@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createLogger, safeStringify } = require('../lib/logger');
+const { createLogger, safeStringify, defaultSink } = require('../lib/logger');
 
 function recordingLogger(level = 'info', format = 'text') {
     const calls = [];
@@ -25,6 +25,35 @@ test('safeStringify returns a readable fallback for circular values', () => {
     assert.equal(safeStringify({ ok: 1 }), JSON.stringify({ ok: 1 }));
 });
 
+test('defaultSink returns console-backed functions', () => {
+    const sink = defaultSink();
+    assert.equal(typeof sink.info, 'function');
+    assert.equal(typeof sink.warn, 'function');
+    assert.equal(typeof sink.error, 'function');
+});
+
+test('the default sink is used when none is provided and non-string values are serialized', () => {
+    const originalLog = console.log;
+    const captured = [];
+    console.log = (...args) => captured.push(args);
+    try {
+        const logger = createLogger({ level: 'info' });
+        logger.info({ ok: 1 });
+    } finally {
+        console.log = originalLog;
+    }
+    assert.equal(captured.length, 1);
+    assert.match(captured[0][1], /"ok":1/);
+});
+
+test('non-string values are serialized through a custom sink', () => {
+    const calls = [];
+    const logger = createLogger({ level: 'info', sink: { info: (...args) => calls.push(args), warn() {}, error() {} } });
+    logger.info({ ok: 1 });
+    assert.equal(calls.length, 1);
+    assert.match(calls[0][1], /"ok":1/);
+});
+
 test('the logger filters levels and supports text and JSON output', () => {
     const { logger: textLogger, calls: textCalls } = recordingLogger('warn');
     textLogger.info('should be hidden');
@@ -38,43 +67,4 @@ test('the logger filters levels and supports text and JSON output', () => {
     const payload = JSON.parse(jsonCalls[0][1][0]);
     assert.equal(payload.level, 'error');
     assert.match(payload.msg, /boom/);
-});
-
-test('defaultSink returns console-backed functions', () => {
-    const sink = require('../lib/logger').defaultSink();
-    assert.equal(typeof sink.info, 'function');
-    assert.equal(typeof sink.warn, 'function');
-    assert.equal(typeof sink.error, 'function');
-});
-
-test('non-string values are serialized', () => {
-    const calls = [];
-    const logger = createLogger({ level: 'info', sink: { info: (...args) => calls.push(args), warn() {}, error() {} } });
-    logger.info({ ok: 1 });
-    assert.equal(calls.length, 1);
-    assert.match(calls[0][1], /"ok":1/);
-});
-
-test('default sink delegates to process stdout and serializes non-string values', () => {
-    const originalWrite = process.stdout.write;
-    const captured = [];
-    process.stdout.write = (chunk, ...args) => {
-        captured.push(String(chunk));
-        return originalWrite.call(process.stdout, chunk, ...args);
-    };
-    try {
-        const logger = createLogger({ level: 'info' });
-        logger.info({ ok: 1 });
-    } finally {
-        process.stdout.write = originalWrite;
-    }
-    assert.ok(captured.some(chunk => chunk.includes('"ok":1')));
-});
-
-test('non-string values are serialized through a custom sink', () => {
-    const calls = [];
-    const logger = createLogger({ level: 'info', sink: { info: (...args) => calls.push(args), warn() {}, error() {} } });
-    logger.info({ ok: 1 });
-    assert.equal(calls.length, 1);
-    assert.match(calls[0][1], /"ok":1/);
 });
