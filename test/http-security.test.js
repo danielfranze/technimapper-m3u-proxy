@@ -173,3 +173,69 @@ test('origin guard requires JSON and a same-origin browser request', () => {
     }), noOrigin, () => { noOriginNext = true; });
     assert.equal(noOriginNext, true);
 });
+
+test('failure limiter evicts the oldest entry when full', () => {
+    let now = 1000;
+    const failures = createFailureLimiter({ windowMs: 1000, max: 1, maxEntries: 1, now: () => now });
+    failures.fail('a');
+    failures.fail('b');
+    assert.equal(failures.size(), 1);
+    assert.equal(failures.status('a'), 0);
+    assert.ok(failures.status('b') > 0);
+});
+
+test('origin guard rejects an invalid origin URL', () => {
+    const guard = createOriginGuard();
+    const res = fakeResponse();
+    guard(fakeRequest({
+        method: 'POST',
+        headers: {
+            host: 'technimapper.local:9191',
+            'content-type': 'application/json',
+            origin: 'not a url'
+        }
+    }), res, () => {});
+    assert.equal(res.statusCode, 403);
+});
+
+test('failure limiter prunes expired entries before evicting', () => {
+    let now = 1000;
+    const failures = createFailureLimiter({ windowMs: 1000, max: 1, maxEntries: 1, now: () => now });
+    failures.fail('a');
+    now += 2000;
+    failures.fail('b');
+    assert.equal(failures.size(), 1);
+    assert.ok(failures.status('b') > 0);
+});
+
+test('createErrorHandler maps error types and status codes', () => {
+    const { createErrorHandler } = require('../lib/http-security');
+    const handler = createErrorHandler({ error() {} });
+
+    const parseError = fakeResponse();
+    handler({ type: 'entity.parse.failed' }, fakeRequest(), parseError, () => {});
+    assert.equal(parseError.statusCode, 400);
+    assert.equal(parseError.body.error, 'Invalid JSON payload');
+
+    const largeError = fakeResponse();
+    handler({ type: 'entity.too.large' }, fakeRequest(), largeError, () => {});
+    assert.equal(largeError.statusCode, 413);
+    assert.equal(largeError.body.error, 'Payload too large');
+
+    const httpError = fakeResponse();
+    handler(new (require('../lib/validation').HttpError)(404, 'missing'), fakeRequest(), httpError, () => {});
+    assert.equal(httpError.statusCode, 404);
+    assert.equal(httpError.body.error, 'missing');
+
+    const statusError = fakeResponse();
+    const err = new Error('bad request');
+    err.status = 400;
+    handler(err, fakeRequest(), statusError, () => {});
+    assert.equal(statusError.statusCode, 400);
+    assert.equal(statusError.body.error, 'Invalid request');
+
+    const unknownError = fakeResponse();
+    handler(new Error('boom'), fakeRequest(), unknownError, () => {});
+    assert.equal(unknownError.statusCode, 500);
+    assert.equal(unknownError.body.error, 'Internal server error');
+});

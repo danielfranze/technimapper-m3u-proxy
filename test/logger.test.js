@@ -39,3 +39,18 @@ test('the logger filters levels and supports text and JSON output', () => {
     assert.equal(payload.level, 'error');
     assert.match(payload.msg, /boom/);
 });
+
+test('defaultSink returns console-backed functions', () => {
+    const sink = require('../lib/logger').defaultSink();
+    assert.equal(typeof sink.info, 'function');
+    assert.equal(typeof sink.warn, 'function');
+    assert.equal(typeof sink.error, 'function');
+});
+
+test('non-string values are serialized', () => {
+    const calls = [];
+    const logger = createLogger({ level: 'info', sink: { info: (...args) => calls.push(args), warn() {}, error() {} } });
+    logger.info({ ok: 1 });
+    assert.equal(calls.length, 1);
+    assert.match(calls[0][1], /"ok":1/);
+});

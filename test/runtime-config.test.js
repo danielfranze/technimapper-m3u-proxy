@@ -60,3 +60,11 @@ test('only one admin credential produces a fail-closed warning', () => {
     const config = loadRuntimeConfig({ ADMIN_USER: 'admin' });
     assert.ok(config.warnings.some(w => /Only one of ADMIN_USER/.test(w)));
 });
+
+test('runtime config handles empty numeric values and comma-separated trust proxies', () => {
+    const warnings = [];
+    assert.equal(intFromEnv('', 9191, { name: 'PORT', warnings }), 9191);
+    assert.equal(intFromEnv('   ', 9191, { name: 'PORT', warnings }), 9191);
+    assert.equal(parseTrustProxy('127.0.0.1, 10.0.0.1', warnings), '127.0.0.1, 10.0.0.1');
+    assert.equal(warnings.length, 0);
+});

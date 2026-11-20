@@ -111,3 +111,25 @@ test('resolveConfig applies defaults, accepts valid overrides and warns about in
     assert.equal(bad.tunerCount, 2);
     assert.equal(bad.warnings.length, 2);
 });
+
+test('hdhr helpers cover remaining branches', () => {
+    const hdhr = require('../lib/hdhr');
+    assert.equal(hdhr.modelLabel('S_SERIES'), 'DIGIT ISIO S/S1/S2');
+    assert.equal(hdhr.defaultFriendlyName(null), 'TechniSat');
+    assert.equal(hdhr.sanitizeModel(''), null);
+    assert.equal(hdhr.sanitizeModel('   '), null);
+    assert.equal(hdhr.guideName('123'), '123');
+    assert.equal(hdhr.guideName('001 Das Erste HD'), 'Das Erste HD');
+
+    const config = hdhr.resolveConfig({ HDHR_DEVICE_ID: 'bad', HDHR_TUNER_COUNT: '99', HDHR_FRIENDLY_NAME: '-' });
+    assert.equal(config.deviceId, '12345678');
+    assert.equal(config.tunerCount, 2);
+    assert.equal(config.friendlyName, null);
+    assert.ok(config.warnings.length >= 2);
+
+    const lineup = hdhr.buildLineup(
+        [{ name: 'A', url: 'http://192.168.1.20/a' }, { name: 'B', url: 'not a url' }],
+        { A: 1, B: 2, Missing: 3 }
+    );
+    assert.deepEqual(lineup, [{ guideNumber: '1', guideName: 'A', url: 'http://192.168.1.20/a' }]);
+});
