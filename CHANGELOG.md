@@ -3,6 +3,13 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.7.2]
+
+### Changed
+- Upgraded Express to 5.3.0, including the API rate-limit route syntax required by Express 5.
+- Updated the container base image to Node 26 Alpine with a pinned image digest.
+- Updated GitHub Actions to current major versions and Node 26 in the CI and release workflows.
+
 ## [1.7.1]
 
 ### Changed

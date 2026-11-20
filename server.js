@@ -537,7 +537,7 @@ function rateLimit({ windowMs, max }) {
 }
 
 app.use(express.json({ limit: '1mb' }));
-app.post('/api/*', rateLimit({ windowMs: 60 * 1000, max: 60 }));
+app.post(/^\/api\//, rateLimit({ windowMs: 60 * 1000, max: 60 }));
 app.use(express.static(path.join(__dirname, 'public'), {
     setHeaders: (res, filePath) => {
         // Bundled fonts rarely change: let browsers cache them for a week.
