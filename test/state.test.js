@@ -1,0 +1,89 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { createState, persistedSnapshot, applyPersistedState } = require('../lib/state');
+const { createValidation, sortMapping } = require('../lib/validation');
+const hdhr = require('../lib/hdhr');
+
+const fakeCron = value => typeof value === 'string' && value.trim().split(/\s+/).length === 5;
+const validation = createValidation({ cronValidate: fakeCron });
+const logger = { warn() {}, info() {}, error() {} };
+
+const deps = {
+    validateMapping: validation.validateMapping,
+    sortMapping,
+    sanitizeModel: hdhr.sanitizeModel,
+    isAllowedReceiverIp: validation.isAllowedReceiverIp,
+    cronValidate: fakeCron,
+    defaultCron: '*/5 * * * *',
+    logger
+};
+
+test('createState starts with safe defaults and supports overrides', () => {
+    const state = createState();
+    assert.equal(state.configured, false);
+    assert.equal(state.cachedM3u8, null);
+    assert.deepEqual(state.config.mapping, {});
+    assert.deepEqual(state.config.channels, []);
+    assert.equal(state.sync.consecutiveFailures, 0);
+
+    const custom = createState({ configured: true, config: { ip: '10.0.0.5' } });
+    assert.equal(custom.configured, true);
+    assert.equal(custom.config.ip, '10.0.0.5');
+    assert.equal(custom.config.port, '9100');
+});
+
+test('persistedSnapshot contains only plain data and does not share mapping/channels', () => {
+    const state = createState({
+        config: {
+            ip: '192.168.1.10',
+            port: '9100',
+            cronExpression: '*/5 * * * *',
+            selectedListName: 'TV-Liste',
+            mapping: { A: 1 },
+            channels: [{ name: 'A', url: 'http://192.168.1.20/a' }],
+            lastSync: '2026-01-01T00:00:00.000Z',
+            detectedModel: 'DIGIT ISIO STC'
+        }
+    });
+
+    const snapshot = persistedSnapshot(state);
+    snapshot.mapping.A = 99;
+    snapshot.channels[0].name = 'changed';
+    assert.equal(state.config.mapping.A, 1);
+    assert.equal(state.config.channels[0].name, 'A');
+});
+
+test('applyPersistedState sanitises values, sorts the mapping and repairs invalid settings', () => {
+    const state = createState();
+    const result = applyPersistedState(state, {
+        ip: '192.168.1.10',
+        port: 'not-a-port',
+        cronExpression: 'not cron',
+        selectedListName: '',
+        mapping: { '002 B': 2, '001 A': 1, bad: 'has space' },
+        channels: [
+            { name: '001 A', url: 'http://192.168.1.20/a' },
+            { name: '002 B', url: 'http://192.168.1.20/b' },
+            { name: 42, url: 'http://invalid' }
+        ],
+        detectedModel: 'DIGIT ISIO STC'
+    }, deps);
+
+    assert.equal(state.configured, true);
+    assert.equal(result.changed, true);
+    assert.equal(result.droppedMapping, 1);
+    assert.deepEqual(Object.keys(state.config.mapping), ['001 A', '002 B']);
+    assert.equal(state.config.port, '9100');
+    assert.equal(state.config.cronExpression, '*/5 * * * *');
+    assert.equal(state.config.selectedListName, 'TV-Liste');
+    assert.equal(state.config.channels.length, 2);
+    assert.equal(state.config.detectedModel, 'DIGIT ISIO STC');
+});
+
+test('applyPersistedState rejects non-object data', () => {
+    const state = createState();
+    assert.throws(() => applyPersistedState(state, null, deps), /not an object/);
+    assert.throws(() => applyPersistedState(state, [], deps), /not an object/);
+});

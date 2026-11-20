@@ -3,6 +3,39 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.8.0]
+
+### Added
+- `createApp()` application factory and a split between server startup (`server.js`) and HTTP wiring (`lib/app.js`), so the full API can be tested without starting a real listener.
+- Unit tests for the new modules and HTTP integration tests using a fake receiver, an in-memory config store and a fake scheduler.
+- `npm run coverage` (Node's built-in coverage report) and a coverage step in CI.
+- Structured `lib/logger.js` with text/JSON output and safe serialisation.
+- `lib/runtime-config.js` with validated environment parsing, including a safe `TRUST_PROXY` parser.
+- `lib/config-store.js` with atomic `mapping.json` writes and an explicit non-atomic fallback for single-file bind mounts.
+- `lib/receiver.js` as a UPnP/SOAP adapter with bounded responses, timeouts and testable DIDL parsing.
+- `lib/http-security.js` with Basic Auth, bounded rate limiting, a CSRF/origin guard and security headers.
+- `GET /health/live` and `GET /health/ready`; `/health` now also reports `lastAttemptAt`, `lastErrorAt`, `lastDurationMs`, channel and mapping counts.
+- `POST /api/save-settings` to change the receiver target separately from a sync.
+- `Cache-Control: no-store` for API and health responses, `Permissions-Policy`, and optional HSTS (`HSTS=true`).
+- Log rotation and a `pids_limit` in `docker-compose.yml`.
+- Documentation for the new endpoints, environment variables and module layout.
+
+### Changed
+- The API now fails closed when only one of `ADMIN_USER` / `ADMIN_PASSWORD` is set: public routes keep working, protected routes answer `503`.
+- Authentication failures and API requests use bounded rate-limit maps; auth failures are throttled before credentials are checked.
+- State-changing `/api/*` requests require `Content-Type: application/json` and a same-origin `Origin`/`Referer` when one is sent.
+- The receiver address is saved through `/api/save-settings`; `/api/fetch-channels` only syncs with the configured target.
+- `MAX_RESPONSE_BYTES` defaults to 2 MiB (was a hard-coded 5 MiB) and is configurable.
+- Graceful shutdown waits up to `SHUTDOWN_TIMEOUT_MS` (default 30 s, always at least the maximum sync duration) and handles `uncaughtException`.
+- The Docker health check and compose health check use `/health/live`.
+- `npm run check` now checks `server.js` and every module in `lib/`.
+- Channel IDs `.` and `..` are rejected; the UI keeps leading zeros (for example `001`) and treats ID `0` as mapped.
+
+### Fixed
+- `TRUST_PROXY=false` and `TRUST_PROXY=0` no longer risk a startup crash.
+- The UI no longer truncates IDs such as `001` or `12abc` through `parseInt`.
+- The README now names `lib/m3u8.js` correctly.
+
 ## [1.7.2]
 
 ### Changed

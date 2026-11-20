@@ -1592,6 +1592,22 @@
     }
 
     /**
+     * Persists receiver settings before a sync. This keeps the receiver target a
+     * separate, validated operation instead of letting every fetch choose an
+     * arbitrary LAN address.
+     */
+    async function saveReceiverSettings(settings) {
+        const res = await fetch(BACKEND_URL + '/api/save-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Could not save settings');
+        return data;
+    }
+
+    /**
      * Communicates with the backend server to retrieve live TV channels and available lists from the TechniSat receiver.
      */
     async function fetchChannels() {
@@ -1619,6 +1635,7 @@
 
         applyBtn.disabled = true;
         try {
+            await saveReceiverSettings({ ip, port, cronExpression, selectedListName });
             const res = await fetch(BACKEND_URL + '/api/fetch-channels', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1688,10 +1705,13 @@
         const used = new Set(Object.values(currentMapping).map(String));
 
         detectedChannels.forEach(name => {
-            if (!currentMapping[name]) {
+            const assigned = currentMapping[name];
+            if (assigned === undefined || assigned === '' || assigned === null) {
                 const match = name.match(/^(\d+)/);
                 if (match) {
-                    const id = parseInt(match[1], 10);
+                    // Keep leading zeros ("001" must stay "001", not become 1).
+                    const raw = match[1];
+                    const id = /^0\d/.test(raw) ? raw : Number(raw);
                     if (used.has(String(id))) {
                         skipped.push(name);
                         return;
@@ -1775,8 +1795,11 @@
         if (value === '') {
             delete currentMapping[name];
         } else {
-            const parsed = parseInt(value, 10);
-            currentMapping[name] = isNaN(parsed) ? value : parsed;
+            const text = String(value).trim();
+            // Canonical non-negative integers stay numbers; anything else (including
+            // "001" and "12abc") is kept verbatim so no information is lost.
+            const isCanonicalNumber = /^(0|[1-9]\d*)$/.test(text) && text.length <= 15 && Number.isSafeInteger(Number(text));
+            currentMapping[name] = isCanonicalNumber ? Number(text) : text;
         }
         updateDirtyIndicator();
     }

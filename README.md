@@ -129,9 +129,12 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 | `PORT` | `9191` | Port the server listens on (inside the container). Publish the same port (`9191:9191`); if you change it, adjust the mapping and the address in Plex/Jellyfin. |
 | `DATA_DIR` | `/app/data` | Directory for `mapping.json`. Must be writable. |
 | `REQUEST_TIMEOUT_MS` | `5000` | Idle timeout per UPnP request (hard deadline: 3×). |
+| `MAX_RESPONSE_BYTES` | `2097152` | Maximum accepted UPnP response size (2 MiB). |
+| `SHUTDOWN_TIMEOUT_MS` | `30000` | Hard deadline for graceful shutdown; always at least 3× `REQUEST_TIMEOUT_MS` + 5 s. |
 | `ALLOW_NON_PRIVATE_IP` | `false` | Allow receiver IPs outside RFC1918 (VPN/CGNAT). Loopback and link-local stay blocked. |
-| `ADMIN_USER` / `ADMIN_PASSWORD` | – | Enables HTTP Basic Auth for the UI and `/api/*`. Set both. |
+| `ADMIN_USER` / `ADMIN_PASSWORD` | – | Enables HTTP Basic Auth for the UI and `/api/*`. Set both; if only one is set, protected routes fail closed with `503`. |
 | `TRUST_PROXY` | – | Number of reverse-proxy hops (or `true`) so rate limiting sees real client IPs. |
+| `HSTS` | `false` | Set to `true` behind a TLS-terminating proxy to add `Strict-Transport-Security`. |
 | `HDHR_ENABLED` | `true` | Set to `false` to switch off the HDHomeRun emulation below `/hdhr`. |
 | `HDHR_FRIENDLY_NAME` | `-` | Tuner name in Plex/Jellyfin. `-` (or empty) means automatic: `TechniSat <detected model>`, e.g. `TechniSat DIGIT ISIO STC` (just `TechniSat` until the first successful sync). Set your own name to override it. |
 | `HDHR_DEVICE_ID` | `12345678` | 8 hex digits. Must be unique per tuner in your network; change it if you run more than one instance. |
@@ -146,13 +149,16 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 |---|---|---|
 | `GET /hdhr/discover.json`, `/hdhr/lineup_status.json`, `/hdhr/lineup.json`, `/hdhr/stream/:id` | public | HDHomeRun emulation, see below. |
 | `GET /playlist.m3u8` | public | Optional M3U8 playlist. `503` + `Retry-After` while nothing is synced/mapped. |
-| `GET /health` | public | Liveness/status JSON (`ok` or `degraded`, last sync, last error). |
+| `GET /health` | public | Aggregated status JSON (`ok` or `degraded`, last sync, last error). |
+| `GET /health/live` | public | Process liveness for container orchestrators. Always `200` while the process is alive. |
+| `GET /health/ready` | public | Readiness. `503` when a configured instance has no usable playlist, otherwise `200`. |
 | `GET /api/get-config` | Basic Auth¹ | Current settings, version, last sync, last error. |
-| `POST /api/fetch-channels` | Basic Auth¹ | Applies settings and syncs with the receiver. |
+| `POST /api/save-settings` | Basic Auth¹ | Validates and saves receiver settings without contacting the receiver. |
+| `POST /api/fetch-channels` | Basic Auth¹ | Syncs with the configured receiver. Changing the receiver address requires `/api/save-settings` first. |
 | `POST /api/save-mapping` | Basic Auth¹ | Saves the channel-name → ID mapping. |
 | `GET /api/export-config` / `POST /api/import-config` | Basic Auth¹ | Backup and restore of settings and mapping. |
 
-¹ Only enforced if `ADMIN_USER` and `ADMIN_PASSWORD` are set.
+¹ Only enforced if `ADMIN_USER` and `ADMIN_PASSWORD` are set. State-changing `/api/*` requests must use `Content-Type: application/json` and a same-origin `Origin`/`Referer` (when the client sends one); cross-origin attempts are rejected.
 
 ## HDHomeRun Emulation (Plex / Jellyfin)
 
@@ -186,6 +192,8 @@ The absolute URLs in the answers are built from the `Host` header of the request
 
 * TechniMapper is built for **trusted home/office networks**. **Do not expose it directly to the internet.**
 * Set `ADMIN_USER`/`ADMIN_PASSWORD` and run it behind a TLS-terminating reverse proxy (set `TRUST_PROXY`). Basic Auth over plain HTTP is not encrypted.
+* State-changing `/api/*` routes require JSON and a same-origin `Origin`/`Referer`; authentication failures and API requests are rate-limited.
+* The receiver address is changed through a separate validated endpoint. A sync never accepts an arbitrary target address, which limits the API's use as a LAN port scanner.
 * The web UI is self-contained: fonts and icons are bundled (`public/fonts/`), the browser makes no requests to external hosts.
 * `/hdhr/*` and `/playlist.m3u8` are public on purpose (media centers, M3U8 clients, container health checks) and expose your receiver's stream URLs. They are not covered by `ADMIN_USER`/`ADMIN_PASSWORD`.
 * Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
@@ -210,27 +218,35 @@ cosign verify ghcr.io/danielfranze/technimapper-m3u-proxy:latest \
 | `/playlist.m3u8` returns `503` | No sync yet, or no channel has an ID. Click **Apply & Fetch**, then map channels and **Save**. |
 | *No TechniSat Live-TV containers found* | Wrong IP/port, receiver in standby/off, unsupported model, or no channel list configured on the receiver. |
 | *Invalid receiver IP* | Only private IPv4 addresses are allowed. Use `ALLOW_NON_PRIVATE_IP=true` for VPN/CGNAT. |
-| *Invalid channel ID for ...* | IDs may only contain letters, digits, `_`, `-`, `.` (max. 32 characters). |
+| *Invalid channel ID for ...* | IDs may only contain letters, digits, `_`, `-`, `.` (max. 32 characters; `.` and `..` are reserved). |
 | Status `degraded` in `/health` | Three or more consecutive failed syncs, or no playlist available. See `lastError` in `/health` or the UI tooltip on the sync badge. |
 
 ## Development
 
 ```bash
 npm ci
-npm test          # unit tests (Node's built-in test runner)
-npm run check     # syntax check
+npm test          # unit + integration tests (Node's built-in test runner)
+npm run coverage  # tests with the built-in coverage report
+npm run check     # syntax check for server.js and lib/*.js
 npm start         # http://localhost:9191
 ```
 
-* `server.js` – HTTP API, scheduler and receiver sync
+* `server.js` – composition root: environment, adapters, startup and graceful shutdown
+* `lib/app.js` – Express app factory (`createApp`, routes, sync orchestration)
+* `lib/state.js` – application state, persisted snapshot and repair logic
+* `lib/config-store.js` – atomic `mapping.json` persistence
+* `lib/receiver.js` – UPnP/SOAP receiver adapter
+* `lib/http-security.js` – auth, CSRF/origin guard, rate limiting, security headers
+* `lib/runtime-config.js` – environment validation
+* `lib/logger.js` – text/JSON logger
 * `lib/validation.js` – input validation (settings, mapping)
-* `lib/m3u.js` – playlist generation and sanitizing
+* `lib/m3u8.js` – playlist generation and sanitizing
 * `lib/hdhr.js` – HDHomeRun emulation (lineup, tuner name, host handling)
-* `test/` – unit tests
+* `test/` – unit and HTTP integration tests
 * `public/index.html` – Web UI
 * `public/fonts/` – bundled fonts (Inter, Material Icons Outlined), see `NOTICE.md`
 
-CI (GitHub Actions) runs tests, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
+CI (GitHub Actions) runs syntax checks, unit/integration tests, coverage, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
 
 ## Third-party fonts
 

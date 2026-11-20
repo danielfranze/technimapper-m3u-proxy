@@ -8,6 +8,7 @@ const path = require('path');
 const publicDir = path.join(__dirname, '..', 'public');
 const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
 const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+const security = fs.readFileSync(path.join(__dirname, '..', 'lib', 'http-security.js'), 'utf8');
 
 test('index.html does not reference external hosts', () => {
     const urls = [...html.matchAll(/(?:href|src)\s*=\s*"(https?:\/\/[^"]+)"|url\(\s*['"]?(https?:\/\/[^)'"]+)/g)]
@@ -17,8 +18,8 @@ test('index.html does not reference external hosts', () => {
 });
 
 test('the Content-Security-Policy does not allow external hosts', () => {
-    assert.ok(!/googleapis|gstatic/.test(server));
-    assert.match(server, /font-src 'self'/);
+    assert.ok(!/googleapis|gstatic/.test(server + security));
+    assert.match(security, /font-src 'self'/);
 });
 
 test('every font referenced in index.html exists and is a WOFF2 file', () => {
