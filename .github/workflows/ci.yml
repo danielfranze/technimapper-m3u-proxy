@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test:
-    name: Test & dependency audit
+    name: Test & dependency audit (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
