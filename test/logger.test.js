@@ -30,7 +30,7 @@ test('the logger filters levels and supports text and JSON output', () => {
     textLogger.info('should be hidden');
     textLogger.warn('visible');
     assert.deepEqual(textCalls.map(call => call[0]), ['warn']);
-    assert.equal(textCalls[0][1][0], 'visible');
+    assert.equal(textCalls[0][1][1], 'visible');
 
     const { logger: jsonLogger, calls: jsonCalls } = recordingLogger('info', 'json');
     jsonLogger.error(new Error('boom'));
