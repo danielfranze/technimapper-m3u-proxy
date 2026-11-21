@@ -3,6 +3,18 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.9.5]
+
+### Added
+- Receiver probe script now inspects both STC and S-series paths.
+- STC mock test reflects real structure (Astra-TV-Liste + TV-Liste).
+
+### Changed
+- None.
+
+### Fixed
+- None.
+
 ## [1.9.4]
 
 ### Added

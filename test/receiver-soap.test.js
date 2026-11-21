@@ -34,7 +34,11 @@ function soapResponse(resultInner) {
 }
 
 const discoveryInner = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
-  <container id="0$3$41$47" parentID="0$3$41" restricted="1" childCount="44" searchable="1">
+  <container id="0$3$41$47" parentID="0$3$41" restricted="1" childCount="316" searchable="1">
+    <dc:title>Astra-TV-Liste</dc:title>
+    <upnp:class>object.container</upnp:class>
+  </container>
+  <container id="0$3$41$48" parentID="0$3$41" restricted="1" childCount="44" searchable="1">
     <dc:title>TV-Liste</dc:title>
     <upnp:class>object.container</upnp:class>
   </container>
@@ -71,7 +75,7 @@ test('STC SOAP flow returns channels from a mock receiver', async () => {
         receiver.close();
 
         assert.equal(result.selectedListName, 'TV-Liste');
-        assert.deepEqual(result.availableLists, ['TV-Liste']);
+        assert.deepEqual(result.availableLists, ['Astra-TV-Liste', 'TV-Liste']);
         assert.equal(result.detectedModel, 'STC');
         assert.equal(result.channels.length, 2);
         assert.deepEqual(result.channels.map(channel => channel.name), ['001 Das Erste HD', '002 ZDF HD']);

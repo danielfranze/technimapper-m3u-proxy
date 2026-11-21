@@ -1,6 +1,6 @@
 {
   "name": "technisat-mapper",
-  "version": "1.9.4",
+  "version": "1.9.5",
   "description": "TechniSat IPTV Proxy",
   "main": "server.js",
   "private": true,
