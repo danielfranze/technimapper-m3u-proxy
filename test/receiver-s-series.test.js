@@ -176,3 +176,49 @@ test('S1 SOAP flow is detected as S1 via the Astra-TV-Liste container', async ()
         await stopServer(server);
     }
 });
+
+// Generic S-series fallback: container structure matches neither S1 nor S2.
+const genericDiscoveryInner = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
+  <container id="3$1" parentID="3" restricted="1" childCount="2" searchable="1">
+    <dc:title>Foo</dc:title>
+    <upnp:class>object.container</upnp:class>
+  </container>
+</DIDL-Lite>`;
+
+const genericListInner = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
+  <item id="3$1$1" parentID="3$1" restricted="1">
+    <dc:title>Channel One</dc:title>
+    <res protocolInfo="http-get:*:video/mpeg:*">http://192.168.178.77:9100/livevideo/a.ts</res>
+    <upnp:class>object.item.videoItem.videoBroadcast</upnp:class>
+  </item>
+</DIDL-Lite>`;
+
+test('an unknown S-series container structure falls back to S_SERIES', async () => {
+    let calls = 0;
+    const { server, port } = await startServer((req, res) => {
+        req.resume();
+        req.on('end', () => {
+            if (req.url === '/dev0/srv1/control') {
+                res.statusCode = 404;
+                res.setHeader('Content-Type', 'text/html');
+                res.end('<html><body>Not Found</body></html>');
+                return;
+            }
+            calls++;
+            const body = calls === 1 ? soapResponse(genericDiscoveryInner) : soapResponse(genericListInner);
+            res.setHeader('Content-Type', 'text/xml; charset="utf-8"');
+            res.end(body);
+        });
+    });
+
+    try {
+        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const result = await receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'Foo' });
+        receiver.close();
+
+        assert.equal(result.detectedModel, 'S_SERIES');
+        assert.equal(result.channels.length, 1);
+    } finally {
+        await stopServer(server);
+    }
+});
