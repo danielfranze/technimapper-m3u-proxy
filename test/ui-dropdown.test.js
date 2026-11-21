@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'styles.css'), 'utf8');
 const script = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'main.js'), 'utf8');
 
 test('the channel list uses a custom dropdown that is a listbox, not a visible native select', () => {
@@ -24,7 +25,7 @@ test('the hidden select is only touched by the dropdown helpers', () => {
 });
 
 test('the copy menu and the channel list share one menu style', () => {
-    for (const cls of ['.dd-menu', '.dd-title', '.dd-item', '.dd-check']) assert.ok(html.includes(cls), cls);
+    for (const cls of ['.dd-menu', '.dd-title', '.dd-item', '.dd-check']) assert.ok(html.includes(cls) || css.includes(cls), cls);
     assert.ok(!/split-(menu|item|check)/.test(html), 'old menu class names must be gone');
 });
 

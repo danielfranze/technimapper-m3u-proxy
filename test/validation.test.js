@@ -113,10 +113,10 @@ test('partitionMapping treats nothing as stale while the channel list is unknown
     assert.deepEqual(orphans, []);
 });
 
-test('sortMapping orders entries like the channel list and puts stale entries last, alphabetically', () => {
+test('sortMapping orders entries like the channel list and keeps stale entries in their current order', () => {
     const mapping = { '004 SAT.1': 4, 'ZZ old': 99, '003 RTL': 3, 'AA old': 98, '001 Das Erste HD': 1 };
     const sorted = sortMapping(mapping, ['001 Das Erste HD', '002 ZDF HD', '003 RTL', '004 SAT.1']);
-    assert.deepEqual(Object.keys(sorted), ['001 Das Erste HD', '003 RTL', '004 SAT.1', 'AA old', 'ZZ old']);
+    assert.deepEqual(Object.keys(sorted), ['001 Das Erste HD', '003 RTL', '004 SAT.1', 'ZZ old', 'AA old']);
     assert.deepEqual(sorted, mapping);                                    // same content, only the order differs
     assert.deepEqual(Object.keys(mapping)[0], '004 SAT.1');               // input is not mutated
 });

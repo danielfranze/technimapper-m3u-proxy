@@ -96,6 +96,7 @@ test('S2 SOAP flow is detected as S2', async () => {
 
         assert.equal(result.detectedModel, 'S2');
         assert.equal(result.selectedListName, 'TV-Liste');
+        assert.deepEqual(result.availableLists, ['TV-Liste']);
         assert.equal(result.channels.length, 2);
         assert.deepEqual(result.channels.map(channel => channel.name), ['Das Erste HD', 'ZDF HD']);
     } finally {
@@ -171,7 +172,7 @@ test('S1 SOAP flow is detected as S1 via the Astra-TV-Liste container', async ()
         assert.equal(result.selectedListName, 'TV-Liste');
         assert.equal(result.channels.length, 2);
         assert.deepEqual(result.channels.map(channel => channel.name), ['Das Erste HD', 'ZDF HD']);
-        assert.deepEqual(result.availableLists, ['Alle Videos', 'Astra-TV-Liste', 'Datum', 'Eigene TV-Aufnahmen', 'TV-Liste', 'Verzeichnis']);
+        assert.deepEqual(result.availableLists, ['Astra-TV-Liste', 'TV-Liste']);
     } finally {
         await stopServer(server);
     }

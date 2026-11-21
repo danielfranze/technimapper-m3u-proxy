@@ -21,6 +21,7 @@ function loadUi({ fetchImpl } = {}) {
         let currentMapping = {};
         let savedMapping = {};
         let detectedChannels = [];
+        const activeOccurrence = {};
         const { showToast, renderTable, fetch, document } = stubs;
         const BACKEND_URL = '';
         ${['getDuplicateGroups', 'describeDuplicates', 'getActiveMapping', 'getOrphans', 'mappingsEqual', 'isDirty',

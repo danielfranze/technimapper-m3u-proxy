@@ -9,6 +9,8 @@
     let detectedChannels = [];
     let currentFilter = 'all';
     let searchTimeout = null;
+    // For duplicate channel names: which occurrence (by index) currently holds the ID.
+    const activeOccurrence = {};
 
     /** Escapes text for safe use in HTML content and double-quoted attributes. */
     function escapeHtml(value) {
@@ -661,7 +663,7 @@
         const selectedListName = getSelectedList();
 
         statusMsg.className = 'info';
-        statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">sync</span> Connecting...`;
+        statusMsg.innerHTML = `<span class="material-icons-outlined icon-14">sync</span> Connecting...`;
 
         applyBtn.disabled = true;
         try {
@@ -683,10 +685,19 @@
             detectedChannels = data.channels;
             currentMapping = data.mapping || {};
             savedMapping = { ...currentMapping };
+            // Default: the first occurrence of a (possibly duplicated) name holds the ID.
+            const seenNames = new Set();
+            detectedChannels.forEach((name, idx) => {
+                if (!seenNames.has(name)) {
+                    seenNames.add(name);
+                    if (currentMapping[name] !== undefined) activeOccurrence[name] = idx;
+                    else delete activeOccurrence[name];
+                }
+            });
             activeListName = data.selectedListName || activeListName;
 
             statusMsg.className = 'success';
-            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">check_circle</span> <span class="status-prefix">Loaded</span> <strong>${detectedChannels.length} channels</strong><span class="status-list">&nbsp;(&ldquo;${escapeHtml(data.selectedListName)}&rdquo;)</span>`;
+            statusMsg.innerHTML = `<span class="material-icons-outlined icon-14">check_circle</span> <span class="status-prefix">Loaded</span> <strong>${detectedChannels.length} channels</strong><span class="status-list">&nbsp;(&ldquo;${escapeHtml(data.selectedListName)}&rdquo;)</span>`;
             statusMsg.title = `Loaded ${detectedChannels.length} channels ("${data.selectedListName}")`;
             
             renderTable();
@@ -697,7 +708,7 @@
             listCard.style.display = 'none';
             
             statusMsg.className = 'error';
-            statusMsg.innerHTML = `<span class="material-icons-outlined" style="font-size: 14px;">error</span> ${escapeHtml(err.message)}`;
+            statusMsg.innerHTML = `<span class="material-icons-outlined icon-14">error</span> ${escapeHtml(err.message)}`;
             
             showToast(err.message, 'error');
         } finally {
@@ -732,26 +743,63 @@
     function autoFillFromName() {
         let count = 0;
         const skipped = [];
-        const used = new Set(Object.values(currentMapping).map(String));
+        const used = new Set();
+        const seenNames = new Set();
+        let nextId = 1;
 
-        detectedChannels.forEach(name => {
-            const assigned = currentMapping[name];
-            if (assigned === undefined || assigned === '' || assigned === null) {
-                const match = name.match(/^(\d+)/);
-                if (match) {
-                    // Keep leading zeros ("001" must stay "001", not become 1).
-                    const raw = match[1];
-                    const num = Number(raw);
-                    const id = /^0\d/.test(raw) ? raw : (raw.length <= 15 && Number.isSafeInteger(num) ? num : raw);
-                    if (used.has(String(id))) {
-                        skipped.push(name);
-                        return;
-                    }
-                    currentMapping[name] = id;
-                    used.add(String(id));
-                    count++;
-                }
+        // Only extract IDs from names when EVERY channel name yields a number.
+        // Otherwise fall back to sequential IDs in the current table order.
+        let searchTerm = '';
+        try {
+            const searchInput = document.getElementById('searchInput');
+            const searchInputMobile = document.getElementById('searchInputMobile');
+            searchTerm = ((searchInput && searchInput.value) || (searchInputMobile && searchInputMobile.value) || '').toLowerCase();
+        } catch (e) { /* no document (e.g. unit tests) */ }
+        const channelsToFill = detectedChannels.filter(name => {
+            const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
+            const isMapped = assignedId !== '';
+            if (currentFilter === 'mapped' && !isMapped) return false;
+            if (currentFilter === 'unmapped' && isMapped) return false;
+            if (searchTerm && !name.toLowerCase().includes(searchTerm)) return false;
+            return true;
+        });
+
+        const allHaveNumbers = channelsToFill.length > 0 && channelsToFill.every(name => /^\\d+/.test(name));
+
+        // Parse is an explicit action: drop previously assigned IDs for the
+        // targeted channels first so the result can be adopted or discarded via Save.
+        channelsToFill.forEach(name => { delete currentMapping[name]; });
+
+        channelsToFill.forEach(name => {
+            // Duplicate channel names only get an ID on their first occurrence.
+            if (seenNames.has(name)) {
+                skipped.push(name);
+                return;
             }
+            seenNames.add(name);
+
+            let id = null;
+            if (allHaveNumbers) {
+                const match = name.match(/^(\\d+)/);
+                const raw = match[1];
+                const num = Number(raw);
+                id = (raw.length <= 15 && Number.isSafeInteger(num)) ? num : raw;
+            } else {
+                while (used.has(String(nextId))) nextId++;
+                id = nextId;
+                nextId++;
+            }
+
+            if (used.has(String(id))) {
+                skipped.push(name);
+                return;
+            }
+            // Overwrite any existing ID: Parse is an explicit action and the
+            // Save button lets the user keep or discard the result.
+            currentMapping[name] = id;
+            used.add(String(id));
+            activeOccurrence[name] = detectedChannels.indexOf(name);
+            count++;
         });
 
         renderTable();
@@ -768,21 +816,51 @@
      */
     function renderTable() {
         const tbody = document.getElementById('channelTableBody');
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        let searchTerm = '';
+        try {
+            const searchInput = document.getElementById('searchInput');
+            const searchInputMobile = document.getElementById('searchInputMobile');
+            searchTerm = ((searchInput && searchInput.value) || (searchInputMobile && searchInputMobile.value) || '').toLowerCase();
+        } catch (e) { /* no document (e.g. unit tests) */ }
         const rows = [];
         const dupIds = new Set(getDuplicateGroups(getActiveMapping()).map(g => g.id));
 
+        const filtered = [];
         detectedChannels.forEach((name, index) => {
-            const assignedId = currentMapping[name] !== undefined ? currentMapping[name] : '';
+            const isActive = activeOccurrence[name] === index;
+            const assignedId = (isActive && currentMapping[name] !== undefined) ? currentMapping[name] : '';
             const isMapped = assignedId !== '';
-            const isDup = isMapped && dupIds.has(String(assignedId));
-
             if (currentFilter === 'mapped' && !isMapped) return;
             if (currentFilter === 'unmapped' && isMapped) return;
             if (searchTerm && !name.toLowerCase().includes(searchTerm)) return;
+            filtered.push({ name, index, isActive, assignedId, isMapped });
+        });
+
+        // Sort by assigned ID (mapped first), keeping unmapped in original order.
+        filtered.sort((a, b) => {
+            const ia = a.assignedId;
+            const ib = b.assignedId;
+            const aHas = ia !== '';
+            const bHas = ib !== '';
+            if (aHas && bHas) {
+                const na = typeof ia === 'number' ? ia : Number(ia);
+                const nb = typeof ib === 'number' ? ib : Number(ib);
+                if (!isNaN(na) && !isNaN(nb)) return na - nb;
+                return String(ia).localeCompare(String(ib), undefined, { numeric: true });
+            }
+            if (aHas) return -1;
+            if (bHas) return 1;
+            return 0; // stable original order
+        });
+
+        const seenNames = new Set();
+        filtered.forEach(({ name, index, assignedId, isMapped }) => {
+            const isFirstOccurrence = !seenNames.has(name);
+            seenNames.add(name);
+            const isDup = isMapped && dupIds.has(String(assignedId));
 
             rows.push(`
-                <tr class="${isDup ? 'dup-row' : ''}">
+                <tr class="${isDup ? 'dup-row' : ''}" data-name="${escapeHtml(name)}">
                     <td>
                         <span class="status-badge ${isMapped ? 'status-mapped' : 'status-unmapped'}">
                             ${isMapped ? 'Mapped' : 'Unmapped'}
@@ -790,11 +868,9 @@
                     </td>
                     <td><strong>${escapeHtml(name)}</strong></td>
                     <td>
-                        <input type="text" id="channel-id-${index}" name="channel-id-${index}" class="id-input" value="${escapeHtml(assignedId)}" 
+                        <input type="text" id="channel-id-${index}" name="channel-id-${index}" class="id-input" value="${escapeHtml(assignedId)}"
                                autocomplete="off" aria-label="Channel ID for ${escapeHtml(name)}"
-                               onfocus="this.closest('tr').classList.add('focused-row')"
-                               onblur="this.closest('tr').classList.remove('focused-row')"
-                               data-name="${escapeHtml(name)}" onchange="updateId(this.dataset.name, this.value)" placeholder="-">
+                               data-name="${escapeHtml(name)}" data-index="${index}" placeholder="-">
                     </td>
                 </tr>
             `);
@@ -822,17 +898,21 @@
      * @param {string} name - The original channel name.
      * @param {string} value - The new assigned channel ID value.
      */
-    function updateId(name, value) {
+    function updateId(name, value, index) {
         if (value === '') {
             delete currentMapping[name];
+            delete activeOccurrence[name];
         } else {
             const text = String(value).trim();
             // Canonical non-negative integers stay numbers; anything else (including
             // "001" and "12abc") is kept verbatim so no information is lost.
             const isCanonicalNumber = /^(0|[1-9]\d*)$/.test(text) && text.length <= 15 && Number.isSafeInteger(Number(text));
             currentMapping[name] = isCanonicalNumber ? Number(text) : text;
+            // The occurrence being edited becomes the one holding the ID.
+            activeOccurrence[name] = (typeof index === 'number') ? index : (activeOccurrence[name] ?? detectedChannels.indexOf(name));
         }
         updateDirtyIndicator();
+        renderTable();
     }
 
     /**
@@ -960,3 +1040,20 @@
     });
     const importFileInput = document.getElementById('importFileInput');
     if (importFileInput) importFileInput.addEventListener('change', (e) => handleImportFile(e));
+
+    const channelTableBody = document.getElementById('channelTableBody');
+    if (channelTableBody) {
+        channelTableBody.addEventListener('focusin', (e) => {
+            const input = e.target.closest('.id-input');
+            if (input) input.closest('tr').classList.add('focused-row');
+        });
+        channelTableBody.addEventListener('focusout', (e) => {
+            const input = e.target.closest('.id-input');
+            if (input) input.closest('tr').classList.remove('focused-row');
+        });
+        channelTableBody.addEventListener('change', (e) => {
+            const input = e.target.closest('.id-input');
+            if (input) updateId(input.dataset.name, input.value, Number(input.dataset.index));
+        });
+    }
+

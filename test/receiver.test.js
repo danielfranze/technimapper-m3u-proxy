@@ -25,8 +25,8 @@ test('parseContainerList extracts id and title and drops incomplete entries', ()
         ]
     };
     assert.deepEqual(parseContainerList(didl), [
-        { id: '3', title: 'TV-Liste' },
-        { id: '4', title: 'Radio' }
+        { id: '3', title: 'TV-Liste', childCount: 0 },
+        { id: '4', title: 'Radio', childCount: 0 }
     ]);
 });
 

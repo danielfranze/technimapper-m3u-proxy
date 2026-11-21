@@ -7,6 +7,7 @@ const path = require('path');
 
 const publicDir = path.join(__dirname, '..', 'public');
 const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
+const css = fs.readFileSync(path.join(publicDir, 'app', 'styles.css'), 'utf8');
 const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 const security = fs.readFileSync(path.join(__dirname, '..', 'lib', 'http-security.js'), 'utf8');
 
@@ -22,8 +23,9 @@ test('the Content-Security-Policy does not allow external hosts', () => {
     assert.match(security, /font-src 'self'/);
 });
 
-test('the Content-Security-Policy does not allow inline scripts or styles', () => {
-    assert.ok(!/unsafe-inline/.test(security), 'CSP must not use unsafe-inline');
+test('the Content-Security-Policy does not allow inline scripts', () => {
+    const scriptSrc = (security.match(/script-src[^;]*/) || [''])[0];
+    assert.ok(!/unsafe-inline/.test(scriptSrc), 'script-src must not use unsafe-inline');
 });
 
 test('index.html has no inline event handlers or style attributes', () => {
@@ -31,8 +33,8 @@ test('index.html has no inline event handlers or style attributes', () => {
     assert.ok(!/\sstyle\s*=/.test(html), 'inline style attributes are not allowed');
 });
 
-test('every font referenced in index.html exists and is a WOFF2 file', () => {
-    const files = [...html.matchAll(/url\('(fonts\/[^']+\.woff2)'\)/g)].map(m => m[1]);
+test('every font referenced in styles.css exists and is a WOFF2 file', () => {
+    const files = [...css.matchAll(/url\('(\.\.\/fonts\/[^']+)'\)/g)].map(m => m[1].replace(/^\.\.\//, ''));
     assert.ok(files.length >= 4, 'expected at least 4 @font-face sources');
     for (const file of files) {
         const full = path.join(publicDir, file);

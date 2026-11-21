@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'styles.css'), 'utf8');
 const script = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'main.js'), 'utf8');
 const grab = (pattern) => {
     const m = script.match(pattern);
@@ -56,6 +57,6 @@ test('the split button is an accessible menu button and replaces the old M3U-onl
 test('the header drops " URL", then the word "Copy" (never the source word), then the label "Last sync:"', () => {
     assert.match(script, /const steps = \['hide-url', 'hide-word', 'hide-label'\];/);
     for (const rule of ['.header-meta.hide-url .copy-url', '.header-meta.hide-word .copy-word', '.header-meta.hide-label .sync-label']) {
-        assert.ok(html.includes(rule), rule);
+        assert.ok(css.includes(rule), rule);
     }
 });
