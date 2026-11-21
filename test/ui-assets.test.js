@@ -22,6 +22,15 @@ test('the Content-Security-Policy does not allow external hosts', () => {
     assert.match(security, /font-src 'self'/);
 });
 
+test('the Content-Security-Policy does not allow inline scripts or styles', () => {
+    assert.ok(!/unsafe-inline/.test(security), 'CSP must not use unsafe-inline');
+});
+
+test('index.html has no inline event handlers or style attributes', () => {
+    assert.ok(!/\son(click|change|input|submit|load)\s*=/.test(html), 'inline event handlers are not allowed');
+    assert.ok(!/\sstyle\s*=/.test(html), 'inline style attributes are not allowed');
+});
+
 test('every font referenced in index.html exists and is a WOFF2 file', () => {
     const files = [...html.matchAll(/url\('(fonts\/[^']+\.woff2)'\)/g)].map(m => m[1]);
     assert.ok(files.length >= 4, 'expected at least 4 @font-face sources');

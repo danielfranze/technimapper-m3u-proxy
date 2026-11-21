@@ -31,9 +31,9 @@ function baseRuntime(overrides = {}) {
 
 /**
  * Builds the standard integration-test harness used by the app-level tests.
- * @param {{ state?: object, runtime?: object, fetchChannels?: Function, channels?: any[] }} [options]
+ * @param {{ state?: object, runtime?: object, fetchChannels?: Function, channels?: any[], syncCoordinator?: any, hdhrEnabled?: boolean, version?: string }} [options]
  */
-function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetchChannels, channels } = {}) {
+function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetchChannels, channels, syncCoordinator, hdhrEnabled, version } = {}) {
     const CHANNELS = channels || [{ name: 'A', url: 'http://192.168.1.20/a' }, { name: 'B', url: 'http://192.168.1.20/b' }];
     const state = createStateStore(createState(stateOverrides || {}));
     const writes = [];
@@ -78,8 +78,9 @@ function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetch
         receiver,
         validation: { validateSettings: validation.validateSettings, validateMapping: validation.validateMapping },
         cron,
-        version: '1.8.0-test',
-        hdhrConfig: { enabled: true, friendlyName: null, deviceId: '12345678', tunerCount: 2 }
+        version: version || '1.8.0-test',
+        hdhrConfig: { enabled: hdhrEnabled !== false, friendlyName: null, deviceId: '12345678', tunerCount: 2 },
+        syncCoordinator
     });
 
     return { app, services, state, writes, calls, configStore, scheduled: () => scheduled, CHANNELS };

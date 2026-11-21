@@ -1,5 +1,7 @@
     'use strict';
 
+    import { BACKEND_URL } from './api.js';
+
     let currentMapping = {};
     let savedMapping = {};
     let activeListName = '';
@@ -7,7 +9,6 @@
     let detectedChannels = [];
     let currentFilter = 'all';
     let searchTimeout = null;
-    const BACKEND_URL = window.location.origin;
 
     /** Escapes text for safe use in HTML content and double-quoted attributes. */
     function escapeHtml(value) {
@@ -938,3 +939,24 @@
         };
         reader.readAsText(file);
     }
+
+    // Event wiring (no inline handlers, CSP-friendly)
+    document.querySelectorAll('[data-action]').forEach(el => {
+        el.addEventListener('click', () => {
+            switch (el.dataset.action) {
+                case 'copy': copySelectedUrl(); break;
+                case 'export': exportConfig(); break;
+                case 'import': triggerImport(); break;
+                case 'fetch': fetchChannels(); break;
+                case 'filter': setFilter(el.dataset.filter, el); break;
+                case 'autofill': autoFillFromName(); break;
+                case 'clean': removeStaleMappings(); break;
+                case 'save': saveMapping(); break;
+            }
+        });
+    });
+    document.querySelectorAll('[data-action="search"]').forEach(el => {
+        el.addEventListener('input', (e) => handleSearchInput(e.target.value));
+    });
+    const importFileInput = document.getElementById('importFileInput');
+    if (importFileInput) importFileInput.addEventListener('change', (e) => handleImportFile(e));

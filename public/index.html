@@ -66,6 +66,21 @@
         -webkit-font-feature-settings: 'liga';
         -webkit-font-smoothing: antialiased;
     }
+    .icon-14 { font-size: 14px; }
+    .icon-15 { font-size: 15px; }
+    .icon-16 { font-size: 16px; }
+    .icon-18 { font-size: 18px; }
+    .flex-center-gap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .flex-center-gap-end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .card-title-compact { margin: 0; }
+    .card-title-center { text-align: center; width: 100%; margin-bottom: 4px; }
+    .hidden-file { display: none; }
+    .search-full { width: 100% !important; }
+    .hidden-card { display: none; }
+    .table-header { background: #16191d; }
+    .col-status { width: 75px; }
+    .col-name { width: 100%; }
+    .col-id { width: 100px; }
 
     /* ==========================================
        CSS Variables & Design System Token Setup
@@ -771,15 +786,15 @@
     </h1>
     <div class="header-meta">
         <div class="header-badge" id="syncBadge" title="Last successful sync">
-            <span class="material-icons-outlined" style="font-size: 15px;">sync</span>
+            <span class="material-icons-outlined icon-15">sync</span>
             <span class="sync-label">Last sync:</span> <span id="last-sync-time">Loading...</span>
         </div>
         <div class="split-btn" id="copySplit">
-            <button type="button" class="btn-subtle split-main" id="copyMain" onclick="copySelectedUrl()" title="Copy the HDHomeRun tuner address (Plex / Jellyfin)" aria-label="Copy the HDHomeRun tuner address (Plex / Jellyfin)">
-                <span class="material-icons-outlined" style="font-size: 15px;">content_copy</span> <span class="copy-label"><span class="copy-word">Copy</span><span class="copy-source"> HDHR</span><span class="copy-url"> URL</span></span>
+            <button type="button" class="btn-subtle split-main" id="copyMain" data-action="copy" title="Copy the HDHomeRun tuner address (Plex / Jellyfin)" aria-label="Copy the HDHomeRun tuner address (Plex / Jellyfin)">
+                <span class="material-icons-outlined icon-15">content_copy</span> <span class="copy-label"><span class="copy-word">Copy</span><span class="copy-source"> HDHR</span><span class="copy-url"> URL</span></span>
             </button>
             <button type="button" class="btn-subtle split-toggle" id="copyToggle" aria-haspopup="menu" aria-expanded="false" aria-controls="copyMenu" title="Choose which URL to copy" aria-label="Choose which URL to copy">
-                <span class="material-icons-outlined" style="font-size: 18px;">expand_more</span>
+                <span class="material-icons-outlined icon-18">expand_more</span>
             </button>
             <div class="dd-menu" id="copyMenu" role="menu" aria-label="URL to copy" hidden>
                 <div class="dd-title" role="presentation">Select URL source</div>
@@ -811,12 +826,12 @@
                     <div class="card-title">Connection & Auto-Update Configuration</div>
                     <div id="modelInfoDesktop" class="model-badge model-badge-pending">Not detected yet</div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
-                    <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON">
-                        <span class="material-icons-outlined" style="font-size: 15px;">download</span> Export
+                <div class="flex-center-gap">
+                    <button class="btn-subtle" data-action="export" title="Export configuration JSON">
+                        <span class="material-icons-outlined icon-15">download</span> Export
                     </button>
-                    <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON">
-                        <span class="material-icons-outlined" style="font-size: 15px;">upload</span> Import
+                    <button class="btn-subtle" data-action="import" title="Import configuration JSON">
+                        <span class="material-icons-outlined icon-15">upload</span> Import
                     </button>
                 </div>
             </div>
@@ -827,18 +842,18 @@
                 </div>
                 <div class="mobile-row-2">
                     <div id="modelInfoMobile" class="model-badge model-badge-pending">Not detected yet</div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
-                        <button class="btn-subtle" onclick="exportConfig()" title="Export configuration JSON" aria-label="Export configuration">
-                            <span class="material-icons-outlined" style="font-size: 15px;">download</span> <span class="btn-label">Export</span>
+                    <div class="flex-center-gap-end">
+                        <button class="btn-subtle" data-action="export" title="Export configuration JSON" aria-label="Export configuration">
+                            <span class="material-icons-outlined icon-15">download</span> <span class="btn-label">Export</span>
                         </button>
-                        <button class="btn-subtle" onclick="triggerImport()" title="Import configuration JSON" aria-label="Import configuration">
-                            <span class="material-icons-outlined" style="font-size: 15px;">upload</span> <span class="btn-label">Import</span>
+                        <button class="btn-subtle" data-action="import" title="Import configuration JSON" aria-label="Import configuration">
+                            <span class="material-icons-outlined icon-15">upload</span> <span class="btn-label">Import</span>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleImportFile(event)">
+            <input type="file" id="importFileInput" accept=".json" class="hidden-file">
         </div>
         <div class="form-grid">
             <div class="input-group">
@@ -881,75 +896,75 @@
         </div>
         <div class="form-actions">
             <div id="statusMsg" role="status" aria-live="polite"></div>
-            <button class="btn" id="applyBtn" onclick="fetchChannels()">
-                <span class="material-icons-outlined" style="font-size: 16px;">refresh</span> Apply & Fetch
+            <button class="btn" id="applyBtn" data-action="fetch">
+                <span class="material-icons-outlined icon-16">refresh</span> Apply & Fetch
             </button>
         </div>
     </div>
 
     <!-- Channel Mapping Card Component -->
-    <div class="card" id="listCard" style="display: none;">
+    <div class="card hidden-card" id="listCard">
         <div class="table-toolbar">
             <div class="toolbar-desktop">
-                <div class="card-title" style="margin: 0;">Channel ID Mapping</div>
+                <div class="card-title card-title-compact">Channel ID Mapping</div>
                 <div class="toolbar-right">
                     <div class="filter-group">
-                        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-                        <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
-                        <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                        <button class="filter-chip active" data-action="filter" data-filter="all">All</button>
+                        <button class="filter-chip" data-action="filter" data-filter="mapped">Mapped</button>
+                        <button class="filter-chip" data-action="filter" data-filter="unmapped">Unmapped</button>
                     </div>
                     <div class="search-container">
-                        <input type="text" id="searchInput" name="searchInput" class="search-input" placeholder="Search" aria-label="Search channels" autocomplete="off" oninput="handleSearchInput(this.value)">
+                        <input type="text" id="searchInput" name="searchInput" class="search-input" placeholder="Search" aria-label="Search channels" autocomplete="off" data-action="search">
                         <span class="material-icons-outlined">search</span>
                     </div>
-                    <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
-                        <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
+                    <button class="btn-subtle" data-action="autofill" title="Extract IDs automatically from channel names">
+                        <span class="material-icons-outlined icon-14">auto_fix_high</span> Parse
                     </button>
-                    <button class="btn-subtle" onclick="removeStaleMappings()" title="Remove IDs of channels that are no longer on the receiver">
-                        <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="count-badge clean-count" hidden></span>
+                    <button class="btn-subtle" data-action="clean" title="Remove IDs of channels that are no longer on the receiver">
+                        <span class="material-icons-outlined icon-14">cleaning_services</span> Clean<span class="count-badge clean-count" hidden></span>
                     </button>
-                    <button class="btn btn-success save-btn" onclick="saveMapping()">
-                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save<span class="dot-badge save-dirty" hidden></span>
+                    <button class="btn btn-success save-btn" data-action="save">
+                        <span class="material-icons-outlined icon-14">save</span> Save<span class="dot-badge save-dirty" hidden></span>
                     </button>
                 </div>
             </div>
 
             <div class="toolbar-mobile">
-                <div class="card-title" style="text-align: center; width: 100%; margin-bottom: 4px;">Channel ID Mapping</div>
+                <div class="card-title card-title-center">Channel ID Mapping</div>
 
                 <div class="mobile-filter-row">
                     <div class="filter-group">
-                        <button class="filter-chip active" onclick="setFilter('all', this)">All</button>
-                        <button class="filter-chip" onclick="setFilter('mapped', this)">Mapped</button>
-                        <button class="filter-chip" onclick="setFilter('unmapped', this)">Unmapped</button>
+                        <button class="filter-chip active" data-action="filter" data-filter="all">All</button>
+                        <button class="filter-chip" data-action="filter" data-filter="mapped">Mapped</button>
+                        <button class="filter-chip" data-action="filter" data-filter="unmapped">Unmapped</button>
                     </div>
                     <div class="search-container">
-                        <input type="text" id="searchInputMobile" name="searchInputMobile" class="search-input" placeholder="Search" aria-label="Search channels" autocomplete="off" oninput="handleSearchInput(this.value)" style="width: 100% !important;">
+                        <input type="text" id="searchInputMobile" name="searchInputMobile" class="search-input search-full" placeholder="Search" aria-label="Search channels" autocomplete="off" data-action="search">
                         <span class="material-icons-outlined">search</span>
                     </div>
                 </div>
 
                 <div class="mobile-action-row">
                     <div class="mobile-action-left">
-                        <button class="btn-subtle" onclick="autoFillFromName()" title="Extract IDs automatically from channel names">
-                            <span class="material-icons-outlined" style="font-size: 14px;">auto_fix_high</span> Parse
+                        <button class="btn-subtle" data-action="autofill" title="Extract IDs automatically from channel names">
+                            <span class="material-icons-outlined icon-14">auto_fix_high</span> Parse
                         </button>
-                        <button class="btn-subtle" onclick="removeStaleMappings()" title="Remove IDs of channels that are no longer on the receiver">
-                            <span class="material-icons-outlined" style="font-size: 14px;">cleaning_services</span> Clean<span class="count-badge clean-count" hidden></span>
+                        <button class="btn-subtle" data-action="clean" title="Remove IDs of channels that are no longer on the receiver">
+                            <span class="material-icons-outlined icon-14">cleaning_services</span> Clean<span class="count-badge clean-count" hidden></span>
                         </button>
                     </div>
-                    <button class="btn btn-success save-btn" onclick="saveMapping()">
-                        <span class="material-icons-outlined" style="font-size: 14px;">save</span> Save<span class="dot-badge save-dirty" hidden></span>
+                    <button class="btn btn-success save-btn" data-action="save">
+                        <span class="material-icons-outlined icon-14">save</span> Save<span class="dot-badge save-dirty" hidden></span>
                     </button>
                 </div>
             </div>
         </div>
         <table>
             <thead>
-                <tr style="background: #16191d;">
-                    <th style="width: 75px;">Status</th>
-                    <th style="width: 100%;">Channel Name</th>
-                    <th style="width: 100px;">Channel ID</th>
+                <tr class="table-header">
+                    <th class="col-status">Status</th>
+                    <th class="col-name">Channel Name</th>
+                    <th class="col-id">Channel ID</th>
                 </tr>
             </thead>
             <tbody id="channelTableBody"></tbody>
@@ -970,6 +985,6 @@
 </dialog>
 
 <!-- Application Script Logic -->
-    <script src="app/main.js"></script>
+    <script type="module" src="app/main.js"></script>
 </body>
 </html>

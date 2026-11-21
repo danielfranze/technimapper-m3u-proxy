@@ -3,6 +3,23 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.9.3]
+
+### Added
+- CSP hardening: `script-src` and `style-src` now only allow `'self'` (no `unsafe-inline`).
+- Extracted `public/app/api.js` (backend URL + fetch helpers) as first UI module.
+- Event delegation via `data-action` attributes instead of inline handlers.
+
+### Changed
+- Inline styles replaced by CSS utility classes; inline `style="..."` attributes removed.
+- `public/app/main.js` loaded as ES module (`type="module"`).
+
+### Fixed
+- None.
+
+### Coverage
+- 169 tests passing, 100 % line coverage across `lib/`.
+
 ## [1.9.2]
 
 ### Added
