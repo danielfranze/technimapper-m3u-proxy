@@ -132,3 +132,10 @@ test('sortMapping copes with duplicate channel names and prototype-like names', 
     const sorted = sortMapping({ constructor: 1, A: 2 }, ['A', 'A', 'constructor']);
     assert.deepEqual(Object.keys(sorted), ['A', 'constructor']);
 });
+
+test('validateSettings rejects non-object payloads', () => {
+    const strict = createValidation({ cronValidate: () => true });
+    for (const bad of [null, undefined, 42, 'x', [1, 2]]) {
+        assert.throws(() => strict.validateSettings(bad), (e) => e instanceof HttpError && e.status === 400);
+    }
+});

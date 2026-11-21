@@ -132,11 +132,19 @@ async function main() {
         }
     });
 
+    // Fail fast and visibly if the port is already in use or another listen error
+    // occurs, instead of relying on the generic uncaught-exception path.
+    server.on('error', (err) => {
+        logger.error(`Server failed to listen on port ${runtime.port}: ${err.message}`);
+        process.exit(1);
+    });
+
     let shuttingDown = false;
-    function shutdown(signal) {
+    function shutdown(signal, exitCode = 0) {
         if (shuttingDown) return;
         shuttingDown = true;
         logger.info(`${signal} received - shutting down gracefully.`);
+
         services.beginShutdown();
 
         // Hard stop if something still hangs. The budget is larger than the
@@ -154,22 +162,32 @@ async function main() {
                 logger.error('Running sync failed during shutdown:', err.message);
             }
             try { receiver.close(); } catch (err) { /* ignore */ }
-            services.dispose();
+            try { services.dispose(); } catch (err) { /* ignore */ }
             clearTimeout(hardStop);
-            process.exit(0);
+            process.exit(exitCode);
         });
         if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
     }
 
-    process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
-    process.on('unhandledRejection', reason => logger.error('Unhandled rejection:', reason));
+    process.on('SIGTERM', () => shutdown('SIGTERM', 0));
+    process.on('SIGINT', () => shutdown('SIGINT', 0));
+    process.on('unhandledRejection', (reason) => {
+        logger.error('Unhandled rejection:', reason);
+        // Express 5 forwards rejected route promises, so an unhandled rejection
+        // is a real bug: do not keep running in an unknown state.
+        process.exit(1);
+    });
     process.on('uncaughtException', (err) => {
         logger.error('Uncaught exception:', err);
-        shutdown('uncaughtException');
+        shutdown('uncaughtException', 1);
     });
 }
 
-if (require.main === module) main();
+if (require.main === module) {
+    main().catch((err) => {
+        console.error('Fatal startup error:', err);
+        process.exit(1);
+    });
+}
 
 module.exports = { main, APP_VERSION };

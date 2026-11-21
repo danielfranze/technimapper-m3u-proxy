@@ -20,6 +20,13 @@ logs/
 
 # Test / tooling output
 coverage/
+*.tmp
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
 
 # Operating system files
 .DS_Store

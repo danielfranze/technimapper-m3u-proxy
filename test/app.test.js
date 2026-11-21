@@ -399,3 +399,92 @@ test('malformed JSON and unknown API routes use the central error handling', asy
         assert.equal((await notFound.json()).error, 'Not found');
     });
 });
+
+test('save-settings rejects non-object payloads', async () => {
+    const harness = createHarness();
+    await withServer(harness, async (base) => {
+        const res = await postJson(base, '/api/save-settings', [1, 2]);
+        assert.equal(res.status, 400);
+        assert.match((await res.json()).error, /Invalid settings payload/);
+    });
+});
+
+test('a sync whose settings change mid-flight is discarded instead of overwriting them', async () => {
+    let resolveFetch;
+    const harness = createHarness({
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
+        fetchChannels: () => new Promise(resolve => { resolveFetch = resolve; })
+    });
+    harness.services.rebuildViews();
+    const before = harness.state.get().cachedM3u8;
+
+    await withServer(harness, async (base) => {
+        const syncPromise = postJson(base, '/api/fetch-channels', { ...BASE_CONFIG });
+
+        // Change the receiver target while the sync is still in flight.
+        const saved = await postJson(base, '/api/save-settings', { ...BASE_CONFIG, ip: '192.168.1.99' });
+        assert.equal(saved.status, 200);
+        assert.equal(harness.state.get().config.ip, '192.168.1.99');
+
+        resolveFetch({
+            channels: CHANNELS,
+            selectedListName: 'TV-Liste',
+            availableLists: ['TV-Liste'],
+            detectedModel: 'STC'
+        });
+
+        const syncRes = await syncPromise;
+        assert.equal(syncRes.status, 409);
+        assert.match((await syncRes.json()).error, /changed during sync/i);
+
+        // The stale sync must not have overwritten the new target or the playlist.
+        assert.equal(harness.state.get().config.ip, '192.168.1.99');
+        assert.equal(harness.state.get().cachedM3u8, before);
+    });
+});
+
+test('a persistence failure rolls back in-memory mapping state', async () => {
+    const harness = createHarness({
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: {} } }
+    });
+    harness.configStore.write = () => { throw new Error('disk full'); };
+
+    await withServer(harness, async (base) => {
+        const res = await postJson(base, '/api/save-mapping', { mapping: { A: 1 } });
+        assert.equal(res.status, 500);
+        assert.equal((await res.json()).error, 'Internal server error');
+        // In-memory state must not retain the failed write.
+        assert.deepEqual(harness.state.get().config.mapping, {});
+    });
+});
+
+test('a persistence failure rolls back in-memory settings state', async () => {
+    const harness = createHarness({
+        state: { configured: true, config: { ...BASE_CONFIG } }
+    });
+    harness.configStore.write = () => { throw new Error('disk full'); };
+
+    await withServer(harness, async (base) => {
+        const res = await postJson(base, '/api/save-settings', { ip: '192.168.1.99' });
+        assert.equal(res.status, 500);
+        assert.equal((await res.json()).error, 'Internal server error');
+        assert.equal(harness.state.get().config.ip, BASE_CONFIG.ip);
+    });
+});
+
+test('a persistence failure during sync preserves last-known-good channels', async () => {
+    const harness = createHarness({
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } }
+    });
+    harness.services.rebuildViews();
+    const beforeChannels = harness.state.get().config.channels;
+    const beforeCached = harness.state.get().cachedM3u8;
+    harness.configStore.write = () => { throw new Error('disk full'); };
+
+    await withServer(harness, async (base) => {
+        const res = await postJson(base, '/api/fetch-channels', { ...BASE_CONFIG });
+        assert.equal(res.status, 502);
+        assert.deepEqual(harness.state.get().config.channels, beforeChannels);
+        assert.equal(harness.state.get().cachedM3u8, beforeCached);
+    });
+});

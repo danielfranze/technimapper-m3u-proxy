@@ -1,3 +1,5 @@
+    'use strict';
+
     let currentMapping = {};
     let savedMapping = {};
     let activeListName = '';
@@ -738,7 +740,8 @@
                 if (match) {
                     // Keep leading zeros ("001" must stay "001", not become 1).
                     const raw = match[1];
-                    const id = /^0\d/.test(raw) ? raw : Number(raw);
+                    const num = Number(raw);
+                    const id = /^0\d/.test(raw) ? raw : (raw.length <= 15 && Number.isSafeInteger(num) ? num : raw);
                     if (used.has(String(id))) {
                         skipped.push(name);
                         return;

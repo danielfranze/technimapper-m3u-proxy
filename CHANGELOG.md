@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.9.2]
+
+### Added
+- Persistence-failure rollback semantics (P0.6): in-memory state is restored when a write to `mapping.json` fails (`save-settings`, `save-mapping`, `import-config`, sync).
+- Probe helpers under `scripts/` for inspecting receiver UPnP/ContentDirectory structure (STC, S, S1, S2).
+
+### Changed
+- SOAP receiver keeps connections non-persistent (keep-alive disabled) to avoid HTTP 412 on S-series receivers.
+
+### Fixed
+- S1/S2 generation detection is now verified against two independent S2 devices; fingerprint logic confirmed.
+
+### Coverage
+- 166+ tests passing.
+
 ## [1.9.1]
 
 ### Added

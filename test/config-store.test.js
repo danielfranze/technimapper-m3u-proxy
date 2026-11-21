@@ -41,3 +41,24 @@ test('config store reports an unwritable data directory', () => {
         fs.rmSync(base, { recursive: true, force: true });
     }
 });
+
+test('config store serializes concurrent writes instead of racing on the temp file', async () => {
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'technimapper-'));
+    const configFile = path.join(dataDir, 'mapping.json');
+    const store = createJsonConfigStore({ dataDir, configFile, logger });
+
+    try {
+        store.ensureDataDir();
+        await Promise.all([
+            store.write({ value: 'first' }),
+            store.write({ value: 'second' })
+        ]);
+        assert.deepEqual(store.read(), { value: 'second' });
+        assert.equal(fs.existsSync(`${configFile}.tmp`), false);
+        // No leftover unique temp files either.
+        const leftovers = fs.readdirSync(dataDir).filter(name => name.includes('.tmp'));
+        assert.deepEqual(leftovers, []);
+    } finally {
+        fs.rmSync(dataDir, { recursive: true, force: true });
+    }
+});

@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createSyncCoordinator } = require('../lib/sync-coordinator');
 
-test('sync coordinator serializes work and reports backoff after failures', async () => {
+test('sync coordinator serializes work and clears backoff after a later success', async () => {
     let active = 0;
     let maxActive = 0;
     const coordinator = createSyncCoordinator({ backoffBaseMs: 10, backoffMaxMs: 100 });
@@ -28,8 +28,8 @@ test('sync coordinator serializes work and reports backoff after failures', asyn
     await assert.rejects(first, /boom/);
     assert.equal(await second, 'ok');
     assert.equal(maxActive, 1);
-    assert.ok(coordinator.backoffRemainingMs() > 0);
-    assert.equal(coordinator.consecutiveFailures, 1);
+    assert.equal(coordinator.backoffRemainingMs(), 0);
+    assert.equal(coordinator.consecutiveFailures, 0);
 });
 
 test('sync coordinator rejects when the queue is full', async () => {
@@ -60,11 +60,28 @@ test('sync coordinator rejects a new request while in backoff', async () => {
     await assert.rejects(coordinator.request(async () => 'later'), /Sync is in backoff/);
 });
 
-test('sync coordinator reset clears backoff', () => {
+test('sync coordinator clearBackoff removes an active backoff', async () => {
     const coordinator = createSyncCoordinator({ backoffBaseMs: 1000, backoffMaxMs: 1000 });
-    // Trigger backoff indirectly is not possible without a run; reset on a fresh
-    // coordinator simply keeps the backoff cleared.
-    coordinator.reset();
+    const failing = coordinator.request(async () => { throw new Error('boom'); });
+    await assert.rejects(failing, /boom/);
+    assert.ok(coordinator.backoffRemainingMs() > 0);
+    coordinator.clearBackoff();
     assert.equal(coordinator.backoffRemainingMs(), 0);
     assert.equal(coordinator.consecutiveFailures, 0);
+    assert.equal(await coordinator.request(async () => 'later'), 'later');
+});
+
+test('sync coordinator reset rejects queued work and clears state', async () => {
+    const coordinator = createSyncCoordinator({ backoffBaseMs: 1000, backoffMaxMs: 1000 });
+    let resolveFirst;
+    const first = coordinator.request(() => new Promise(resolve => { resolveFirst = resolve; }));
+    const queued = coordinator.request(async () => 'queued done');
+
+    coordinator.reset();
+    await assert.rejects(queued, /reset/);
+    resolveFirst('done');
+    assert.equal(await first, 'done');
+    assert.equal(coordinator.backoffRemainingMs(), 0);
+    assert.equal(coordinator.consecutiveFailures, 0);
+    assert.equal(coordinator.queueLength, 0);
 });
