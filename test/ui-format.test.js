@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].pop()[1];
+const script = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'main.js'), 'utf8');
 const source = script.match(/    function formatSync\([\s\S]*?\n    \}\n/)[0];
 const formatSync = new Function(`${source}; return formatSync;`)();
 
@@ -24,5 +24,5 @@ test('formatSync returns "Never" for missing or invalid values', () => {
 test('the old green flash is gone and replaced by the calm sync pulse', () => {
     assert.ok(!html.includes('success-flash'));
     assert.ok(html.includes('sync-pulse') && html.includes('prefers-reduced-motion'));
-    assert.equal((html.match(/triggerSyncPulse\(\)/g) || []).length, 2, 'one definition and one call');
+    assert.equal((script.match(/triggerSyncPulse\(\)/g) || []).length, 2, 'one definition and one call');
 });

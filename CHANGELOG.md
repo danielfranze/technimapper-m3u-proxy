@@ -3,6 +3,37 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.9.1]
+
+### Added
+- End-to-end smoke tests with Playwright (`e2e/smoke.spec.js`) and CI integration.
+- TypeScript readiness layer: `lib/types.js`, `lib/ports.js`, `jsconfig.json`, ADR 0005.
+- Extracted HTTP route modules under `lib/routes/` (`health`, `config`, `mapping`, `playlist`, `hdhr`, `metrics`).
+- Extracted application sync service (`lib/sync-service.js`) and central error handler (`createErrorHandler`).
+- Immutable state store (`lib/state-store.js`) and sync coordinator (`lib/sync-coordinator.js`).
+- Request context with `X-Request-Id`, request logging and Prometheus-style `/metrics`.
+- Playlist ETag and `304 Not Modified` support.
+- Additional unit/integration tests for SOAP flows, coverage branches, sync coordination, state repair, HTTP security and logger.
+
+### Changed
+- `lib/app.js` is now a thin composition/wiring layer around the sync service and route modules.
+- Config persistence is asynchronous (`fs.promises`) to avoid blocking the event loop on the request path.
+- Inline UI JavaScript moved from `public/index.html` to `public/app/main.js`.
+- Sync execution is serialized with bounded queueing and backoff.
+- Health endpoint now reports queue length and backoff.
+- CI test job name now includes the Node version.
+
+### Fixed
+- `TRUST_PROXY=false`/`0` no longer risks startup issues.
+- Logger test assertions and stray test artifacts removed.
+- Config store tests now mock the asynchronous rename path correctly.
+- UI tests updated for the externalized script.
+
+### Coverage
+- 155+ tests passing.
+- 100 % line coverage across `lib/`.
+- Branch coverage improved to ~92 %.
+
 ## [1.9.0]
 
 ### Added

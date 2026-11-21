@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].pop()[1];
+const script = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'main.js'), 'utf8');
 
 test('the channel list uses a custom dropdown that is a listbox, not a visible native select', () => {
     assert.ok(html.includes('id="listToggle"') && html.includes('aria-haspopup="listbox"'));
@@ -30,6 +30,6 @@ test('the copy menu and the channel list share one menu style', () => {
 
 test('the word M3U8 is used everywhere in the UI (only the #EXTM3U file header is exempt)', () => {
     assert.equal(html.replace(/M3U8/g, '').match(/M3U/g), null);
-    assert.ok(html.includes('/playlist.m3u8'));
+    assert.ok(script.includes('/playlist.m3u8'));
     assert.ok(!/playlist\.m3u(?!8)/.test(html));
 });

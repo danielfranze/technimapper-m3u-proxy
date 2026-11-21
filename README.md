@@ -227,6 +227,7 @@ cosign verify ghcr.io/danielfranze/technimapper-m3u-proxy:latest \
 npm ci
 npm test          # unit + integration tests (Node's built-in test runner)
 npm run coverage  # tests with the built-in coverage report
+npm run test:e2e # end-to-end smoke tests with Playwright
 npm run check     # syntax check for server.js and lib/*.js
 npm start         # http://localhost:9191
 ```

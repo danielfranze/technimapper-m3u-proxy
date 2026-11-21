@@ -24,3 +24,11 @@ coverage/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Playwright runtime data
+.playwright-data/

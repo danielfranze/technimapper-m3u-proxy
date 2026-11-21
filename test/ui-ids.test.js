@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-const script = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].pop()[1];
+const script = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'main.js'), 'utf8');
 
 const grab = (name) => {
     const match = script.match(new RegExp(`    function ${name}\\([\\s\\S]*?\\n    \\}\\n`));
