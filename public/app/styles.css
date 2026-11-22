@@ -559,6 +559,12 @@
 
     table { width: 100%; border-collapse: collapse; margin-top: 5px; table-layout: fixed; }
     html { scrollbar-gutter: stable; }
+
+    /* Render only visible table rows; huge channel lists stay responsive. */
+    #channelTableBody tr {
+        content-visibility: auto;
+        contain-intrinsic-size: 0 40px;
+    }
     th { color: var(--text-dim); padding: 10px 14px; font-size: 0.78rem; text-align: left; border-bottom: 1px solid var(--border); }
     td { padding: 10px 14px; font-size: 0.84rem; border-bottom: 1px solid var(--border); }
 
