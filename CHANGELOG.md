@@ -3,6 +3,22 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [1.9.6]
+
+### Added
+- Development Tools section in README (scripts overview).
+- Screenshots moved to `docs/images/`.
+- E2E tests expanded: mock-receiver sync flow, UI interactions (search, filter, dirty-state, parse, dropdown, copy menu).
+- Unit tests: persistence rollback, S1/S2/STC mock tests, autoFill leading-zeros and sequential IDs.
+- Shared test harnesses (`test-helpers/`) and coverage threshold enforcement.
+
+### Changed
+- Folder structure cleaned up (`.playwright-data` removed, `assets/` → `docs/images/`).
+- Coverage-only tests removed; meaningful edge-case tests retained.
+
+### Fixed
+- None.
+
 ## [1.9.5]
 
 ### Added

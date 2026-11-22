@@ -24,7 +24,7 @@ TechniMapper is specifically developed and tested for the TechniSat DIGIT ISIO S
 
 *Note: Models not listed as supported may use different SOAP service structures which are not currently implemented.*
 
-![TechniMapper Web UI](assets/screenshot.png)
+![TechniMapper Web UI](docs/images/screenshot.png)
 
 ## Prerequisites
 
@@ -32,7 +32,7 @@ TechniMapper is specifically developed and tested for the TechniSat DIGIT ISIO S
 
 The receiver must be reachable from the container via a **private IPv4 address** (10.x, 172.16–31.x, 192.168.x). For VPN/CGNAT setups set `ALLOW_NON_PRIVATE_IP=true`.
 
-![TechniMapper streams played in VLC](assets/screenshot_vlc.png)
+![TechniMapper streams played in VLC](docs/images/screenshot_vlc.png)
 
 ## Quick Start & Deployment
 
@@ -244,8 +244,19 @@ npm start         # http://localhost:9191
 * `lib/m3u8.js` – playlist generation and sanitizing
 * `lib/hdhr.js` – HDHomeRun emulation (lineup, tuner name, host handling)
 * `test/` – unit and HTTP integration tests
+* `test-helpers/` – shared test harnesses and dependency builders
 * `public/index.html` – Web UI
 * `public/fonts/` – bundled fonts (Inter, Material Icons Outlined), see `NOTICE.md`
+* `scripts/` – development tools (see below)
+
+### Development Tools (`scripts/`)
+
+| Script | Purpose |
+|---|---|
+| `npm run coverage` | Runs tests with V8 coverage and enforces thresholds (lines 90 %, branches 80 %, functions 90 %) |
+| `scripts/probe-receiver.js <ip> [port]` | Inspects a receiver's UPnP/ContentDirectory structure and prints the detected model |
+| `scripts/mock-receiver.js` | Minimal SOAP mock for manual testing (set `MOCK_RECEIVER_PORT`) |
+| `scripts/start-e2e.js` | Starts mock receiver + app for Playwright E2E tests |
 
 CI (GitHub Actions) runs syntax checks, unit/integration tests, coverage, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
 
