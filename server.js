@@ -68,7 +68,8 @@ async function main() {
 
     const validation = createValidation({
         cronValidate: expr => cron.validate(expr),
-        allowNonPrivateIp: runtime.allowNonPrivateIp
+        allowNonPrivateIp: runtime.allowNonPrivateIp,
+        allowLoopback: runtime.allowLoopbackReceiver
     });
     const { validateMapping, validateSettings, isAllowedReceiverIp } = validation;
 
