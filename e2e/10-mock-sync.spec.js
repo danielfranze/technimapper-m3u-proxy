@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('syncs channels from the mock receiver and serves them as a playlist', async ({ request }) => {
+test('syncs channels from the mock receiver', async ({ request }) => {
     const saveRes = await request.post('/api/save-settings', { data: { ip: '127.0.0.1', port: '9199', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' } });
     expect(saveRes.ok()).toBeTruthy();
 
@@ -9,17 +9,6 @@ test('syncs channels from the mock receiver and serves them as a playlist', asyn
     const syncBody = await syncRes.json();
     expect(syncBody.channels).toContain('Das Erste HD');
     expect(syncBody.channels).toContain('ZDF HD');
-
-    const playlistRes = await request.get('/playlist.m3u8');
-    expect(playlistRes.status()).toBe(200);
-    const playlist = await playlistRes.text();
-    expect(playlist).toContain('Das Erste HD');
-    expect(playlist).toContain('ZDF HD');
-
-    const lineupRes = await request.get('/hdhr/lineup.json');
-    expect(lineupRes.ok()).toBeTruthy();
-    const lineup = await lineupRes.json();
-    expect(lineup.length).toBeGreaterThan(0);
 });
 
 test('mapped channels appear in playlist and lineup after save-mapping', async ({ request }) => {
