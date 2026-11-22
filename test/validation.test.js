@@ -10,6 +10,8 @@ const fakeCron = (s) => typeof s === 'string' && s.trim().split(/\s+/).length ==
 const strict = createValidation({ cronValidate: fakeCron });
 const permissive = createValidation({ cronValidate: fakeCron, allowNonPrivateIp: true });
 
+
+
 test('isAllowedReceiverIp accepts private IPv4 ranges', () => {
     for (const ip of ['192.168.178.28', '10.0.0.1', '172.16.0.1', '172.31.255.254']) {
         assert.equal(strict.isAllowedReceiverIp(ip), true, ip);
