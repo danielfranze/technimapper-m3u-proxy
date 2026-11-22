@@ -1,15 +1,11 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "module": "commonjs",
-        "moduleResolution": "node",
+        "module": "node16",
+        "moduleResolution": "node16",
         "checkJs": true,
         "strict": false,
-        "noEmit": true,
-        "baseUrl": ".",
-        "paths": {
-            "lib/*": ["lib/*"]
-        }
+        "noEmit": true
     },
     "include": ["server.js", "lib/**/*.js"],
     "exclude": ["node_modules", "dist", "public"]

@@ -1,7 +1,7 @@
 'use strict';
 
-const { createValidation, sortMapping } = require('../lib/validation');
-const hdhr = require('../lib/hdhr');
+const { createValidation, sortMapping } = require('../lib/validation.js');
+const hdhr = require('../lib/hdhr.js');
 
 const fakeCron = value => typeof value === 'string' && value.trim().split(/\s+/).length === 5;
 

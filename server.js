@@ -35,15 +35,15 @@
 
 const cron = require('node-cron');
 const packageJson = require('./package.json');
-const { createLogger } = require('./lib/logger');
-const { loadRuntimeConfig } = require('./lib/runtime-config');
-const { createJsonConfigStore } = require('./lib/config-store');
-const { createSoapReceiver } = require('./lib/receiver');
-const { createState, applyPersistedState, persistedSnapshot } = require('./lib/state');
-const { createStateStore } = require('./lib/state-store');
-const { createValidation, sortMapping } = require('./lib/validation');
-const hdhr = require('./lib/hdhr');
-const { createApp } = require('./lib/app');
+const { createLogger } = require('./lib/logger.js');
+const { loadRuntimeConfig } = require('./lib/runtime-config.js');
+const { createJsonConfigStore } = require('./lib/config-store.js');
+const { createSoapReceiver } = require('./lib/receiver.js');
+const { createState, applyPersistedState, persistedSnapshot } = require('./lib/state.js');
+const { createStateStore } = require('./lib/state-store.js');
+const { createValidation, sortMapping } = require('./lib/validation.js');
+const hdhr = require('./lib/hdhr.js');
+const { createApp } = require('./lib/app.js');
 
 const APP_VERSION = packageJson.version;
 

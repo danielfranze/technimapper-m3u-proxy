@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseContainerList, parseChannelItems, escapeXml, xmlText } = require('../lib/receiver');
+const { parseContainerList, parseChannelItems, escapeXml, xmlText } = require('../lib/receiver.js');
 
 test('xmlText handles strings, arrays and xml2js text objects', () => {
     assert.equal(xmlText('hello'), 'hello');

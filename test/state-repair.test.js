@@ -2,8 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createState, applyPersistedState } = require('../lib/state');
-const { createDeps, fakeCron } = require('../test-helpers/state-deps');
+const { createState, applyPersistedState } = require('../lib/state.js');
+const { createDeps, fakeCron } = require('../test-helpers/state-deps.js');
 
 function deps(logger) {
     return createDeps(logger);

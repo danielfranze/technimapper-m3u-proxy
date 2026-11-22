@@ -8,7 +8,7 @@ const {
     createRateLimiter,
     createFailureLimiter,
     createOriginGuard
-} = require('../lib/http-security');
+} = require('../lib/http-security.js');
 
 const quietLogger = { warn() {}, info() {}, error() {} };
 
@@ -209,7 +209,7 @@ test('failure limiter prunes expired entries before evicting', () => {
 });
 
 test('createErrorHandler maps error types and status codes', () => {
-    const { createErrorHandler } = require('../lib/http-security');
+    const { createErrorHandler } = require('../lib/http-security.js');
     const handler = createErrorHandler({ error() {} });
 
     const parseError = fakeResponse();
@@ -223,7 +223,7 @@ test('createErrorHandler maps error types and status codes', () => {
     assert.equal(largeError.body.error, 'Payload too large');
 
     const httpError = fakeResponse();
-    handler(new (require('../lib/validation').HttpError)(404, 'missing'), fakeRequest(), httpError, () => {});
+    handler(new (require('../lib/validation.js').HttpError)(404, 'missing'), fakeRequest(), httpError, () => {});
     assert.equal(httpError.statusCode, 404);
     assert.equal(httpError.body.error, 'missing');
 

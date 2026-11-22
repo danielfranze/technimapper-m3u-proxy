@@ -2,8 +2,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createState, applyPersistedState, persistedSnapshot } = require('../lib/state');
-const { createDeps, fakeCron } = require('../test-helpers/state-deps');
+const { createState, applyPersistedState, persistedSnapshot } = require('../lib/state.js');
+const { createDeps, fakeCron } = require('../test-helpers/state-deps.js');
 
 test('applyPersistedState handles missing and invalid persisted fields', () => {
     const warnings = [];

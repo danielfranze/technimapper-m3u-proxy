@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const {
     DEFAULTS, LINEUP_STATUS, resolveConfig, modelLabel, sanitizeModel, defaultFriendlyName,
     guideName, buildLineup, baseUrlFrom, discoverPayload, lineupPayload
-} = require('../lib/hdhr');
+} = require('../lib/hdhr.js');
 
 const channels = [
     { name: '001 Das Erste HD', url: 'http://192.168.178.230:9100/disk/a.ts' },
@@ -113,7 +113,7 @@ test('resolveConfig applies defaults, accepts valid overrides and warns about in
 });
 
 test('hdhr helpers cover remaining branches', () => {
-    const hdhr = require('../lib/hdhr');
+    const hdhr = require('../lib/hdhr.js');
     assert.equal(hdhr.modelLabel('S_SERIES'), 'DIGIT ISIO S/S1/S2');
     assert.equal(hdhr.defaultFriendlyName(null), 'TechniSat');
     assert.equal(hdhr.sanitizeModel(''), null);
