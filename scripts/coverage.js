@@ -34,6 +34,19 @@ if (!match) {
     process.exit(1);
 }
 
+// Per-module advisory: list lib files below 90% line coverage (non-fatal).
+const fileLines = plain.matchAll(/^ℹ\s+(\S+\.js)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/gm);
+const weak = [];
+for (const m of fileLines) {
+    const file = m[1];
+    const lines = parseFloat(m[2]);
+    if (file.startsWith('lib') && lines < 90) weak.push(`${file}: ${lines}%`);
+}
+if (weak.length) {
+    console.log('\nAdvisory: lib files below 90% line coverage:');
+    weak.forEach(w => console.log('  - ' + w));
+}
+
 const lines = parseFloat(match[1]);
 const branches = parseFloat(match[2]);
 const functions = parseFloat(match[3]);

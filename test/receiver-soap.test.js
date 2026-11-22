@@ -131,7 +131,7 @@ test('SOAP receiver reports a timeout', async () => {
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 50, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({ requestTimeoutMs: 200, maxResponseBytes: 64 * 1024, logger: quietLogger });
         await assert.rejects(
             receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' }),
             /timed out|exceeded total deadline/

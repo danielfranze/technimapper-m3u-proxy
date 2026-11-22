@@ -311,6 +311,19 @@ test('a persistence failure returns 500 without leaving a broken response', asyn
     });
 });
 
+test('metrics endpoint returns Prometheus text', async () => {
+    const harness = createHarness({ state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } } });
+    harness.services.rebuildViews();
+    await withServer(harness, async (base) => {
+        const res = await fetch(base + '/metrics');
+        assert.equal(res.status, 200);
+        assert.match(res.headers.get('content-type') || '', /text\/plain/);
+        const body = await res.text();
+        assert.match(body, /technimapper_http_requests_total/);
+        assert.match(body, /technimapper_channels_total/);
+    });
+});
+
 test('malformed JSON and unknown API routes use the central error handling', async () => {
     const harness = createHarness();
     await withServer(harness, async (base) => {

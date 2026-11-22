@@ -3,22 +3,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { createState, persistedSnapshot, applyPersistedState } = require('../lib/state');
-const { createValidation, sortMapping } = require('../lib/validation');
-const hdhr = require('../lib/hdhr');
+const { createDeps, fakeCron } = require('../test-helpers/state-deps');
 
-const fakeCron = value => typeof value === 'string' && value.trim().split(/\s+/).length === 5;
-const validation = createValidation({ cronValidate: fakeCron });
 const logger = { warn() {}, info() {}, error() {} };
-
-const deps = {
-    validateMapping: validation.validateMapping,
-    sortMapping,
-    sanitizeModel: hdhr.sanitizeModel,
-    isAllowedReceiverIp: validation.isAllowedReceiverIp,
-    cronValidate: fakeCron,
-    defaultCron: '*/5 * * * *',
-    logger
-};
+const deps = createDeps(logger);
 
 test('createState starts with safe defaults and supports overrides', () => {
     const state = createState();
