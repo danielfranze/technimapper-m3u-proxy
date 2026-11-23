@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { createJsonConfigStore } = require('../lib/config-store.js');
+const { createJsonConfigStore } = require('../dist/lib/config-store.js');
 
 const logger = { warn() {}, error() {} };
 

@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createStateStore } = require('../lib/state-store.js');
+const { createStateStore } = require('../dist/lib/state-store.js');
 
 test('state store commits immutable snapshots', () => {
     const store = createStateStore({ count: 1, nested: { value: 2 } });

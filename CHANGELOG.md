@@ -3,6 +3,21 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [2.0.0-rc.1]
+
+### Added
+- TypeScript migration (Phase 1-4): Backend converted to `.ts` with `tsc` build step.
+- `tsconfig.json` with Node16 module resolution and strict mode (initially `strict: false`).
+- Multi-stage Docker build (build stage + runtime stage).
+
+### Changed
+- `package.json`: `main` → `dist/server.js`, scripts updated (`build`, `start`, `test`, `check`).
+- Test imports updated to `dist/lib/*.js`.
+- App `publicDir` resolved via `process.cwd()` for compiled output.
+
+### Fixed
+- None.
+
 ## [1.9.6]
 
 ### Added

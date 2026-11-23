@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildM3u8, sanitizeM3u8Text, STREAM_URL_REGEX } = require('../lib/m3u8.js');
+const { buildM3u8, sanitizeM3u8Text, STREAM_URL_REGEX } = require('../dist/lib/m3u8.js');
 
 const channels = [
     { name: 'Das Erste HD', url: 'http://192.168.1.10:8080/stream/1' },

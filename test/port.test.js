@@ -8,8 +8,8 @@ const path = require('path');
 const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
 test('the default port 9191 is used consistently by the server, the Dockerfile and the compose file', () => {
-    assert.match(read('lib/runtime-config.js'), /intFromEnv\(env\.PORT, DEFAULT_PORT/);
-    assert.match(read('server.js'), /app\.listen\(runtime\.port/);
+    assert.match(read('lib/runtime-config.ts'), /intFromEnv\(env\.PORT, DEFAULT_PORT/);
+    assert.match(read('server.ts'), /app\.listen\(runtime\.port/);
 
     const dockerfile = read('Dockerfile');
     assert.match(dockerfile, /^EXPOSE 9191$/m);

@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('path');
-const { loadRuntimeConfig, parseTrustProxy, intFromEnv } = require('../lib/runtime-config.js');
+const { loadRuntimeConfig, parseTrustProxy, intFromEnv } = require('../dist/lib/runtime-config.js');
 
 test('runtime config uses safe defaults and warns about missing authentication', () => {
     const config = loadRuntimeConfig({});

@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createSyncCoordinator } = require('../lib/sync-coordinator.js');
+const { createSyncCoordinator } = require('../dist/lib/sync-coordinator.js');
 
 test('sync coordinator serializes work and clears backoff after a later success', async () => {
     let active = 0;

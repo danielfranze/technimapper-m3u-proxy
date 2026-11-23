@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
-const { createSoapReceiver, escapeXml } = require('../lib/receiver.js');
+const { createSoapReceiver, escapeXml } = require('../dist/lib/receiver.js');
 
 const quietLogger = { info() {}, warn() {}, error() {} };
 

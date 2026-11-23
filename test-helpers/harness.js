@@ -1,9 +1,9 @@
 'use strict';
 
-const { createState } = require('../lib/state.js');
-const { createStateStore } = require('../lib/state-store.js');
-const { createValidation } = require('../lib/validation.js');
-const { createLogger } = require('../lib/logger.js');
+const { createState } = require('../dist/lib/state.js');
+const { createStateStore } = require('../dist/lib/state-store.js');
+const { createValidation } = require('../dist/lib/validation.js');
+const { createLogger } = require('../dist/lib/logger.js');
 
 const fakeCron = value => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
 
@@ -69,7 +69,7 @@ function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetch
     };
 
     const validation = createValidation({ cronValidate: fakeCron });
-    const { createApp } = require('../lib/app.js');
+    const { createApp } = require('../dist/lib/app.js');
     const { app, services } = createApp({
         runtime: baseRuntime(runtimeOverrides),
         logger: quietLogger(),
