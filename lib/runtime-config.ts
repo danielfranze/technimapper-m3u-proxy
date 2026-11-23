@@ -118,7 +118,7 @@ function loadRuntimeConfig(env: any = process.env) {
         warnings.push(`SHUTDOWN_TIMEOUT_MS is smaller than the maximum sync duration - using ${shutdownTimeoutMs} ms.`);
     }
 
-    const dataDir = env.DATA_DIR ? path.resolve(env.DATA_DIR) : path.join(__dirname, '..', 'data');
+    const dataDir = env.DATA_DIR ? path.resolve(env.DATA_DIR) : path.join(process.cwd(), 'data');
     const adminUser = typeof env.ADMIN_USER === 'string' ? env.ADMIN_USER : '';
     const adminPassword = typeof env.ADMIN_PASSWORD === 'string' ? env.ADMIN_PASSWORD : '';
 

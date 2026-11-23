@@ -122,7 +122,7 @@ function loadRuntimeConfig(env = process.env) {
     if (shutdownTimeoutMs !== configuredShutdownMs) {
         warnings.push(`SHUTDOWN_TIMEOUT_MS is smaller than the maximum sync duration - using ${shutdownTimeoutMs} ms.`);
     }
-    const dataDir = env.DATA_DIR ? node_path_1.default.resolve(env.DATA_DIR) : node_path_1.default.join(__dirname, '..', 'data');
+    const dataDir = env.DATA_DIR ? node_path_1.default.resolve(env.DATA_DIR) : node_path_1.default.join(process.cwd(), 'data');
     const adminUser = typeof env.ADMIN_USER === 'string' ? env.ADMIN_USER : '';
     const adminPassword = typeof env.ADMIN_PASSWORD === 'string' ? env.ADMIN_PASSWORD : '';
     if (Boolean(adminUser) !== Boolean(adminPassword)) {
