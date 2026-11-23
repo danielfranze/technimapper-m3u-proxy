@@ -17,6 +17,6 @@ test('Dockerfile installs dependencies from the lockfile, then removes package m
 
 test('Dockerfile runs as the unprivileged user and starts node directly', () => {
     assert.match(dockerfile, /^USER node$/m);
-    assert.match(dockerfile, /CMD \["node", "server\.js"\]/);
+    assert.match(dockerfile, /CMD \["node", "dist\/server\.js"\]/);
     assert.ok(!/CMD \[?"?npm/.test(dockerfile), 'the container must not start through npm');
 });
