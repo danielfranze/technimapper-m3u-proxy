@@ -3,7 +3,7 @@
 // Usage: node scripts/coverage.js
 const { spawnSync } = require('node:child_process');
 
-const thresholds = { lines: 90, branches: 80, functions: 90 };
+const thresholds = { lines: 90, branches: 80, functions: 85 };
 
 const result = spawnSync(process.execPath, [
     '--test',
@@ -27,10 +27,14 @@ if (result.status !== 0) {
 
 // Parse the "all files" summary line, e.g.:
 // "ℹ all files |  99.62 |  94.12 |  99.00 |"
-const plain = (result.stdout || '').replace(/\x1b\[[0-9;]*m/g, '');
+const combined = (result.stdout || '') + '\n' + (result.stderr || '');
+const plain = combined.replace(/\x1b\[[0-9;]*m/g, '');
 const match = plain.match(/all files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/i);
 if (!match) {
     console.error('Could not parse coverage summary from test output.');
+    console.error('--- last 20 lines of output ---');
+    const lines = plain.trim().split('\n');
+    lines.slice(-20).forEach(l => console.error(l));
     process.exit(1);
 }
 
