@@ -64,5 +64,5 @@ declare function securityHeaders({ hsts }?: {
  * Keeping this as a factory makes the status mapping testable without an HTTP
  * route that has to throw a synthetic error in production.
  */
-declare function createErrorHandler(logger?: any): (err: any, req: any, res: any, next: any) => any;
+declare function createErrorHandler(logger?: any): (err: any, _req: any, res: any, _next: any) => any;
 export { clientKey, safeEqual, isPublicPath, createFailureLimiter, createAuth, createRateLimiter, createOriginGuard, securityHeaders, createErrorHandler };

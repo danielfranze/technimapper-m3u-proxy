@@ -122,5 +122,5 @@ function applyPersistedState(state, parsed, deps) {
     const changed = repairPersistedSettings(state, deps);
     return { changed, droppedMapping: invalid.length };
 }
-export { DEFAULT_CONFIG, createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };
+export { createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };
 //# sourceMappingURL=state.js.map

@@ -6,9 +6,9 @@ import * as hdhrModule from '../hdhr.js';
  * @param {any} ctx
  */
 function registerConfigRoutes(app, ctx) {
-    const { getState, updateState, state: stateStore, currentSettings, mergeSettings, persistState, startBackgroundCron, syncCoordinator, receiver, validation, version, hdhrConfig, logger, performSync } = ctx;
+    const { getState, updateState, state: stateStore, currentSettings, mergeSettings, persistState, startBackgroundCron, syncCoordinator, validation, version, hdhrConfig, logger, performSync } = ctx;
     const { validateMapping } = validation;
-    app.get('/api/get-config', (req, res) => {
+    app.get('/api/get-config', (_req, res) => {
         const snapshot = getState();
         res.json({
             version,
@@ -75,7 +75,7 @@ function registerConfigRoutes(app, ctx) {
             return next(new HttpError(502, e.message || 'Receiver request failed'));
         }
     });
-    app.get('/api/export-config', (req, res) => {
+    app.get('/api/export-config', (_req, res) => {
         const snapshot = getState();
         res.setHeader('Content-Disposition', 'attachment; filename="technimapper-config.json"');
         res.json({

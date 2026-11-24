@@ -13,10 +13,7 @@ declare module 'express-serve-static-core' {
     }
 }
 
-import { HttpError, findDuplicateIds, findDuplicateGroups, partitionMapping } from './validation.js';
-import {  buildM3u8  } from './m3u8.js';
 import * as hdhrModule from './hdhr.js';
-import {  persistedSnapshot  } from './state.js';
 import {  createStateStore  } from './state-store.js';
 import {  createSyncCoordinator  } from './sync-coordinator.js';
 import {  securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler  } from './http-security.js';
@@ -237,7 +234,7 @@ function createApp(deps: any) {
     registerMetricsRoutes(app, ctx);
 
     // 404 for unknown API routes, then central error handler
-    app.use('/api', (req: any, res: any) => res.status(404).json({ error: 'Not found' }));
+    app.use('/api', (_req: any, res: any) => res.status(404).json({ error: 'Not found' }));
 
     app.use(createErrorHandler(logger));
 

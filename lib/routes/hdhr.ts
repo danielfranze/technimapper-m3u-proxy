@@ -21,16 +21,16 @@ function registerHdhrRoutes(app, ctx) {
         return handler(req, res, baseUrl);
     };
 
-    hdhrRouter.use((req, res, next) => {
+    hdhrRouter.use((_req, res, next) => {
         res.setHeader('Cache-Control', 'no-store');
         next();
     });
 
-    hdhrRouter.get('/discover.json', withBaseUrl((req, res, baseUrl) => res.json(hdhrModule.discoverPayload(baseUrl, hdhrConfig, getState().config.detectedModel))));
-    hdhrRouter.get('/lineup_status.json', (req: any, res: any) => res.json(hdhrModule.LINEUP_STATUS));
-    hdhrRouter.get('/lineup.json', withBaseUrl((req, res, baseUrl) => res.json(hdhrModule.lineupPayload(getState().lineupEntries, baseUrl))));
+    hdhrRouter.get('/discover.json', withBaseUrl((_req, res, baseUrl) => res.json(hdhrModule.discoverPayload(baseUrl, hdhrConfig, getState().config.detectedModel))));
+    hdhrRouter.get('/lineup_status.json', (_req: any, res: any) => res.json(hdhrModule.LINEUP_STATUS));
+    hdhrRouter.get('/lineup.json', withBaseUrl((_req, res, baseUrl) => res.json(hdhrModule.lineupPayload(getState().lineupEntries, baseUrl))));
 
-    hdhrRouter.post('/lineup.post', (req: any, res: any) => res.sendStatus(200));
+    hdhrRouter.post('/lineup.post', (_req: any, res: any) => res.sendStatus(200));
 
     hdhrRouter.get('/stream/:id', (req: any, res: any) => {
         const entry = getState().lineupEntries.find(item => item.guideNumber === req.params.id);

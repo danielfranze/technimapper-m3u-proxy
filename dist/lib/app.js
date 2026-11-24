@@ -197,7 +197,7 @@ function createApp(deps) {
     registerHdhrRoutes(app, ctx);
     registerMetricsRoutes(app, ctx);
     // 404 for unknown API routes, then central error handler
-    app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+    app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
     app.use(createErrorHandler(logger));
     return {
         app,

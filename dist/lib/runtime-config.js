@@ -3,8 +3,6 @@
  */
 import net from 'node:net';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PORT = 9191;
 const DEFAULT_REQUEST_TIMEOUT_MS = 5000;
 const DEFAULT_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;

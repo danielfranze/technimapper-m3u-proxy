@@ -228,21 +228,21 @@ npm ci
 npm test          # unit + integration tests (Node's built-in test runner)
 npm run coverage  # tests with the built-in coverage report
 npm run test:e2e # end-to-end smoke tests with Playwright
-npm run check     # syntax check for server.js and lib/*.js
+npm run check     # type check with tsc --noEmit
 npm start         # http://localhost:9191
 ```
 
-* `server.js` – composition root: environment, adapters, startup and graceful shutdown
-* `lib/app.js` – Express app factory (`createApp`, routes, sync orchestration)
-* `lib/state.js` – application state, persisted snapshot and repair logic
-* `lib/config-store.js` – atomic `mapping.json` persistence
-* `lib/receiver.js` – UPnP/SOAP receiver adapter
-* `lib/http-security.js` – auth, CSRF/origin guard, rate limiting, security headers
-* `lib/runtime-config.js` – environment validation
-* `lib/logger.js` – text/JSON logger
-* `lib/validation.js` – input validation (settings, mapping)
-* `lib/m3u8.js` – playlist generation and sanitizing
-* `lib/hdhr.js` – HDHomeRun emulation (lineup, tuner name, host handling)
+* `server.ts` – composition root: environment, adapters, startup and graceful shutdown
+* `lib/app.ts` – Express app factory (`createApp`, routes, sync orchestration)
+* `lib/state.ts` – application state, persisted snapshot and repair logic
+* `lib/config-store.ts` – atomic `mapping.json` persistence
+* `lib/receiver.ts` – UPnP/SOAP receiver adapter
+* `lib/http-security.ts` – auth, CSRF/origin guard, rate limiting, security headers
+* `lib/runtime-config.ts` – environment validation
+* `lib/logger.ts` – text/JSON logger
+* `lib/validation.ts` – input validation (settings, mapping)
+* `lib/m3u8.ts` – playlist generation and sanitizing
+* `lib/hdhr.ts` – HDHomeRun emulation (lineup, tuner name, host handling)
 * `test/` – unit and HTTP integration tests
 * `test-helpers/` – shared test harnesses and dependency builders
 * `public/index.html` – Web UI
@@ -256,7 +256,6 @@ npm start         # http://localhost:9191
 | `npm run coverage` | Runs tests with V8 coverage and enforces thresholds (lines 90 %, branches 80 %, functions 90 %) |
 | `scripts/probe-receiver.js <ip> [port]` | Inspects a receiver's UPnP/ContentDirectory structure and prints the detected model |
 | `scripts/mock-receiver.js` | Minimal SOAP mock for manual testing (set `MOCK_RECEIVER_PORT`) |
-| `scripts/start-e2e.js` | Starts mock receiver + app for Playwright E2E tests |
 
 CI (GitHub Actions) runs syntax checks, unit/integration tests, coverage, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
 

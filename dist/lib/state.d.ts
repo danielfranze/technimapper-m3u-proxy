@@ -5,16 +5,6 @@
  * not change while the server becomes testable. Release 2 replaces the mutation
  * points with an immutable snapshot store (see the architecture roadmap).
  */
-declare const DEFAULT_CONFIG: Readonly<{
-    ip: "192.168.178.28";
-    port: "9100";
-    cronExpression: "*/5 * * * *";
-    selectedListName: "TV-Liste";
-    mapping: Readonly<{}>;
-    channels: readonly never[];
-    lastSync: null;
-    detectedModel: null;
-}>;
 /**
  * @param {{ config?: Record<string, unknown>, sync?: Record<string, unknown>, configured?: boolean, cachedM3u8?: string | null, lineupEntries?: unknown[] }} [overrides]
  * @returns {any}
@@ -47,4 +37,4 @@ declare function applyPersistedState(state: any, parsed: any, deps: any): {
     changed: boolean;
     droppedMapping: number;
 };
-export { DEFAULT_CONFIG, createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };
+export { createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };

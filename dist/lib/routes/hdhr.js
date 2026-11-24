@@ -17,14 +17,14 @@ function registerHdhrRoutes(app, ctx) {
             return res.status(400).json({ error: 'Invalid Host header' });
         return handler(req, res, baseUrl);
     };
-    hdhrRouter.use((req, res, next) => {
+    hdhrRouter.use((_req, res, next) => {
         res.setHeader('Cache-Control', 'no-store');
         next();
     });
-    hdhrRouter.get('/discover.json', withBaseUrl((req, res, baseUrl) => res.json(hdhrModule.discoverPayload(baseUrl, hdhrConfig, getState().config.detectedModel))));
-    hdhrRouter.get('/lineup_status.json', (req, res) => res.json(hdhrModule.LINEUP_STATUS));
-    hdhrRouter.get('/lineup.json', withBaseUrl((req, res, baseUrl) => res.json(hdhrModule.lineupPayload(getState().lineupEntries, baseUrl))));
-    hdhrRouter.post('/lineup.post', (req, res) => res.sendStatus(200));
+    hdhrRouter.get('/discover.json', withBaseUrl((_req, res, baseUrl) => res.json(hdhrModule.discoverPayload(baseUrl, hdhrConfig, getState().config.detectedModel))));
+    hdhrRouter.get('/lineup_status.json', (_req, res) => res.json(hdhrModule.LINEUP_STATUS));
+    hdhrRouter.get('/lineup.json', withBaseUrl((_req, res, baseUrl) => res.json(hdhrModule.lineupPayload(getState().lineupEntries, baseUrl))));
+    hdhrRouter.post('/lineup.post', (_req, res) => res.sendStatus(200));
     hdhrRouter.get('/stream/:id', (req, res) => {
         const entry = getState().lineupEntries.find(item => item.guideNumber === req.params.id);
         if (!entry)

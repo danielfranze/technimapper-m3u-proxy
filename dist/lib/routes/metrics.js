@@ -5,7 +5,7 @@
  */
 function registerMetricsRoutes(app, ctx) {
     const { getState, metrics, syncCoordinator } = ctx;
-    app.get('/metrics', (req, res) => {
+    app.get('/metrics', (_req, res) => {
         const snapshot = getState();
         res.type('text/plain; version=0.0.4');
         res.send(`# HELP technimapper_http_requests_total Total HTTP requests\n` +

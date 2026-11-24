@@ -1,11 +1,11 @@
 # ADR 0005 – TypeScript readiness without a big-bang migration
 
-- Status: Accepted
+- Status: Accepted, updated 2026-11-24
 - Date: 2026-11-20
 
 ## Context
 
-The project is a small CommonJS/Node.js application. A full TypeScript rewrite
+The project was a small CommonJS/Node.js application. A full TypeScript rewrite
 would risk regressions and slow down feature work. At the same time the codebase
 should become easier for humans and AI tools to understand and refactor.
 
@@ -22,6 +22,11 @@ Prepare for TypeScript incrementally instead of migrating everything at once:
    `infrastructure`, then `http`.
 6. Keep runtime validation at all system boundaries; TypeScript types never
    replace validation.
+
+Update 2026-11-24: steps 2 and 3 were superseded when the backend migration
+completed: `lib/types.ts` and `lib/ports.ts` were removed, `jsconfig.json` was
+removed, and the backend is now fully typed TypeScript (`nodenext`, `strict:
+true`) with tests typed selectively in `test/`.
 
 ## Consequences
 

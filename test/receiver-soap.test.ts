@@ -130,7 +130,7 @@ test('SOAP receiver rejects an oversized response', async () => {
 });
 
 test('SOAP receiver reports a timeout', async () => {
-    const { server, port } = await startServer((req, res) => {
+    const { server, port } = await startServer((req, _res) => {
         req.resume();
         // Never answer; the client must time out.
     });

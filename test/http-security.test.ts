@@ -122,7 +122,6 @@ test('failed authentication is throttled before credentials are checked', () => 
 test('rate limiter is bounded and returns 429 with Retry-After', () => {
     let now = 1000;
     const limiter = createRateLimiter({ windowMs: 1000, max: 2, maxEntries: 2, now: () => now });
-    const key = (request: FakeRequest) => request.ip;
 
     const first = fakeResponse();
     let next = 0;

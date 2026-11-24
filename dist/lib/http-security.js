@@ -219,8 +219,7 @@ function securityHeaders({ hsts = false } = {}) {
  * route that has to throw a synthetic error in production.
  */
 function createErrorHandler(logger = console) {
-    // eslint-disable-next-line no-unused-vars
-    return (err, req, res, next) => {
+    return (err, _req, res, _next) => {
         if (err?.type === 'entity.parse.failed')
             return res.status(400).json({ error: 'Invalid JSON payload' });
         if (err?.type === 'entity.too.large')

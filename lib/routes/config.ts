@@ -17,7 +17,6 @@ function registerConfigRoutes(app, ctx) {
         persistState,
         startBackgroundCron,
         syncCoordinator,
-        receiver,
         validation,
         version,
         hdhrConfig,
@@ -26,7 +25,7 @@ function registerConfigRoutes(app, ctx) {
     } = ctx;
     const { validateMapping } = validation;
 
-    app.get('/api/get-config', (req: any, res: any) => {
+    app.get('/api/get-config', (_req: any, res: any) => {
         const snapshot = getState();
         res.json({
             version,
@@ -94,7 +93,7 @@ function registerConfigRoutes(app, ctx) {
         }
     });
 
-    app.get('/api/export-config', (req: any, res: any) => {
+    app.get('/api/export-config', (_req: any, res: any) => {
         const snapshot = getState();
         res.setHeader('Content-Disposition', 'attachment; filename="technimapper-config.json"');
         res.json({
