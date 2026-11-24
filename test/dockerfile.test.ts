@@ -1,11 +1,13 @@
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
 
-const dockerfile = fs.readFileSync(path.join(__dirname, '..', 'Dockerfile'), 'utf8');
+const dockerfile = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'Dockerfile'), 'utf8');
 
 test('Dockerfile installs dependencies from the lockfile, then removes package managers from the runtime image', () => {
     const install = dockerfile.indexOf('npm ci --omit=dev');

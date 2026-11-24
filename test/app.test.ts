@@ -1,8 +1,8 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createHarness } = require('../test-helpers/harness.ts');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {  createHarness  } from '../test-helpers/harness.ts';
 
 const fakeCron = value => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
 

@@ -1,13 +1,15 @@
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const path = require('path');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import path from 'path';
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
-const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'styles.css'), 'utf8');
-const script = fs.readFileSync(path.join(__dirname, '..', 'public', 'app', 'main.js'), 'utf8');
+const html = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
+const css = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'styles.css'), 'utf8');
+const script = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
 const grab = (pattern) => {
     const m = script.match(pattern);
     assert.ok(m, `not found in index.html: ${pattern}`);

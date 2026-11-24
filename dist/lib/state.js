@@ -1,4 +1,3 @@
-"use strict";
 /**
  * Application state helpers.
  *
@@ -6,12 +5,6 @@
  * not change while the server becomes testable. Release 2 replaces the mutation
  * points with an immutable snapshot store (see the architecture roadmap).
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DEFAULT_CONFIG = void 0;
-exports.createState = createState;
-exports.persistedSnapshot = persistedSnapshot;
-exports.repairPersistedSettings = repairPersistedSettings;
-exports.applyPersistedState = applyPersistedState;
 const DEFAULT_CONFIG = Object.freeze({
     ip: '192.168.178.28',
     port: '9100',
@@ -22,7 +15,6 @@ const DEFAULT_CONFIG = Object.freeze({
     lastSync: null,
     detectedModel: null
 });
-exports.DEFAULT_CONFIG = DEFAULT_CONFIG;
 /**
  * @param {{ config?: Record<string, unknown>, sync?: Record<string, unknown>, configured?: boolean, cachedM3u8?: string | null, lineupEntries?: unknown[] }} [overrides]
  * @returns {any}
@@ -130,4 +122,5 @@ function applyPersistedState(state, parsed, deps) {
     const changed = repairPersistedSettings(state, deps);
     return { changed, droppedMapping: invalid.length };
 }
+export { DEFAULT_CONFIG, createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };
 //# sourceMappingURL=state.js.map

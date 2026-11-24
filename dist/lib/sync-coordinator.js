@@ -1,6 +1,4 @@
 'use strict';
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSyncCoordinator = createSyncCoordinator;
 /**
  * Serialises sync work and applies backoff after failures.
  *
@@ -98,4 +96,5 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
         get consecutiveFailures() { return consecutiveFailures; }
     };
 }
+export { createSyncCoordinator };
 //# sourceMappingURL=sync-coordinator.js.map

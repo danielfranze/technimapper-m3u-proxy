@@ -1,10 +1,5 @@
 'use strict';
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerPlaylistRoutes = registerPlaylistRoutes;
-const crypto_1 = __importDefault(require("crypto"));
+import crypto from 'crypto';
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
@@ -13,7 +8,7 @@ function registerPlaylistRoutes(app, ctx) {
     const { getState } = ctx;
     const playlistPaths = ctx.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];
     function playlistEtag(content) {
-        return `"${crypto_1.default.createHash('sha1').update(content).digest('hex')}"`;
+        return `"${crypto.createHash('sha1').update(content).digest('hex')}"`;
     }
     const servePlaylist = (req, res) => {
         const snapshot = getState();
@@ -33,4 +28,5 @@ function registerPlaylistRoutes(app, ctx) {
     };
     playlistPaths.forEach(route => app.get(route, servePlaylist));
 }
+export { registerPlaylistRoutes };
 //# sourceMappingURL=playlist.js.map

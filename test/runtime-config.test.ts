@@ -1,9 +1,9 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const { loadRuntimeConfig, parseTrustProxy, intFromEnv } = require('../dist/lib/runtime-config.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import {  loadRuntimeConfig, parseTrustProxy, intFromEnv  } from '../dist/lib/runtime-config.js';
 
 test('runtime config uses safe defaults and warns about missing authentication', () => {
     const config = loadRuntimeConfig({});

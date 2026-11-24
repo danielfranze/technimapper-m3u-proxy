@@ -1,57 +1,21 @@
 'use strict';
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createApp = createApp;
-const crypto_1 = __importDefault(require("crypto"));
-const express_1 = __importDefault(require("express"));
-const compression = require('compression');
-const node_path_1 = __importDefault(require("node:path"));
-const hdhrModule = __importStar(require("./hdhr.js"));
-const state_store_js_1 = require("./state-store.js");
-const sync_coordinator_js_1 = require("./sync-coordinator.js");
-const http_security_js_1 = require("./http-security.js");
-const health_js_1 = require("./routes/health.js");
-const config_js_1 = require("./routes/config.js");
-const mapping_js_1 = require("./routes/mapping.js");
-const playlist_js_1 = require("./routes/playlist.js");
-const hdhr_js_1 = require("./routes/hdhr.js");
-const metrics_js_1 = require("./routes/metrics.js");
-const sync_service_js_1 = require("./sync-service.js");
+import crypto from 'crypto';
+import express from 'express';
+import compression from 'compression';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import * as hdhrModule from './hdhr.js';
+import { createStateStore } from './state-store.js';
+import { createSyncCoordinator } from './sync-coordinator.js';
+import { securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler } from './http-security.js';
+import { registerHealthRoutes } from './routes/health.js';
+import { registerConfigRoutes } from './routes/config.js';
+import { registerMappingRoutes } from './routes/mapping.js';
+import { registerPlaylistRoutes } from './routes/playlist.js';
+import { registerHdhrRoutes } from './routes/hdhr.js';
+import { registerMetricsRoutes } from './routes/metrics.js';
+import { createSyncService } from './sync-service.js';
 /**
  * HTTP application factory.
  *
@@ -62,37 +26,37 @@ const sync_service_js_1 = require("./sync-service.js");
  * @param {any} deps
  */
 function createApp(deps) {
-    const { runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false }, publicDir = node_path_1.default.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep } = deps;
+    const { runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false }, publicDir = path.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep } = deps;
     const state = (typeof stateDep?.get === 'function')
         ? stateDep
-        : (0, state_store_js_1.createStateStore)(stateDep);
+        : createStateStore(stateDep);
     const { validateSettings, validateMapping } = validation;
     const playlistPaths = runtime.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];
     const publicPaths = runtime.publicPaths || [...playlistPaths, '/health', '/health/live', '/health/ready'];
     let cronTask = null;
     let shuttingDown = false;
-    const syncCoordinator = syncCoordinatorDep || (0, sync_coordinator_js_1.createSyncCoordinator)({
+    const syncCoordinator = syncCoordinatorDep || createSyncCoordinator({
         maxQueue: 4,
         backoffBaseMs: 5000,
         backoffMaxMs: 300000
     });
-    const app = (0, express_1.default)();
+    const app = express();
     app.disable('x-powered-by');
     if (runtime.trustProxy !== false && runtime.trustProxy !== undefined) {
         app.set('trust proxy', runtime.trustProxy);
     }
     // Request context: a stable ID for correlating logs and responses.
     app.use((req, res, next) => {
-        const requestId = (typeof crypto_1.default !== 'undefined' && crypto_1.default.randomUUID)
-            ? crypto_1.default.randomUUID()
+        const requestId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+            ? crypto.randomUUID()
             : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         req.requestId = requestId;
         res.setHeader('X-Request-Id', requestId);
         next();
     });
-    app.use((0, http_security_js_1.securityHeaders)({ hsts: runtime.hsts }));
+    app.use(securityHeaders({ hsts: runtime.hsts }));
     app.use(compression());
-    const auth = (0, http_security_js_1.createAuth)({
+    const auth = createAuth({
         user: runtime.adminUser,
         password: runtime.adminPassword,
         publicPaths,
@@ -103,15 +67,15 @@ function createApp(deps) {
     app.use(auth);
     // State-changing API requests must be JSON and same-origin. This also blocks
     // the "empty fetch()" CSRF vector on /api/fetch-channels.
-    app.use('/api', (0, http_security_js_1.createOriginGuard)());
-    app.use(express_1.default.json({ limit: '1mb' }));
-    const apiLimiter = (0, http_security_js_1.createRateLimiter)({
+    app.use('/api', createOriginGuard());
+    app.use(express.json({ limit: '1mb' }));
+    const apiLimiter = createRateLimiter({
         windowMs: runtime.apiRateWindowMs,
         max: runtime.apiRateMax,
         maxEntries: runtime.maxRateEntries
     });
     app.use('/api', apiLimiter);
-    app.use(express_1.default.static(publicDir, {
+    app.use(express.static(publicDir, {
         setHeaders: (res, filePath) => {
             // Bundled fonts rarely change: let browsers cache them for a week.
             if (filePath.endsWith('.woff2'))
@@ -132,7 +96,7 @@ function createApp(deps) {
     // -----------------------------------------------------------------------
     // Application service (state, sync, persistence)
     // -----------------------------------------------------------------------
-    const syncService = (0, sync_service_js_1.createSyncService)({
+    const syncService = createSyncService({
         state,
         configStore,
         receiver,
@@ -226,15 +190,15 @@ function createApp(deps) {
         stopBackgroundCron,
         playlistPaths
     };
-    (0, health_js_1.registerHealthRoutes)(app, ctx);
-    (0, config_js_1.registerConfigRoutes)(app, ctx);
-    (0, mapping_js_1.registerMappingRoutes)(app, ctx);
-    (0, playlist_js_1.registerPlaylistRoutes)(app, ctx);
-    (0, hdhr_js_1.registerHdhrRoutes)(app, ctx);
-    (0, metrics_js_1.registerMetricsRoutes)(app, ctx);
+    registerHealthRoutes(app, ctx);
+    registerConfigRoutes(app, ctx);
+    registerMappingRoutes(app, ctx);
+    registerPlaylistRoutes(app, ctx);
+    registerHdhrRoutes(app, ctx);
+    registerMetricsRoutes(app, ctx);
     // 404 for unknown API routes, then central error handler
     app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
-    app.use((0, http_security_js_1.createErrorHandler)(logger));
+    app.use(createErrorHandler(logger));
     return {
         app,
         state,
@@ -255,4 +219,5 @@ function createApp(deps) {
         }
     };
 }
+export { createApp };
 //# sourceMappingURL=app.js.map

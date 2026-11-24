@@ -1,15 +1,4 @@
 'use strict';
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.DISCOVERY_TARGETS = void 0;
-exports.escapeXml = escapeXml;
-exports.xmlText = xmlText;
-exports.asArray = asArray;
-exports.parseContainerList = parseContainerList;
-exports.parseChannelItems = parseChannelItems;
-exports.createSoapReceiver = createSoapReceiver;
 /**
  * UPnP/SOAP adapter for TechniSat receivers.
  *
@@ -17,15 +6,14 @@ exports.createSoapReceiver = createSoapReceiver;
  * series (STC and S-series). Everything above it works with plain channel
  * objects, which makes the sync flow testable with a fake receiver.
  */
-const http_1 = __importDefault(require("http"));
-const xml2js_1 = __importDefault(require("xml2js"));
-const m3u8_js_1 = require("./m3u8.js");
+import http from 'http';
+import xml2js from 'xml2js';
+import { STREAM_URL_REGEX } from './m3u8.js';
 const SOAP_ACTION = '"urn:schemas-upnp-org:service:ContentDirectory:1#Browse"';
 const DISCOVERY_TARGETS = Object.freeze([
     { type: 'STC', parentObj: '0$3$41', path: '/dev0/srv1/control' },
     { type: 'S_SERIES', parentObj: '3', path: '/ContentDirectory/Control' }
 ]);
-exports.DISCOVERY_TARGETS = DISCOVERY_TARGETS;
 function escapeXml(str) {
     return String(str).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
 }
@@ -56,7 +44,7 @@ function parseContainerList(didl) {
 function parseChannelItems(didl) {
     return asArray(didl && didl.item)
         .map((item) => ({ name: xmlText(item?.['dc:title']), url: xmlText(item?.['res']) }))
-        .filter((channel) => channel.name && channel.url && m3u8_js_1.STREAM_URL_REGEX.test(channel.url.trim()))
+        .filter((channel) => channel.name && channel.url && STREAM_URL_REGEX.test(channel.url.trim()))
         .map((channel) => ({ name: channel.name.trim(), url: channel.url.trim() }));
 }
 /**
@@ -68,7 +56,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
     // "Connection: keep-alive" but do not correctly handle a second request on
     // the reused socket, returning HTTP 412. A fresh connection per request is
     // a few milliseconds slower but reliable across all receiver generations.
-    const upnpAgent = agent || new http_1.default.Agent({ keepAlive: false });
+    const upnpAgent = agent || new http.Agent({ keepAlive: false });
     function postSoap(ip, port, pathEndpoint, soapEnvelope) {
         return new Promise((resolve, reject) => {
             let settled = false;
@@ -84,7 +72,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                 else
                     resolve(value);
             };
-            const req = http_1.default.request({
+            const req = http.request({
                 hostname: ip,
                 port: parseInt(String(port), 10),
                 path: pathEndpoint,
@@ -138,11 +126,11 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
   </u:Browse></s:Body>
 </s:Envelope>`;
         const body = await postSoap(ip, port, pathEndpoint, soapEnvelope);
-        const result = await xml2js_1.default.parseStringPromise(body, { explicitArray: false });
+        const result = await xml2js.parseStringPromise(body, { explicitArray: false });
         const resultXml = xmlText(result?.['s:Envelope']?.['s:Body']?.['u:BrowseResponse']?.['Result']);
         if (!resultXml)
             throw new Error('UPnP SOAP Browse response invalid');
-        const browse = await xml2js_1.default.parseStringPromise(resultXml, { explicitArray: false });
+        const browse = await xml2js.parseStringPromise(resultXml, { explicitArray: false });
         if (!browse?.['DIDL-Lite'])
             throw new Error('Invalid DIDL-Lite payload');
         return browse['DIDL-Lite'];
@@ -229,4 +217,5 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
         close: () => upnpAgent.destroy()
     };
 }
+export { DISCOVERY_TARGETS, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
 //# sourceMappingURL=receiver.js.map

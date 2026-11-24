@@ -1,24 +1,11 @@
-"use strict";
 /**
  * Pure helpers for the HDHomeRun emulation (no Express, no I/O) so they can be unit-tested in isolation.
  */
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.LINEUP_STATUS = exports.DEFAULTS = void 0;
-exports.resolveConfig = resolveConfig;
-exports.modelLabel = modelLabel;
-exports.sanitizeModel = sanitizeModel;
-exports.defaultFriendlyName = defaultFriendlyName;
-exports.guideName = guideName;
-exports.buildLineup = buildLineup;
-exports.baseUrlFrom = baseUrlFrom;
-exports.discoverPayload = discoverPayload;
-exports.lineupPayload = lineupPayload;
-const m3u8_js_1 = require("./m3u8.js");
+import { STREAM_URL_REGEX } from './m3u8.js';
 const DEFAULTS = Object.freeze({
     deviceId: '12345678',
     tunerCount: 2
 });
-exports.DEFAULTS = DEFAULTS;
 const DEVICE_ID_REGEX = /^[0-9A-Fa-f]{8}$/;
 const HOST_REGEX = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
 const LINEUP_STATUS = Object.freeze({
@@ -27,8 +14,7 @@ const LINEUP_STATUS = Object.freeze({
     Source: 'Cable',
     SourceList: Object.freeze(['Cable'])
 });
-exports.LINEUP_STATUS = LINEUP_STATUS;
-function resolveConfig(env = {}) {
+export function resolveConfig(env = {}) {
     const warnings = [];
     const rawName = String(env.HDHR_FRIENDLY_NAME || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 64);
     const friendlyName = rawName === '' || rawName === '-' ? null : rawName;
@@ -49,7 +35,7 @@ function resolveConfig(env = {}) {
     }
     return { enabled: env.HDHR_ENABLED !== 'false', friendlyName, deviceId, tunerCount, warnings };
 }
-function modelLabel(deviceType) {
+export function modelLabel(deviceType) {
     switch (deviceType) {
         case 'STC': return 'DIGIT ISIO STC';
         case 'S': return 'DIGIT ISIO S';
@@ -58,19 +44,19 @@ function modelLabel(deviceType) {
         default: return 'DIGIT ISIO S/S1/S2';
     }
 }
-function sanitizeModel(value) {
+export function sanitizeModel(value) {
     if (typeof value !== 'string')
         return null;
     return value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60) || null;
 }
-function defaultFriendlyName(model) {
+export function defaultFriendlyName(model) {
     return model ? `TechniSat ${model}` : 'TechniSat';
 }
-function guideName(name) {
+export function guideName(name) {
     const original = String(name).trim();
     return original.replace(/^\d+\s+/, '').trim() || original;
 }
-function buildLineup(channels, mapping) {
+export function buildLineup(channels, mapping) {
     const entries = [];
     const seen = new Set();
     for (const ch of channels) {
@@ -78,19 +64,19 @@ function buildLineup(channels, mapping) {
             continue;
         const guideNumber = String(mapping[ch.name]).trim().replace(/^ts-ch/, '');
         const url = String(ch.url).trim();
-        if (!guideNumber || seen.has(guideNumber) || !m3u8_js_1.STREAM_URL_REGEX.test(url))
+        if (!guideNumber || seen.has(guideNumber) || !STREAM_URL_REGEX.test(url))
             continue;
         seen.add(guideNumber);
         entries.push({ guideNumber, guideName: guideName(ch.name), url });
     }
     return entries;
 }
-function baseUrlFrom(protocol, host) {
+export function baseUrlFrom(protocol, host) {
     if (typeof host !== 'string' || !HOST_REGEX.test(host))
         return null;
     return `${protocol === 'https' ? 'https' : 'http'}://${host}`;
 }
-function discoverPayload(baseUrl, config, model) {
+export function discoverPayload(baseUrl, config, model) {
     return {
         FriendlyName: config.friendlyName || defaultFriendlyName(model),
         ModelNumber: 'HDHR4-2DT',
@@ -103,11 +89,12 @@ function discoverPayload(baseUrl, config, model) {
         TunerCount: config.tunerCount
     };
 }
-function lineupPayload(entries, baseUrl) {
+export function lineupPayload(entries, baseUrl) {
     return entries.map((e) => ({
         GuideNumber: e.guideNumber,
         GuideName: e.guideName,
         URL: `${baseUrl}/hdhr/stream/${encodeURIComponent(e.guideNumber)}`
     }));
 }
+export { DEFAULTS, LINEUP_STATUS };
 //# sourceMappingURL=hdhr.js.map

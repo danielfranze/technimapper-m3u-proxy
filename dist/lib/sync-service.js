@@ -1,9 +1,7 @@
 'use strict';
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createSyncService = createSyncService;
-const state_js_1 = require("./state.js");
-const m3u8_js_1 = require("./m3u8.js");
-const validation_js_1 = require("./validation.js");
+import { persistedSnapshot } from './state.js';
+import { buildM3u8 } from './m3u8.js';
+import { HttpError } from './validation.js';
 /**
  * Application service for receiver sync and playlist state.
  *
@@ -26,7 +24,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
     }
     function mergeSettings(overrides = {}) {
         if (overrides === null || typeof overrides !== 'object' || Array.isArray(overrides)) {
-            throw new validation_js_1.HttpError(400, 'Invalid settings payload');
+            throw new HttpError(400, 'Invalid settings payload');
         }
         const merged = currentSettings();
         // A key that is explicitly present overrides the stored value, even when
@@ -40,11 +38,11 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         return validateSettings(merged);
     }
     async function persistState() {
-        await configStore.write((0, state_js_1.persistedSnapshot)(getState()));
+        await configStore.write(persistedSnapshot(getState()));
     }
     function rebuildViews() {
         const snapshot = getState();
-        const { m3u8, count } = (0, m3u8_js_1.buildM3u8)(snapshot.config.channels, snapshot.config.mapping);
+        const { m3u8, count } = buildM3u8(snapshot.config.channels, snapshot.config.mapping);
         updateState(s => {
             s.cachedM3u8 = count > 0 ? m3u8 : null;
             s.lineupEntries = hdhrModule.buildLineup(s.config.channels, s.config.mapping);
@@ -134,4 +132,5 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         performSync
     };
 }
+export { createSyncService };
 //# sourceMappingURL=sync-service.js.map

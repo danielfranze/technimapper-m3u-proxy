@@ -1,22 +1,10 @@
-"use strict";
 /**
  * Pure input-validation helpers (no Express, no I/O) so they can be unit-tested in isolation.
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ID_REGEX = exports.HttpError = void 0;
-exports.createValidation = createValidation;
-exports.findDuplicateIds = findDuplicateIds;
-exports.findDuplicateGroups = findDuplicateGroups;
-exports.partitionMapping = partitionMapping;
-exports.sortMapping = sortMapping;
-const net_1 = __importDefault(require("net"));
+import net from 'net';
 // "." and ".." are valid in a character class but would be normalised by URL
 // parsing and could escape the /hdhr/stream/:id route.
 const ID_REGEX = /^(?!\.{1,2}$)[A-Za-z0-9_.\-]{1,32}$/;
-exports.ID_REGEX = ID_REGEX;
 /**
  * @extends {Error}
  */
@@ -31,14 +19,13 @@ class HttpError extends Error {
         this.status = status;
     }
 }
-exports.HttpError = HttpError;
 /**
  * @param {{ cronValidate: (expr: string) => boolean, allowNonPrivateIp?: boolean }} options
  */
 function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopback = false }) {
     /** Receiver must be a valid IPv4; loopback/link-local/multicast are always rejected. */
     function isAllowedReceiverIp(ip) {
-        if (typeof ip !== 'string' || !net_1.default.isIPv4(ip))
+        if (typeof ip !== 'string' || !net.isIPv4(ip))
             return false;
         const [a, b] = ip.split('.').map(Number);
         if (a === 0 || a >= 224)
@@ -180,4 +167,5 @@ function sortMapping(mapping, channelNames) {
         sorted[name] = mapping[name];
     return sorted;
 }
+export { HttpError, ID_REGEX, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping };
 //# sourceMappingURL=validation.js.map

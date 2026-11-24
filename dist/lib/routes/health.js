@@ -1,6 +1,4 @@
 'use strict';
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerHealthRoutes = registerHealthRoutes;
 /**
  * Health endpoints.
  * @param {import('express').Express} app
@@ -40,4 +38,5 @@ function registerHealthRoutes(app, ctx) {
         res.status(ready ? 200 : 503).json({ ...payload, status: ready ? payload.status : 'degraded' });
     });
 }
+export { registerHealthRoutes };
 //# sourceMappingURL=health.js.map

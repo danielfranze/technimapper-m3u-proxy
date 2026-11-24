@@ -1,5 +1,5 @@
 'use strict';
-const http = require('http');
+import http from 'http';
 
 const ip = process.argv[2];
 const port = process.argv[3] || '9100';

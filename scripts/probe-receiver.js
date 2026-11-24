@@ -1,5 +1,5 @@
 'use strict';
-const { createSoapReceiver } = require('../dist/lib/receiver.js');
+import {  createSoapReceiver  } from '../dist/lib/receiver.js';
 
 const ip = process.argv[2];
 const port = process.argv[3] || '9100';

@@ -1,11 +1,11 @@
 'use strict';
 console.log('start-e2e.js: starting');
 // Starts the mock receiver and the app for E2E tests.
-const { spawn } = require('child_process');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
+import {  spawn  } from 'child_process';
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 const mockPort = process.env.MOCK_RECEIVER_PORT || '9199';
 const dataDir = process.env.DATA_DIR || path.join(os.tmpdir(), 'technimapper-e2e-mock');

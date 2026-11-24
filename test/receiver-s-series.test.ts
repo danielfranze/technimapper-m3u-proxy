@@ -1,9 +1,9 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const http = require('http');
-const { createSoapReceiver, escapeXml } = require('../dist/lib/receiver.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'http';
+import {  createSoapReceiver, escapeXml  } from '../dist/lib/receiver.js';
 
 const quietLogger = { info() {}, warn() {}, error() {} };
 

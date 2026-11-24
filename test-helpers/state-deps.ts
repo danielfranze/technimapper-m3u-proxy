@@ -1,7 +1,7 @@
 'use strict';
 
-const { createValidation, sortMapping } = require('../dist/lib/validation.js');
-const hdhr = require('../dist/lib/hdhr.js');
+import {  createValidation, sortMapping  } from '../dist/lib/validation.js';
+import * as hdhr from '../dist/lib/hdhr.js';
 
 const fakeCron = value => typeof value === 'string' && value.trim().split(/\s+/).length === 5;
 
@@ -18,4 +18,4 @@ function createDeps(logger) {
     };
 }
 
-module.exports = { createDeps, fakeCron };
+export { createDeps, fakeCron };

@@ -1,8 +1,8 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { HttpError, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } = require('../dist/lib/validation.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {  HttpError, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping  } from '../dist/lib/validation.js';
 
 // Simple stand-in for node-cron's validate(): five whitespace-separated fields.
 const fakeCron = (s) => typeof s === 'string' && s.trim().split(/\s+/).length === 5;

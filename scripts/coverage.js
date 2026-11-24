@@ -1,7 +1,7 @@
 'use strict';
 // Runs the test suite with V8 code coverage and enforces minimum thresholds.
 // Usage: node scripts/coverage.js
-const { spawnSync } = require('node:child_process');
+import {  spawnSync  } from 'node:child_process';
 
 const thresholds = { lines: 90, branches: 80, functions: 85 };
 

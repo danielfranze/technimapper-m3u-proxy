@@ -1,9 +1,10 @@
 'use strict';
 
-const { createState } = require('../dist/lib/state.js');
-const { createStateStore } = require('../dist/lib/state-store.js');
-const { createValidation } = require('../dist/lib/validation.js');
-const { createLogger } = require('../dist/lib/logger.js');
+import {  createState  } from '../dist/lib/state.js';
+import {  createStateStore  } from '../dist/lib/state-store.js';
+import {  createValidation  } from '../dist/lib/validation.js';
+import {  createLogger  } from '../dist/lib/logger.js';
+import { createApp } from '../dist/lib/app.js';
 
 const fakeCron = value => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
 
@@ -69,7 +70,6 @@ function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetch
     };
 
     const validation = createValidation({ cronValidate: fakeCron });
-    const { createApp } = require('../dist/lib/app.js');
     const { app, services } = createApp({
         runtime: baseRuntime(runtimeOverrides),
         logger: quietLogger(),
@@ -86,4 +86,4 @@ function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetch
     return { app, services, state, writes, calls, configStore, scheduled: () => scheduled, CHANNELS };
 }
 
-module.exports = { createHarness, baseRuntime, quietLogger, fakeCron };
+export { createHarness, baseRuntime, quietLogger, fakeCron };

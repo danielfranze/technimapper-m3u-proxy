@@ -1,8 +1,8 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createLogger, safeStringify, defaultSink } = require('../dist/lib/logger.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {  createLogger, safeStringify, defaultSink  } from '../dist/lib/logger.js';
 
 function recordingLogger(level = 'info', format = 'text') {
     const calls = [];

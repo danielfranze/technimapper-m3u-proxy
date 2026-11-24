@@ -2,8 +2,10 @@
 
 import crypto from 'crypto';
 import express from 'express';
-const compression = require('compression');
+import compression from 'compression';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 declare module 'express-serve-static-core' {
     interface Request {

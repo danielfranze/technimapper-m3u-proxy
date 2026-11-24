@@ -1,12 +1,14 @@
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const path = require('path');
-const { execFileSync, spawnSync } = require('node:child_process');
-const pkg = require('../package.json');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'path';
+import {  execFileSync, spawnSync  } from 'node:child_process';
+import pkg from '../package.json';
 
-const root = path.join(__dirname, '..');
+const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const script = '.github/scripts/release-notes.sh';
 const hasBash = !spawnSync('bash', ['--version']).error;
 

@@ -1,17 +1,4 @@
 'use strict';
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.clientKey = clientKey;
-exports.safeEqual = safeEqual;
-exports.isPublicPath = isPublicPath;
-exports.createFailureLimiter = createFailureLimiter;
-exports.createAuth = createAuth;
-exports.createRateLimiter = createRateLimiter;
-exports.createOriginGuard = createOriginGuard;
-exports.securityHeaders = securityHeaders;
-exports.createErrorHandler = createErrorHandler;
 /**
  * HTTP boundary helpers: security headers, Basic Auth, CSRF/origin checks and
  * bounded in-memory rate limiting.
@@ -19,16 +6,16 @@ exports.createErrorHandler = createErrorHandler;
  * Everything here is transport-level policy. Business routes only register
  * themselves and rely on these middleware functions.
  */
-const crypto_1 = __importDefault(require("crypto"));
-const validation_js_1 = require("./validation.js");
+import crypto from 'crypto';
+import { HttpError } from './validation.js';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 function clientKey(req) {
     return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 function safeEqual(a, b) {
-    const ha = crypto_1.default.createHash('sha256').update(String(a)).digest();
-    const hb = crypto_1.default.createHash('sha256').update(String(b)).digest();
-    return crypto_1.default.timingSafeEqual(ha, hb);
+    const ha = crypto.createHash('sha256').update(String(a)).digest();
+    const hb = crypto.createHash('sha256').update(String(b)).digest();
+    return crypto.timingSafeEqual(ha, hb);
 }
 /** @param {string} requestPath */
 function isPublicPath(requestPath, publicPaths = [], publicPrefixes = ['/hdhr/']) {
@@ -238,7 +225,7 @@ function createErrorHandler(logger = console) {
             return res.status(400).json({ error: 'Invalid JSON payload' });
         if (err?.type === 'entity.too.large')
             return res.status(413).json({ error: 'Payload too large' });
-        if (err instanceof validation_js_1.HttpError)
+        if (err instanceof HttpError)
             return res.status(err.status).json({ error: err.message });
         if (typeof err?.status === 'number' && err.status >= 400 && err.status < 500) {
             return res.status(err.status).json({ error: 'Invalid request' });
@@ -247,4 +234,5 @@ function createErrorHandler(logger = console) {
         return res.status(500).json({ error: 'Internal server error' });
     };
 }
+export { clientKey, safeEqual, isPublicPath, createFailureLimiter, createAuth, createRateLimiter, createOriginGuard, securityHeaders, createErrorHandler };
 //# sourceMappingURL=http-security.js.map

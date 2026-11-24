@@ -1,8 +1,8 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createSyncCoordinator } = require('../dist/lib/sync-coordinator.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {  createSyncCoordinator  } from '../dist/lib/sync-coordinator.js';
 
 test('sync coordinator serializes work and clears backoff after a later success', async () => {
     let active = 0;

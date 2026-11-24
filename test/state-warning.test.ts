@@ -1,9 +1,9 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { createState, applyPersistedState } = require('../dist/lib/state.js');
-const { createDeps, fakeCron } = require('../test-helpers/state-deps.ts');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {  createState, applyPersistedState  } from '../dist/lib/state.js';
+import {  createDeps, fakeCron  } from '../test-helpers/state-deps.ts';
 
 test('repairPersistedSettings warns about a disallowed receiver IP', () => {
     const warnings = [];

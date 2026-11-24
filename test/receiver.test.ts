@@ -1,8 +1,8 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { parseContainerList, parseChannelItems, escapeXml, xmlText } = require('../dist/lib/receiver.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {  parseContainerList, parseChannelItems, escapeXml, xmlText  } from '../dist/lib/receiver.js';
 
 test('xmlText handles strings, arrays and xml2js text objects', () => {
     assert.equal(xmlText('hello'), 'hello');

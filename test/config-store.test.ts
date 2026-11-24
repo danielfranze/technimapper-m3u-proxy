@@ -1,11 +1,11 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const { createJsonConfigStore } = require('../dist/lib/config-store.js');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import {  createJsonConfigStore  } from '../dist/lib/config-store.js';
 
 const logger = { warn() {}, error() {} };
 

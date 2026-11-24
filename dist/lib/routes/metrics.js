@@ -1,6 +1,4 @@
 'use strict';
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.registerMetricsRoutes = registerMetricsRoutes;
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
@@ -36,4 +34,5 @@ function registerMetricsRoutes(app, ctx) {
             `technimapper_sync_queue_length ${syncCoordinator.queueLength}\n`);
     });
 }
+export { registerMetricsRoutes };
 //# sourceMappingURL=metrics.js.map

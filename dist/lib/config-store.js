@@ -1,16 +1,10 @@
-"use strict";
 /**
  * JSON persistence adapter for mapping.json.
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.createJsonConfigStore = createJsonConfigStore;
-const node_fs_1 = __importDefault(require("node:fs"));
-const node_path_1 = __importDefault(require("node:path"));
-const fsp = node_fs_1.default.promises;
-function createJsonConfigStore({ dataDir, configFile, logger, fsModule = node_fs_1.default }) {
+import fs from 'node:fs';
+import path from 'node:path';
+const fsp = fs.promises;
+export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }) {
     const promises = fsModule.promises || fsp;
     function ensureDataDir() {
         try {
@@ -50,7 +44,7 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = node_fs
                 const e = err;
                 if (!['EBUSY', 'EXDEV', 'EPERM'].includes(e.code || ''))
                     throw err;
-                logger.warn(`Atomic rename of ${node_path_1.default.basename(configFile)} failed (${e.code}) - writing in place.`);
+                logger.warn(`Atomic rename of ${path.basename(configFile)} failed (${e.code}) - writing in place.`);
                 await promises.writeFile(configFile, json, 'utf8');
             }
         });

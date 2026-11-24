@@ -1,16 +1,10 @@
-"use strict";
 /**
  * Reads and validates the process environment once at startup.
  */
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.intFromEnv = intFromEnv;
-exports.parseTrustProxy = parseTrustProxy;
-exports.loadRuntimeConfig = loadRuntimeConfig;
-const node_net_1 = __importDefault(require("node:net"));
-const node_path_1 = __importDefault(require("node:path"));
+import net from 'node:net';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_PORT = 9191;
 const DEFAULT_REQUEST_TIMEOUT_MS = 5000;
 const DEFAULT_MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
@@ -18,7 +12,7 @@ const DEFAULT_CRON = '*/5 * * * *';
 const DEFAULT_SHUTDOWN_TIMEOUT_MS = 30000;
 const DEFAULT_PLAYLIST_PATHS = Object.freeze(['/playlist.m3u8', '/playlist.m3u']);
 const TRUST_PROXY_TOKENS = new Set(['loopback', 'linklocal', 'uniquelocal']);
-function intFromEnv(raw, fallback, options = {}) {
+export function intFromEnv(raw, fallback, options = {}) {
     const { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, name = 'value', warnings = [] } = options;
     if (raw === undefined || raw === null || String(raw).trim() === '')
         return fallback;
@@ -37,7 +31,7 @@ function intFromEnv(raw, fallback, options = {}) {
 function booleanFromEnv(raw) {
     return String(raw || '').trim().toLowerCase() === 'true';
 }
-function parseTrustProxy(raw, warnings = []) {
+export function parseTrustProxy(raw, warnings = []) {
     const text = String(raw || '').trim();
     if (text === '')
         return false;
@@ -50,20 +44,20 @@ function parseTrustProxy(raw, warnings = []) {
     if (text === 'false')
         return false;
     const parts = text.split(',').map((p) => p.trim()).filter(Boolean);
-    const valid = parts.length > 0 && parts.every((part) => TRUST_PROXY_TOKENS.has(part) || node_net_1.default.isIP(part) !== 0);
+    const valid = parts.length > 0 && parts.every((part) => TRUST_PROXY_TOKENS.has(part) || net.isIP(part) !== 0);
     if (valid)
         return text;
     warnings.push(`TRUST_PROXY "${text}" is not a valid hop count, subnet or named range - using false.`);
     return false;
 }
-function loadRuntimeConfig(env = process.env) {
+export function loadRuntimeConfig(env = process.env) {
     const warnings = [];
     const port = intFromEnv(env.PORT, DEFAULT_PORT, { min: 1, max: 65535, name: 'PORT', warnings });
     const requestTimeoutMs = intFromEnv(env.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, { min: 500, max: 120000, name: 'REQUEST_TIMEOUT_MS', warnings });
     const maxResponseBytes = intFromEnv(env.MAX_RESPONSE_BYTES, DEFAULT_MAX_RESPONSE_BYTES, { min: 64 * 1024, max: 32 * 1024 * 1024, name: 'MAX_RESPONSE_BYTES', warnings });
     const rawShutdown = intFromEnv(env.SHUTDOWN_TIMEOUT_MS, DEFAULT_SHUTDOWN_TIMEOUT_MS, { min: 1000, max: 300000, name: 'SHUTDOWN_TIMEOUT_MS', warnings });
     const shutdownTimeoutMs = Math.max(rawShutdown, requestTimeoutMs * 3 + 1000);
-    const dataDir = env.DATA_DIR ? node_path_1.default.resolve(env.DATA_DIR) : node_path_1.default.join(process.cwd(), 'data');
+    const dataDir = env.DATA_DIR ? path.resolve(env.DATA_DIR) : path.join(process.cwd(), 'data');
     const adminUser = (env.ADMIN_USER || '').trim();
     const adminPassword = (env.ADMIN_PASSWORD || '').trim();
     if (adminUser && !adminPassword)
@@ -79,7 +73,7 @@ function loadRuntimeConfig(env = process.env) {
     return {
         port,
         dataDir,
-        configFile: node_path_1.default.join(dataDir, 'mapping.json'),
+        configFile: path.join(dataDir, 'mapping.json'),
         requestTimeoutMs,
         maxResponseBytes,
         shutdownTimeoutMs,

@@ -1,7 +1,4 @@
 'use strict';
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.deepFreeze = deepFreeze;
-exports.createStateStore = createStateStore;
 /**
  * Immutable application state store.
  *
@@ -41,4 +38,5 @@ function createStateStore(initial) {
         }
     };
 }
+export { deepFreeze, createStateStore };
 //# sourceMappingURL=state-store.js.map

@@ -1,14 +1,16 @@
 'use strict';
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const {
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
     isPublicPath,
     createAuth,
     createRateLimiter,
     createFailureLimiter,
-    createOriginGuard
-} = require('../dist/lib/http-security.js');
+    createOriginGuard,
+    createErrorHandler
+} from '../dist/lib/http-security.js';
+import { HttpError } from '../dist/lib/validation.js';
 
 const quietLogger = { warn() {}, info() {}, error() {} };
 
@@ -209,7 +211,6 @@ test('failure limiter prunes expired entries before evicting', () => {
 });
 
 test('createErrorHandler maps error types and status codes', () => {
-    const { createErrorHandler } = require('../dist/lib/http-security.js');
     const handler = createErrorHandler({ error() {} });
 
     const parseError = fakeResponse();
@@ -223,7 +224,7 @@ test('createErrorHandler maps error types and status codes', () => {
     assert.equal(largeError.body.error, 'Payload too large');
 
     const httpError = fakeResponse();
-    handler(new (require('../dist/lib/validation.js').HttpError)(404, 'missing'), fakeRequest(), httpError, () => {});
+    handler(new HttpError(404, 'missing'), fakeRequest(), httpError, () => {});
     assert.equal(httpError.statusCode, 404);
     assert.equal(httpError.body.error, 'missing');
 

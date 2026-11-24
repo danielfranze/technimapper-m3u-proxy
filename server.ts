@@ -35,7 +35,7 @@
 
 import cron from 'node-cron';
 import path from 'node:path';
-import packageJson from './package.json';
+import packageJson from './package.json' with { type: 'json' };
 import {  createLogger  } from './lib/logger.js';
 import {  loadRuntimeConfig  } from './lib/runtime-config.js';
 import {  createJsonConfigStore  } from './lib/config-store.js';
@@ -186,11 +186,10 @@ async function main() {
     });
 }
 
-if (require.main === module) {
-    main().catch((err: any) => {
-        console.error('Fatal startup error:', err);
-        process.exit(1);
-    });
-}
+// In ESM, always run main (this file is the entry point).
+main().catch((err: any) => {
+    console.error('Fatal startup error:', err);
+    process.exit(1);
+});
 
 export { main, APP_VERSION };
