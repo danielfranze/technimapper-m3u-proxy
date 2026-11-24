@@ -6,7 +6,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import * as hdhrModule from './hdhr.js';
-import { createStateStore } from './state-store.js';
 import { createSyncCoordinator } from './sync-coordinator.js';
 import { securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler } from './http-security.js';
 import { registerHealthRoutes } from './routes/health.js';
@@ -22,17 +21,15 @@ import { createSyncService } from './sync-service.js';
  * `createApp()` wires the HTTP boundary around an application state store.
  * It never starts a listener, which is what makes integration tests possible:
  * tests can call it with fake receiver, persistence and cron implementations.
- *
- * @param {any} deps
  */
-function createApp(deps) {
-    const { runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false }, publicDir = path.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep } = deps;
-    const state = (typeof stateDep?.get === 'function')
-        ? stateDep
-        : createStateStore(stateDep);
+function errorMessage(err) {
+    return err instanceof Error ? err.message : String(err);
+}
+function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] }, publicDir = path.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep }) {
+    const state = stateDep;
     const { validateSettings, validateMapping } = validation;
-    const playlistPaths = runtime.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];
-    const publicPaths = runtime.publicPaths || [...playlistPaths, '/health', '/health/live', '/health/ready'];
+    const playlistPaths = runtime.playlistPaths ? [...runtime.playlistPaths] : ['/playlist.m3u8', '/playlist.m3u'];
+    const publicPaths = runtime.publicPaths ? [...runtime.publicPaths] : [...playlistPaths, '/health', '/health/live', '/health/ready'];
     let cronTask = null;
     let shuttingDown = false;
     const syncCoordinator = syncCoordinatorDep || createSyncCoordinator({
@@ -128,14 +125,14 @@ function createApp(deps) {
             });
         }
         catch (err) {
-            logger.error(`[Sync] Invalid stored settings: ${err.message}`);
+            logger.error(`[Sync] Invalid stored settings: ${errorMessage(err)}`);
             return;
         }
         try {
             await syncCoordinator.request(() => performSync(candidate));
         }
         catch (err) {
-            logger.error(`[Sync] ${err.message} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`);
+            logger.error(`[Sync] ${errorMessage(err)} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`);
         }
     }
     function stopBackgroundCron() {
@@ -157,7 +154,7 @@ function createApp(deps) {
             cronTask = cron.schedule(pattern, runScheduledSync);
         }
         catch (err) {
-            logger.error(`Failed to schedule background sync: ${err.message}`);
+            logger.error(`Failed to schedule background sync: ${errorMessage(err)}`);
             cronTask = null;
         }
         return cronTask;

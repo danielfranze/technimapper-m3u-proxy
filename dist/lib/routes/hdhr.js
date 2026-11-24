@@ -7,12 +7,12 @@ import * as hdhrModule from '../hdhr.js';
  */
 function registerHdhrRoutes(app, ctx) {
     const { getState } = ctx;
-    const hdhrConfig = ctx.hdhrConfig || { enabled: false };
+    const hdhrConfig = ctx.hdhrConfig || { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] };
     if (!hdhrConfig.enabled)
         return;
     const hdhrRouter = express.Router();
-    const withBaseUrl = handler => (req, res) => {
-        const baseUrl = hdhrModule.baseUrlFrom(req.protocol, req.get('host'));
+    const withBaseUrl = (handler) => (req, res) => {
+        const baseUrl = hdhrModule.baseUrlFrom(req.protocol, req.get('host') || '');
         if (!baseUrl)
             return res.status(400).json({ error: 'Invalid Host header' });
         return handler(req, res, baseUrl);

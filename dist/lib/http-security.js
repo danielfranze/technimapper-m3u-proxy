@@ -17,12 +17,11 @@ function safeEqual(a, b) {
     const hb = crypto.createHash('sha256').update(String(b)).digest();
     return crypto.timingSafeEqual(ha, hb);
 }
-/** @param {string} requestPath */
 function isPublicPath(requestPath, publicPaths = [], publicPrefixes = ['/hdhr/']) {
     const path = String(requestPath || '');
     if (publicPaths.includes(path))
         return true;
-    return publicPrefixes.some((prefix) => path === prefix.slice(0, -1) || path.startsWith(prefix));
+    return publicPrefixes.some(prefix => path === prefix.slice(0, -1) || path.startsWith(prefix));
 }
 /**
  * Bounded map of failed authentication attempts. Only failures are counted, so
@@ -95,7 +94,8 @@ function createAuth({ user = '', password = '', publicPaths = [], publicPrefixes
             return next();
         if (misconfigured) {
             res.set('Cache-Control', 'no-store');
-            return res.status(503).json({ error: 'Authentication is misconfigured' });
+            res.status(503).json({ error: 'Authentication is misconfigured' });
+            return;
         }
         if (!enabled)
             return next();
@@ -103,7 +103,8 @@ function createAuth({ user = '', password = '', publicPaths = [], publicPrefixes
         const retryAfter = failures.status(key);
         if (retryAfter > 0) {
             res.set('Retry-After', String(retryAfter));
-            return res.status(429).json({ error: 'Too many failed authentication attempts' });
+            res.status(429).json({ error: 'Too many failed authentication attempts' });
+            return;
         }
         const credentials = readCredentials(req);
         if (credentials && safeEqual(credentials.user, user) && safeEqual(credentials.password, password)) {
@@ -113,7 +114,7 @@ function createAuth({ user = '', password = '', publicPaths = [], publicPrefixes
         failures.fail(key);
         logger.warn(`Authentication failed from ${key}.`);
         res.set('WWW-Authenticate', 'Basic realm="TechniMapper", charset="UTF-8"');
-        return res.status(401).send('Authentication required');
+        res.status(401).send('Authentication required');
     }
     middleware.enabled = enabled;
     middleware.misconfigured = misconfigured;
@@ -148,7 +149,7 @@ function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, 
         if (!result.limited)
             return next();
         res.set('Retry-After', String(result.retryAfter));
-        return res.status(429).json({ error: 'Too many requests' });
+        res.status(429).json({ error: 'Too many requests' });
     }
     middleware.consume = consume;
     middleware.size = () => hits.size;
@@ -167,11 +168,14 @@ function createOriginGuard() {
             return next();
         const contentType = String(req.get('content-type') || '').toLowerCase();
         if (!contentType.startsWith('application/json')) {
-            return res.status(415).json({ error: 'Content-Type application/json required' });
+            res.status(415).json({ error: 'Content-Type application/json required' });
+            return;
         }
         const host = req.get('host');
-        if (!host)
-            return res.status(400).json({ error: 'Missing Host header' });
+        if (!host) {
+            res.status(400).json({ error: 'Missing Host header' });
+            return;
+        }
         const origin = req.get('origin');
         const referer = req.get('referer');
         const source = origin || referer;
@@ -182,10 +186,13 @@ function createOriginGuard() {
             sourceHost = new URL(source).host;
         }
         catch (err) {
-            return res.status(403).json({ error: 'Invalid origin' });
+            res.status(403).json({ error: 'Invalid origin' });
+            return;
         }
-        if (sourceHost.toLowerCase() !== host.toLowerCase())
-            return res.status(403).json({ error: 'Cross-origin request blocked' });
+        if (sourceHost.toLowerCase() !== host.toLowerCase()) {
+            res.status(403).json({ error: 'Cross-origin request blocked' });
+            return;
+        }
         return next();
     };
 }
@@ -218,16 +225,17 @@ function securityHeaders({ hsts = false } = {}) {
  * Keeping this as a factory makes the status mapping testable without an HTTP
  * route that has to throw a synthetic error in production.
  */
-function createErrorHandler(logger = console) {
+function createErrorHandler(logger = { error: () => undefined }) {
     return (err, _req, res, _next) => {
-        if (err?.type === 'entity.parse.failed')
+        const e = err;
+        if (e?.type === 'entity.parse.failed')
             return res.status(400).json({ error: 'Invalid JSON payload' });
-        if (err?.type === 'entity.too.large')
+        if (e?.type === 'entity.too.large')
             return res.status(413).json({ error: 'Payload too large' });
-        if (err instanceof HttpError)
-            return res.status(err.status).json({ error: err.message });
-        if (typeof err?.status === 'number' && err.status >= 400 && err.status < 500) {
-            return res.status(err.status).json({ error: 'Invalid request' });
+        if (e instanceof HttpError)
+            return res.status(e.status).json({ error: e.message });
+        if (typeof e?.status === 'number' && e.status >= 400 && e.status < 500) {
+            return res.status(e.status).json({ error: 'Invalid request' });
         }
         logger.error('Unhandled error:', err);
         return res.status(500).json({ error: 'Internal server error' });

@@ -10,46 +10,64 @@ import http from 'http';
 import xml2js from 'xml2js';
 import { STREAM_URL_REGEX } from './m3u8.js';
 const SOAP_ACTION = '"urn:schemas-upnp-org:service:ContentDirectory:1#Browse"';
+const ESCAPE_MAP = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' };
 const DISCOVERY_TARGETS = Object.freeze([
     { type: 'STC', parentObj: '0$3$41', path: '/dev0/srv1/control' },
     { type: 'S_SERIES', parentObj: '3', path: '/ContentDirectory/Control' }
 ]);
 function escapeXml(str) {
-    return String(str).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+    return String(str).replace(/[<>&"']/g, (c) => ESCAPE_MAP[c]);
 }
-/** xml2js returns either a string or { _: text, $: attrs }. */
+function asNode(value) {
+    return value && typeof value === 'object' ? value : undefined;
+}
+/** xml2js gibt entweder einen String oder { _: text, $: attrs } zurück. */
 function xmlText(value) {
-    if (Array.isArray(value))
-        value = value[0];
-    if (value && typeof value === 'object')
-        value = value._;
-    return typeof value === 'string' ? value : undefined;
+    let current = value;
+    if (Array.isArray(current))
+        current = current[0];
+    const node = asNode(current);
+    if (node)
+        current = node['_'];
+    return typeof current === 'string' ? current : undefined;
 }
 function asArray(value) {
     if (value === undefined || value === null)
         return [];
-    return Array.isArray(value) ? value : [value];
+    if (Array.isArray(value))
+        return value;
+    return [value];
+}
+function nodeKey(node, key) {
+    return node ? node[key] : undefined;
 }
 /** Extracts the DIDL-Lite containers (channel lists) from a Browse response. */
 function parseContainerList(didl) {
-    return asArray(didl && didl.container)
-        .map(container => ({
-        id: container?.['$']?.id || container?.id,
-        title: xmlText(container?.['dc:title']),
-        childCount: parseInt(container?.['$']?.childCount, 10) || 0
-    }))
-        .filter(list => list.id && list.title);
+    const containers = asArray(nodeKey(didl, 'container'));
+    const lists = [];
+    for (const container of containers) {
+        const attrs = asNode(container['$']);
+        const id = attrs?.['id'] ?? xmlText(container['id']);
+        const title = xmlText(container['dc:title']);
+        const childCount = parseInt(String(attrs?.['childCount']), 10) || 0;
+        if (id && title)
+            lists.push({ id, title, childCount });
+    }
+    return lists;
 }
 /** Extracts playable channel items from a DIDL-Lite payload. */
 function parseChannelItems(didl) {
-    return asArray(didl && didl.item)
-        .map((item) => ({ name: xmlText(item?.['dc:title']), url: xmlText(item?.['res']) }))
-        .filter((channel) => channel.name && channel.url && STREAM_URL_REGEX.test(channel.url.trim()))
-        .map((channel) => ({ name: channel.name.trim(), url: channel.url.trim() }));
+    const items = asArray(nodeKey(didl, 'item'));
+    const channels = [];
+    for (const item of items) {
+        const name = xmlText(item['dc:title']);
+        const url = xmlText(item['res']);
+        if (name && url && STREAM_URL_REGEX.test(url.trim())) {
+            channels.push({ name: name.trim(), url: url.trim() });
+        }
+    }
+    return channels;
 }
-/**
- * @param {{ requestTimeoutMs?: number, maxResponseBytes?: number, logger?: object, agent?: http.Agent }} [options]
- */
 function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 1024 * 1024, logger = console, agent } = {}) {
     // Keep-alive is intentionally disabled: several TechniSat receivers (notably
     // the S-series) answer the first (often failing) request with
@@ -69,7 +87,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                     clearTimeout(totalTimer);
                 if (err)
                     reject(err);
-                else
+                else if (value !== undefined)
                     resolve(value);
             };
             const req = http.request({
@@ -126,28 +144,21 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
   </u:Browse></s:Body>
 </s:Envelope>`;
         const body = await postSoap(ip, port, pathEndpoint, soapEnvelope);
-        const result = await xml2js.parseStringPromise(body, { explicitArray: false });
-        const resultXml = xmlText(result?.['s:Envelope']?.['s:Body']?.['u:BrowseResponse']?.['Result']);
+        const parsed = await xml2js.parseStringPromise(body, { explicitArray: false });
+        const envelope = asNode(parsed['s:Envelope']);
+        const response = asNode(nodeKey(envelope, 's:Body'));
+        const resultXml = xmlText(nodeKey(asNode(nodeKey(response, 'u:BrowseResponse')), 'Result'));
         if (!resultXml)
             throw new Error('UPnP SOAP Browse response invalid');
         const browse = await xml2js.parseStringPromise(resultXml, { explicitArray: false });
-        if (!browse?.['DIDL-Lite'])
+        const didl = browse['DIDL-Lite'];
+        if (!didl || typeof didl !== 'object')
             throw new Error('Invalid DIDL-Lite payload');
-        return browse['DIDL-Lite'];
+        return asNode(didl);
     }
     /**
- * Best-effort generation detection for S-series receivers.
- *
- * There is no device description endpoint on these receivers, so the container
- * structure found during discovery is used as a fingerprint:
- *   - S1 exposes an extra "Astra-TV-Liste" container.
- *   - S2 exposes exactly 5 containers (Alle Videos, Datum, Eigene TV-Aufnahmen,
- *     TV-Liste, Verzeichnis) without "Astra-TV-Liste".
- *   - Anything else stays generic ("S_SERIES") until a capture is available
- *     (e.g. the original S series).
- * @param {{ id: string, title: string }[]} lists
- * @returns {'S1'|'S2'|'S_SERIES'}
- */
+     * Best-effort generation detection for S-series receivers.
+     */
     function detectSSeriesGeneration(lists) {
         const titles = new Set(lists.map(list => list.title));
         if (titles.has('Astra-TV-Liste'))
@@ -173,11 +184,11 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                 }
             }
             catch (err) {
-                lastError = err;
-                logger.warn(`Discovery via ${target.type} failed: ${err.message}`);
+                lastError = err instanceof Error ? err : new Error(String(err));
+                logger.warn(`Discovery via ${target.type} failed: ${lastError.message}`);
             }
         }
-        throw new Error('No TechniSat Live-TV containers found' + (lastError ? ` (${lastError?.message})` : '.'));
+        throw new Error('No TechniSat Live-TV containers found' + (lastError ? ` (${lastError.message})` : '.'));
     }
     /** Reads channels from the receiver. Never mutates application state. */
     async function fetchChannels({ ip, port, selectedListName }) {

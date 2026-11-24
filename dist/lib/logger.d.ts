@@ -6,29 +6,27 @@ declare const LEVELS: Readonly<{
     readonly warn: 1;
     readonly info: 2;
 }>;
+type LogSink = {
+    info(...args: unknown[]): void;
+    warn(...args: unknown[]): void;
+    error(...args: unknown[]): void;
+};
+type LogFunction = (...args: unknown[]) => void;
 export declare function safeStringify(value: unknown): string;
 export declare function formatValue(value: unknown): string;
 export declare function normalizeLevel(value: unknown): string;
 export declare function normalizeFormat(value: unknown): string;
-export declare function defaultSink(): {
-    info: (...args: any[]) => void;
-    warn: (...args: any[]) => void;
-    error: (...args: any[]) => void;
-};
+export declare function defaultSink(): LogSink;
 export interface LoggerOptions {
     level?: string;
     format?: string;
-    sink?: {
-        info: (...args: any[]) => void;
-        warn: (...args: any[]) => void;
-        error: (...args: any[]) => void;
-    };
+    sink?: LogSink;
 }
 export declare function createLogger(options?: LoggerOptions): {
     level: string;
     format: string;
-    info: (...args: any[]) => void;
-    warn: (...args: any[]) => void;
-    error: (...args: any[]) => void;
+    info: LogFunction;
+    warn: LogFunction;
+    error: LogFunction;
 };
 export { LEVELS };

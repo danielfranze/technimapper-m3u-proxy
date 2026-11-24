@@ -19,9 +19,6 @@ class HttpError extends Error {
         this.status = status;
     }
 }
-/**
- * @param {{ cronValidate: (expr: string) => boolean, allowNonPrivateIp?: boolean }} options
- */
 function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopback = false }) {
     /** Receiver must be a valid IPv4; loopback/link-local/multicast are always rejected. */
     function isAllowedReceiverIp(ip) {
@@ -40,27 +37,26 @@ function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopba
     }
     /**
      * Validates a full settings object and returns a normalised copy. Throws HttpError(400).
-     * @param {unknown} raw
-     * @returns {{ ip: string, port: string, cronExpression: string, selectedListName: string }}
      */
     function validateSettings(raw) {
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
             throw new HttpError(400, 'Invalid settings payload');
         }
-        const ip = String(raw.ip ?? '').trim();
+        const input = raw;
+        const ip = String(input.ip ?? '').trim();
         if (!isAllowedReceiverIp(ip)) {
             throw new HttpError(400, 'Invalid receiver IP. Use a private IPv4 address (10.x, 172.16-31.x, 192.168.x).');
         }
-        const portStr = String(raw.port ?? '').trim();
+        const portStr = String(input.port ?? '').trim();
         const portNum = parseInt(portStr, 10);
         if (!/^\d{1,5}$/.test(portStr) || portNum < 1 || portNum > 65535) {
             throw new HttpError(400, 'Invalid port (1-65535).');
         }
-        const cronExpression = String(raw.cronExpression ?? '').trim();
+        const cronExpression = String(input.cronExpression ?? '').trim();
         if (cronExpression.length > 100 || !cronValidate(cronExpression)) {
             throw new HttpError(400, `Invalid cron expression "${cronExpression.slice(0, 40)}" (example: */5 * * * *).`);
         }
-        const selectedListName = String(raw.selectedListName ?? '').trim();
+        const selectedListName = String(input.selectedListName ?? '').trim();
         if (!selectedListName || selectedListName.length > 200) {
             throw new HttpError(400, 'Invalid channel list name.');
         }
@@ -69,8 +65,6 @@ function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopba
     /**
      * Validates a channel-name -> ID mapping.
      * Returns { mapping, invalid } where invalid lists channel names with unusable IDs.
-     * @param {unknown} input
-     * @returns {{ mapping: Record<string, string | number>, invalid: string[] }}
      */
     function validateMapping(input) {
         const mapping = {};

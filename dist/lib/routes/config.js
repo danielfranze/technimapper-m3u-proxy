@@ -1,6 +1,9 @@
 'use strict';
 import { HttpError } from '../validation.js';
 import * as hdhrModule from '../hdhr.js';
+function errorMessage(err) {
+    return err instanceof Error ? err.message : String(err);
+}
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
@@ -24,7 +27,7 @@ function registerConfigRoutes(app, ctx) {
         });
     });
     app.post('/api/save-settings', async (req, res) => {
-        const settings = mergeSettings(req.body || {});
+        const settings = mergeSettings((req.body || {}));
         const before = getState();
         updateState(s => {
             Object.assign(s.config, settings);
@@ -38,8 +41,7 @@ function registerConfigRoutes(app, ctx) {
                 stateStore.commit(before);
             throw err;
         }
-        if (typeof syncCoordinator.clearBackoff === 'function')
-            syncCoordinator.clearBackoff();
+        syncCoordinator.clearBackoff();
         startBackgroundCron();
         res.json({ success: true, ...currentSettings() });
     });
@@ -54,7 +56,7 @@ function registerConfigRoutes(app, ctx) {
                 }
             }
             const result = await syncCoordinator.request(() => performSync(candidate));
-            if (result && result.stale) {
+            if (result?.stale) {
                 throw new HttpError(409, 'Receiver settings changed during sync. Please retry.');
             }
             startBackgroundCron();
@@ -64,15 +66,14 @@ function registerConfigRoutes(app, ctx) {
                 availableLists: result.availableLists,
                 selectedListName: snapshot.config.selectedListName,
                 mapping: snapshot.config.mapping,
-                detectedModel: hdhrModule.modelLabel(result.detectedModel)
+                detectedModel: hdhrModule.modelLabel(result.detectedModel ?? null)
             });
         }
         catch (err) {
-            const e = err;
-            if (e instanceof HttpError)
-                return next(e);
-            logger.error('[fetch-channels]', e.message);
-            return next(new HttpError(502, e.message || 'Receiver request failed'));
+            if (err instanceof HttpError)
+                return next(err);
+            logger.error('[fetch-channels]', errorMessage(err));
+            return next(new HttpError(502, errorMessage(err) || 'Receiver request failed'));
         }
     });
     app.get('/api/export-config', (_req, res) => {

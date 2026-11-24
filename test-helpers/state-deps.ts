@@ -5,17 +5,17 @@ import * as hdhr from '../dist/lib/hdhr.js';
 
 const fakeCron = (value: string): boolean => typeof value === 'string' && value.trim().split(/\s+/).length === 5;
 
-interface Deps {
+export interface Deps {
     validateMapping: ReturnType<typeof createValidation>['validateMapping'];
     sortMapping: typeof sortMapping;
     sanitizeModel: typeof hdhr.sanitizeModel;
     isAllowedReceiverIp: ReturnType<typeof createValidation>['isAllowedReceiverIp'];
     cronValidate: (value: string) => boolean;
     defaultCron: string;
-    logger: unknown;
+    logger: { warn(...args: unknown[]): void; info(...args: unknown[]): void; error(...args: unknown[]): void };
 }
 
-function createDeps(logger: unknown): Deps {
+function createDeps(logger: Deps['logger']): Deps {
     const validation = createValidation({ cronValidate: fakeCron });
     return {
         validateMapping: validation.validateMapping,

@@ -8,31 +8,37 @@
  * so readers never observe a half-updated state and old snapshots stay valid.
  */
 
-function deepFreeze(value, seen = new WeakSet()) {
+import type { AppState } from './state.js';
+
+function deepFreeze<T>(value: T, seen: WeakSet<object> = new WeakSet()): T {
     if (value === null || typeof value !== 'object') return value;
-    if (seen.has(value)) return value;
-    seen.add(value);
-    for (const key of Reflect.ownKeys(value)) {
-        deepFreeze(value[key], seen);
+    if (seen.has(value as object)) return value;
+    seen.add(value as object);
+    const record = value as Record<string | symbol, unknown>;
+    for (const key of Reflect.ownKeys(record)) {
+        deepFreeze(record[key], seen);
     }
-    return Object.freeze(value);
+    return Object.freeze(record) as T;
 }
 
-/**
- * @param {any} initial
- */
-function createStateStore(initial: any) {
+export type { AppState } from './state.js';
+
+export type StateStore<T = AppState> = {
+    get(): T;
+    commit(next: T): void;
+    update(mutator: (state: T) => void): T;
+};
+
+function createStateStore<T = AppState>(initial: T): StateStore<T> {
     let state = deepFreeze(initial);
 
     return {
-        get() {
-            return state;
-        },
-        commit(next) {
+        get: () => state,
+        commit(next: T) {
             state = deepFreeze(next);
         },
         // Convenience for the few places that still mutate a draft in place.
-        update(mutator) {
+        update(mutator: (state: T) => void): T {
             const next = structuredClone(state);
             mutator(next);
             state = deepFreeze(next);

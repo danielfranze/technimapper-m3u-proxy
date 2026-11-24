@@ -2,7 +2,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {  createState, persistedSnapshot, applyPersistedState  } from '../dist/lib/state.js';
+import {  createState, persistedSnapshot, applyPersistedState, type AppState  } from '../dist/lib/state.js';
 import {  createDeps  } from '../test-helpers/state-deps.ts';
 
 const logger = { warn() {}, info() {}, error() {} };
@@ -16,7 +16,7 @@ test('createState starts with safe defaults and supports overrides', () => {
     assert.deepEqual(state.config.channels, []);
     assert.equal(state.sync.consecutiveFailures, 0);
 
-    const custom = createState({ configured: true, config: { ip: '10.0.0.5' } });
+    const custom = createState({ configured: true, config: { ip: '10.0.0.5' } as AppState['config'] });
     assert.equal(custom.configured, true);
     assert.equal(custom.config.ip, '10.0.0.5');
     assert.equal(custom.config.port, '9100');
@@ -36,7 +36,7 @@ test('persistedSnapshot contains only plain data and does not share mapping/chan
         }
     });
 
-    const snapshot = persistedSnapshot(state);
+    const snapshot = persistedSnapshot(state) as { mapping: Record<string, number>; channels: Array<{ name: string }> };
     snapshot.mapping.A = 99;
     snapshot.channels[0].name = 'changed';
     assert.equal(state.config.mapping.A, 1);

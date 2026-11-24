@@ -1,39 +1,72 @@
-declare const DISCOVERY_TARGETS: readonly {
-    type: string;
-    parentObj: string;
-    path: string;
-}[];
-declare function escapeXml(str: any): string;
-/** xml2js returns either a string or { _: text, $: attrs }. */
-declare function xmlText(value: any): string | undefined;
-declare function asArray(value: any): any[];
-/** Extracts the DIDL-Lite containers (channel lists) from a Browse response. */
-declare function parseContainerList(didl: any): {
-    id: any;
-    title: string | undefined;
+/**
+ * UPnP/SOAP adapter for TechniSat receivers.
+ *
+ * This is the only module that knows about SOAP, DIDL-Lite and the two device
+ * series (STC and S-series). Everything above it works with plain channel
+ * objects, which makes the sync flow testable with a fake receiver.
+ */
+import http from 'http';
+/** xml2js-Ergebnisse: Entweder ein String, ein Objekt ({ ... }) oder ein Array davon. */
+type XmlValue = XmlNode | XmlNode[] | string | undefined;
+interface XmlNode {
+    [key: string]: unknown;
+}
+interface ChannelList {
+    id: string;
+    title: string;
     childCount: number;
-}[];
-/** Extracts playable channel items from a DIDL-Lite payload. */
-declare function parseChannelItems(didl: any): {
+}
+interface Channel {
     name: string;
     url: string;
-}[];
-/**
- * @param {{ requestTimeoutMs?: number, maxResponseBytes?: number, logger?: object, agent?: http.Agent }} [options]
- */
+}
+interface DiscoveryResult {
+    deviceType: 'STC' | 'S1' | 'S2' | 'S_SERIES';
+    path: string;
+    lists: ChannelList[];
+}
+interface FetchResult {
+    channels: Channel[];
+    selectedListName: string;
+    availableLists: string[];
+    detectedModel: 'STC' | 'S1' | 'S2' | 'S_SERIES';
+}
+interface SoapReceiverLogger {
+    info(...args: unknown[]): void;
+    warn(...args: unknown[]): void;
+    error(...args: unknown[]): void;
+}
+declare const DISCOVERY_TARGETS: readonly [{
+    readonly type: "STC";
+    readonly parentObj: "0$3$41";
+    readonly path: "/dev0/srv1/control";
+}, {
+    readonly type: "S_SERIES";
+    readonly parentObj: "3";
+    readonly path: "/ContentDirectory/Control";
+}];
+declare function escapeXml(str: string): string;
+/** xml2js gibt entweder einen String oder { _: text, $: attrs } zurück. */
+declare function xmlText(value: XmlValue): string | undefined;
+declare function asArray(value: XmlValue): XmlNode[];
+/** Extracts the DIDL-Lite containers (channel lists) from a Browse response. */
+declare function parseContainerList(didl: XmlValue): ChannelList[];
+/** Extracts playable channel items from a DIDL-Lite payload. */
+declare function parseChannelItems(didl: XmlValue): Channel[];
 declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger, agent }?: {
     requestTimeoutMs?: number;
     maxResponseBytes?: number;
-    logger?: any;
-    agent?: any;
+    logger?: SoapReceiverLogger;
+    agent?: http.Agent;
 }): {
-    fetchChannels: ({ ip, port, selectedListName }: {
+    fetchChannels: (settings: {
         ip: string;
         port: string | number;
         selectedListName: string;
-    }) => Promise<any>;
-    browseUpnp: (ip: string, port: string | number, objectId: string, pathEndpoint: string) => Promise<any>;
-    discoverTvLists: (ip: string, port: string | number) => Promise<any>;
-    close: () => any;
+    }) => Promise<FetchResult>;
+    browseUpnp: (ip: string, port: string | number, objectId: string, pathEndpoint: string) => Promise<XmlNode | undefined>;
+    discoverTvLists: (ip: string, port: string | number) => Promise<DiscoveryResult>;
+    close: () => void;
 };
 export { DISCOVERY_TARGETS, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
+export type Receiver = ReturnType<typeof createSoapReceiver>;

@@ -1,13 +1,47 @@
 'use strict';
 
-import {  HttpError  } from '../validation.js';
+import type { Express, NextFunction, Request, Response } from 'express';
+import { HttpError } from '../validation.js';
+import type { ValidatedSettings } from '../validation.js';
+import type { StateStore, AppState } from '../state-store.js';
 import * as hdhrModule from '../hdhr.js';
+
+interface PerformSyncResult {
+    channels: { name: string; url: string }[];
+    availableLists: string[];
+    stale?: boolean;
+    detectedModel?: string;
+}
+
+interface ConfigCtx {
+    getState(): AppState;
+    updateState(mutator: (state: AppState) => void): void;
+    state: StateStore;
+    currentSettings(): ValidatedSettings;
+    mergeSettings(overrides: Record<string, unknown> | null): ValidatedSettings;
+    persistState(): Promise<void>;
+    startBackgroundCron(): unknown;
+    syncCoordinator: {
+        clearBackoff(): void;
+        request(fn: () => Promise<unknown>): Promise<unknown>;
+    };
+    validation: { validateMapping(input: unknown): { mapping: Record<string, string | number>; invalid: string[] } };
+    version: string;
+    hdhrConfig: { enabled: boolean };
+    logger: { error(...args: unknown[]): void };
+    performSync(candidate: { ip: string; port: string | number; selectedListName: string; cronExpression: string }): Promise<PerformSyncResult>;
+    rebuildViews(): void;
+}
+
+function errorMessage(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
+}
 
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
  */
-function registerConfigRoutes(app, ctx) {
+function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
     const {
         getState,
         updateState,
@@ -25,7 +59,7 @@ function registerConfigRoutes(app, ctx) {
     } = ctx;
     const { validateMapping } = validation;
 
-    app.get('/api/get-config', (_req: any, res: any) => {
+    app.get('/api/get-config', (_req: Request, res: Response) => {
         const snapshot = getState();
         res.json({
             version,
@@ -41,8 +75,8 @@ function registerConfigRoutes(app, ctx) {
         });
     });
 
-    app.post('/api/save-settings', async (req: any, res: any) => {
-        const settings = mergeSettings(req.body || {});
+    app.post('/api/save-settings', async (req: Request, res: Response) => {
+        const settings = mergeSettings((req.body || {}) as Record<string, unknown>);
         const before = getState();
         updateState(s => {
             Object.assign(s.config, settings);
@@ -54,14 +88,14 @@ function registerConfigRoutes(app, ctx) {
             if (stateStore && typeof stateStore.commit === 'function') stateStore.commit(before);
             throw err;
         }
-        if (typeof syncCoordinator.clearBackoff === 'function') syncCoordinator.clearBackoff();
+        syncCoordinator.clearBackoff();
         startBackgroundCron();
         res.json({ success: true, ...currentSettings() });
     });
 
-    app.post('/api/fetch-channels', async (req, res, next) => {
+    app.post('/api/fetch-channels', async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+            const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body as Record<string, unknown> : {};
             const candidate = mergeSettings(body);
 
             if (getState().configured && (body.ip !== undefined || body.port !== undefined)) {
@@ -71,8 +105,8 @@ function registerConfigRoutes(app, ctx) {
                 }
             }
 
-            const result = await syncCoordinator.request(() => performSync(candidate));
-            if (result && result.stale) {
+            const result = await syncCoordinator.request(() => performSync(candidate)) as PerformSyncResult;
+            if (result?.stale) {
                 throw new HttpError(409, 'Receiver settings changed during sync. Please retry.');
             }
             startBackgroundCron();
@@ -83,17 +117,16 @@ function registerConfigRoutes(app, ctx) {
                 availableLists: result.availableLists,
                 selectedListName: snapshot.config.selectedListName,
                 mapping: snapshot.config.mapping,
-                detectedModel: hdhrModule.modelLabel(result.detectedModel)
+                detectedModel: hdhrModule.modelLabel(result.detectedModel ?? null)
             });
         } catch (err) {
-            const e = err as any;
-            if (e instanceof HttpError) return next(e);
-            logger.error('[fetch-channels]', e.message);
-            return next(new HttpError(502, e.message || 'Receiver request failed'));
+            if (err instanceof HttpError) return next(err);
+            logger.error('[fetch-channels]', errorMessage(err));
+            return next(new HttpError(502, errorMessage(err) || 'Receiver request failed'));
         }
     });
 
-    app.get('/api/export-config', (_req: any, res: any) => {
+    app.get('/api/export-config', (_req: Request, res: Response) => {
         const snapshot = getState();
         res.setHeader('Content-Disposition', 'attachment; filename="technimapper-config.json"');
         res.json({
@@ -104,12 +137,12 @@ function registerConfigRoutes(app, ctx) {
         });
     });
 
-    app.post('/api/import-config', async (req: any, res: any) => {
-        const data = req.body;
+    app.post('/api/import-config', async (req: Request, res: Response) => {
+        const data = req.body as { config?: unknown; mapping?: unknown } | null | undefined;
         if (!data || typeof data !== 'object' || Array.isArray(data)) throw new HttpError(400, 'Invalid JSON payload');
 
-        const settings = data.config ? mergeSettings(data.config) : null;
-        let mapping = null;
+        const settings = data.config ? mergeSettings(data.config as Record<string, unknown>) : null;
+        let mapping: Record<string, string | number> | null = null;
         if (data.mapping !== undefined) {
             const checked = validateMapping(data.mapping);
             if (checked.invalid.length) throw new HttpError(400, `Invalid channel ID in import for: ${checked.invalid.slice(0, 5).join(', ')}`);

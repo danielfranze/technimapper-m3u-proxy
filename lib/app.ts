@@ -14,7 +14,11 @@ declare module 'express-serve-static-core' {
 }
 
 import * as hdhrModule from './hdhr.js';
-import {  createStateStore  } from './state-store.js';
+import { createLogger } from './logger.js';
+import { loadRuntimeConfig } from './runtime-config.js';
+import { createValidation } from './validation.js';
+import { createSoapReceiver } from './receiver.js';
+import type { StateStore } from './state-store.js';
 import {  createSyncCoordinator  } from './sync-coordinator.js';
 import {  securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler  } from './http-security.js';
 import {  registerHealthRoutes  } from './routes/health.js';
@@ -24,6 +28,8 @@ import {  registerPlaylistRoutes  } from './routes/playlist.js';
 import {  registerHdhrRoutes  } from './routes/hdhr.js';
 import { registerMetricsRoutes } from './routes/metrics.js';
 import { createSyncService } from './sync-service.js';
+import type { ConfigStore } from './config-store.js';
+import type { HdhrConfig } from './hdhr.js';
 
 /**
  * HTTP application factory.
@@ -31,34 +37,55 @@ import { createSyncService } from './sync-service.js';
  * `createApp()` wires the HTTP boundary around an application state store.
  * It never starts a listener, which is what makes integration tests possible:
  * tests can call it with fake receiver, persistence and cron implementations.
- *
- * @param {any} deps
  */
-function createApp(deps: any) {
-    const {
-        runtime,
-        logger,
-        state: stateDep,
-        configStore,
-        receiver,
-        validation,
-        cron,
-        version,
-        hdhrConfig = { enabled: false },
-        publicDir = path.join(__dirname, '..', 'public'),
-        syncCoordinator: syncCoordinatorDep
-    } = deps;
 
-    const state = (typeof stateDep?.get === 'function')
-        ? stateDep
-        : createStateStore(stateDep);
+function errorMessage(err: unknown): string {
+    return err instanceof Error ? err.message : String(err);
+}
+
+type Logger = ReturnType<typeof createLogger>;
+type SyncCoordinator = ReturnType<typeof createSyncCoordinator>;
+type AppRuntime = ReturnType<typeof loadRuntimeConfig>;
+type Receiver = ReturnType<typeof createSoapReceiver>;
+type Validation = Pick<ReturnType<typeof createValidation>, 'validateSettings' | 'validateMapping'>;type CronHandle = { stop(): void; destroy?(): void } | null;
+type CronScheduler = { validate(expr: string): boolean; schedule(pattern: string, fn: () => void): CronHandle };
+
+interface AppDeps {
+    runtime: AppRuntime;
+    logger: Logger;
+    state: StateStore;
+    configStore: ConfigStore;
+    receiver: Receiver;
+    validation: Validation;
+    cron: CronScheduler;
+    version: string;
+    hdhrConfig?: HdhrConfig;
+    publicDir?: string;
+    syncCoordinator?: SyncCoordinator;
+}
+
+function createApp({
+    runtime,
+    logger,
+    state: stateDep,
+    configStore,
+    receiver,
+    validation,
+    cron,
+    version,
+    hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] },
+    publicDir = path.join(__dirname, '..', 'public'),
+    syncCoordinator: syncCoordinatorDep
+}: AppDeps) {
+
+    const state: StateStore = stateDep;
 
     const { validateSettings, validateMapping } = validation;
-    const playlistPaths = runtime.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];
-    const publicPaths = runtime.publicPaths || [...playlistPaths, '/health', '/health/live', '/health/ready'];
+    const playlistPaths: string[] = runtime.playlistPaths ? [...runtime.playlistPaths] : ['/playlist.m3u8', '/playlist.m3u'];
+    const publicPaths: string[] = runtime.publicPaths ? [...runtime.publicPaths] : [...playlistPaths, '/health', '/health/live', '/health/ready'];
 
 
-    let cronTask: any = null;
+    let cronTask: CronHandle = null;
     let shuttingDown = false;
 
     const syncCoordinator = syncCoordinatorDep || createSyncCoordinator({
@@ -109,7 +136,7 @@ function createApp(deps: any) {
     app.use('/api', apiLimiter);
 
     app.use(express.static(publicDir, {
-        setHeaders: (res: any, filePath: any) => {
+        setHeaders: (res: express.Response, filePath: string) => {
             // Bundled fonts rarely change: let browsers cache them for a week.
             if (filePath.endsWith('.woff2')) res.setHeader('Cache-Control', 'public, max-age=604800');
         }
@@ -162,14 +189,14 @@ function createApp(deps: any) {
                 selectedListName: snapshot.config.selectedListName
             });
         } catch (err) {
-            logger.error(`[Sync] Invalid stored settings: ${(err as any).message}`);
+            logger.error(`[Sync] Invalid stored settings: ${errorMessage(err)}`);
             return;
         }
 
         try {
             await syncCoordinator.request(() => performSync(candidate));
         } catch (err) {
-            logger.error(`[Sync] ${(err as any).message} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`);
+            logger.error(`[Sync] ${errorMessage(err)} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`);
         }
     }
 
@@ -191,7 +218,7 @@ function createApp(deps: any) {
         try {
             cronTask = cron.schedule(pattern, runScheduledSync);
         } catch (err) {
-            logger.error(`Failed to schedule background sync: ${(err as any).message}`);
+            logger.error(`Failed to schedule background sync: ${errorMessage(err)}`);
             cronTask = null;
         }
         return cronTask;
@@ -234,7 +261,7 @@ function createApp(deps: any) {
     registerMetricsRoutes(app, ctx);
 
     // 404 for unknown API routes, then central error handler
-    app.use('/api', (_req: any, res: any) => res.status(404).json({ error: 'Not found' }));
+    app.use('/api', (_req: express.Request, res: express.Response) => res.status(404).json({ error: 'Not found' }));
 
     app.use(createErrorHandler(logger));
 
@@ -260,3 +287,4 @@ function createApp(deps: any) {
 }
 
 export { createApp };
+export type { AppDeps, AppRuntime, Receiver, CronHandle, CronScheduler };

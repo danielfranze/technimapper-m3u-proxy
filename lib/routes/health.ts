@@ -1,11 +1,20 @@
 'use strict';
 
+import type { Express, Request, Response } from 'express';
+import type { AppState } from '../state-store.js';
+
+interface HealthCtx {
+    getState(): AppState;
+    version: string;
+    syncCoordinator: { queueLength: number; backoffRemainingMs(): number };
+}
+
 /**
  * Health endpoints.
  * @param {import('express').Express} app
  * @param {any} ctx
  */
-function registerHealthRoutes(app, ctx) {
+function registerHealthRoutes(app: Express, ctx: HealthCtx): void {
     const { getState, version } = ctx;
 
     function healthPayload() {
@@ -31,13 +40,13 @@ function registerHealthRoutes(app, ctx) {
         };
     }
 
-    app.get('/health', (_req: any, res: any) => res.json(healthPayload()));
+    app.get('/health', (_req: Request, res: Response) => res.json(healthPayload()));
 
-    app.get('/health/live', (_req: any, res: any) => {
+    app.get('/health/live', (_req: Request, res: Response) => {
         res.json({ status: 'ok', version, uptimeSeconds: Math.round(process.uptime()) });
     });
 
-    app.get('/health/ready', (_req: any, res: any) => {
+    app.get('/health/ready', (_req: Request, res: Response) => {
         const payload = healthPayload();
         const ready = !getState().configured || (payload.playlistAvailable && payload.status === 'ok');
         res.status(ready ? 200 : 503).json({ ...payload, status: ready ? payload.status : 'degraded' });

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {  createJsonConfigStore  } from '../dist/lib/config-store.js';
+import {  createJsonConfigStore, type FsLike  } from '../dist/lib/config-store.js';
 
 const logger = { warn() {}, error() {} };
 
@@ -13,7 +13,7 @@ test('config store falls back to an in-place write when rename fails with EBUSY'
     const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'technimapper-'));
     const configFile = path.join(dataDir, 'mapping.json');
     const realFs = fs;
-    const fsModule = Object.assign({}, realFs, { promises: { ...realFs.promises } }) as any;
+    const fsModule = Object.assign({}, realFs, { promises: { ...realFs.promises } }) as FsLike;
     fsModule.promises = {
         ...realFs.promises,
         rename: async () => {

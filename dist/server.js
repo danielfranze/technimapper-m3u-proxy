@@ -44,6 +44,9 @@ import { createValidation, sortMapping } from './lib/validation.js';
 import * as hdhr from './lib/hdhr.js';
 import { createApp } from './lib/app.js';
 const APP_VERSION = packageJson.version;
+function errorMessage(err) {
+    return err instanceof Error ? err.message : String(err);
+}
 async function main() {
     const runtime = loadRuntimeConfig(process.env);
     const logger = createLogger({ level: runtime.logLevel, format: runtime.logFormat });
@@ -58,7 +61,7 @@ async function main() {
         configStore.ensureDataDir();
     }
     catch (err) {
-        logger.error(err.message);
+        logger.error(errorMessage(err));
         logger.error('If you use a bind mount with a non-root container, run: chown -R 1000:1000 <host-data-dir>');
         process.exit(1);
     }
@@ -88,14 +91,14 @@ async function main() {
                     await configStore.write(persistedSnapshot(stateStore.get()));
                 }
                 catch (err) {
-                    logger.error('Failed to persist repaired mapping.json:', err.message);
+                    logger.error('Failed to persist repaired mapping.json:', errorMessage(err));
                 }
             }
             logger.info('Configuration loaded from disk.');
         }
     }
     catch (err) {
-        logger.error('Failed to read mapping.json (using defaults):', err.message);
+        logger.error('Failed to read mapping.json (using defaults):', errorMessage(err));
     }
     const receiver = createSoapReceiver({
         requestTimeoutMs: runtime.requestTimeoutMs,
@@ -152,16 +155,16 @@ async function main() {
                 await services.waitForSync(); // let a running sync finish (and persist) first
             }
             catch (err) {
-                logger.error('Running sync failed during shutdown:', err.message);
+                logger.error('Running sync failed during shutdown:', errorMessage(err));
             }
             try {
                 receiver.close();
             }
-            catch (err) { /* ignore */ }
+            catch { /* ignore */ }
             try {
                 services.dispose();
             }
-            catch (err) { /* ignore */ }
+            catch { /* ignore */ }
             clearTimeout(hardStop);
             process.exit(exitCode);
         });

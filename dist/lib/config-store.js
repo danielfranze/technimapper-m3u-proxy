@@ -9,10 +9,10 @@ export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = 
     function ensureDataDir() {
         try {
             fsModule.mkdirSync(dataDir, { recursive: true });
-            fsModule.accessSync(dataDir, fsModule.constants.W_OK);
+            fsModule.accessSync(dataDir);
         }
         catch (err) {
-            throw new Error(`Data directory "${dataDir}" is not writable: ${err.message}`);
+            throw new Error(`Data directory "${dataDir}" is not writable: ${err instanceof Error ? err.message : String(err)}`);
         }
     }
     function exists() {
@@ -33,7 +33,7 @@ export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = 
                 try {
                     await promises.unlink(tempFile);
                 }
-                catch (err) { /* ignore */ }
+                catch { /* ignore */ }
             };
             try {
                 await promises.writeFile(tempFile, json, 'utf8');

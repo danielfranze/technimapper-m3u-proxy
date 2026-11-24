@@ -3,9 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {  createState, applyPersistedState  } from '../dist/lib/state.js';
-import {  createDeps  } from '../test-helpers/state-deps.ts';
+import {  createDeps, type Deps  } from '../test-helpers/state-deps.ts';
 
-function deps(logger: unknown) {
+function deps(logger: Deps['logger']): Deps {
     return createDeps(logger);
 }
 

@@ -11,16 +11,26 @@ declare class HttpError extends Error {
      * @param {number} status
      * @param {string} message
      */
-    constructor(status: any, message: any);
+    constructor(status: number, message: string);
 }
-/**
- * @param {{ cronValidate: (expr: string) => boolean, allowNonPrivateIp?: boolean }} options
- */
+export interface ValidatedSettings {
+    ip: string;
+    port: string;
+    cronExpression: string;
+    selectedListName: string;
+}
 declare function createValidation({ cronValidate, allowNonPrivateIp, allowLoopback }: {
     cronValidate: (expr: string) => boolean;
     allowNonPrivateIp?: boolean;
     allowLoopback?: boolean;
-}): any;
+}): {
+    isAllowedReceiverIp: (ip: unknown) => boolean;
+    validateSettings: (raw: unknown) => ValidatedSettings;
+    validateMapping: (input: unknown) => {
+        mapping: Record<string, string | number>;
+        invalid: string[];
+    };
+};
 /**
  * Returns the IDs that are assigned to more than one channel.
  * @param {Record<string, string | number>} mapping

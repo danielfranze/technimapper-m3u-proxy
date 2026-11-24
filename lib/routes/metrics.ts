@@ -1,13 +1,28 @@
 'use strict';
 
+import type { Express, Request, Response } from 'express';
+import type { AppState } from '../state-store.js';
+
+interface MetricsCtx {
+    getState(): AppState;
+    metrics: {
+        httpRequests: number;
+        httpErrors: number;
+        syncRuns: number;
+        syncFailures: number;
+        syncDurationMs: number;
+    };
+    syncCoordinator: { queueLength: number };
+}
+
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
  */
-function registerMetricsRoutes(app, ctx) {
+function registerMetricsRoutes(app: Express, ctx: MetricsCtx): void {
     const { getState, metrics, syncCoordinator } = ctx;
 
-    app.get('/metrics', (_req: any, res: any) => {
+    app.get('/metrics', (_req: Request, res: Response) => {
         const snapshot = getState();
         res.type('text/plain; version=0.0.4');
         res.send(

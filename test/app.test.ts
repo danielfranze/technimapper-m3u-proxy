@@ -253,7 +253,7 @@ test('a failed sync keeps the last known playlist and records the error', async 
         assert.match(((await res.json()) as Record<string, string>).error, /receiver unreachable/);
         assert.equal(harness.state.get().cachedM3u8, before, 'the last known playlist must survive a failed sync');
         assert.equal(harness.state.get().sync.consecutiveFailures, 1);
-        assert.match(harness.state.get().sync.lastError, /receiver unreachable/);
+        assert.match(harness.state.get().sync.lastError!, /receiver unreachable/);
         assert.equal(harness.state.get().config.mapping.A, 1);
     });
 });

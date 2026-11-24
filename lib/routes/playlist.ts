@@ -1,20 +1,22 @@
 'use strict';
 
 import crypto from 'crypto';
+import type { Express, Request, Response } from 'express';
+import type { AppState } from '../state-store.js';
 
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
  */
-function registerPlaylistRoutes(app, ctx) {
+function registerPlaylistRoutes(app: Express, ctx: { getState(): AppState; playlistPaths?: string[] }): void {
     const { getState } = ctx;
-    const playlistPaths = ctx.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];
+    const playlistPaths: string[] = ctx.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];
 
-    function playlistEtag(content: any) {
+    function playlistEtag(content: string): string {
         return `"${crypto.createHash('sha1').update(content).digest('hex')}"`;
     }
 
-    const servePlaylist = (req: any, res: any) => {
+    const servePlaylist = (req: Request, res: Response) => {
         const snapshot = getState();
         if (snapshot.cachedM3u8 === null) {
             // Never serve an empty playlist: clients that clean up missing channels would delete all of them.

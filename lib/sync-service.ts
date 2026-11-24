@@ -1,34 +1,64 @@
 'use strict';
 
+import type { AppState, StateStore } from './state-store.js';
 import {  persistedSnapshot  } from './state.js';
 import {  buildM3u8  } from './m3u8.js';
-import {  HttpError  } from './validation.js';
+import {  HttpError, type ValidatedSettings  } from './validation.js';
+import type { LineupEntry } from './hdhr.js';
 
 /**
  * Application service for receiver sync and playlist state.
  *
  * Extracting this from the HTTP layer keeps route handlers thin and makes the
  * sync flow reusable and testable without Express.
- *
- * @param {object} deps
  */
-function createSyncService({ state, configStore, receiver, validation, hdhrModule, logger, metrics }) {
+
+interface SyncServiceMetrics {
+    syncRuns: number;
+    syncFailures: number;
+    syncDurationMs: number;
+}
+
+interface SyncServiceDeps {
+    state: StateStore;
+    configStore: { write(data: unknown): Promise<void> };
+    receiver: {
+        fetchChannels(settings: { ip: string; port: string | number; selectedListName: string }): Promise<{
+            channels: { name: string; url: string }[];
+            selectedListName: string;
+            availableLists: string[];
+            detectedModel: string;
+        }>;
+    };
+    validation: {
+        validateSettings(raw: unknown): ValidatedSettings;
+        validateMapping?(input: unknown): unknown;
+    };
+    hdhrModule: {
+        buildLineup(channels: { name: string; url: string }[], mapping: Record<string, string | number>): LineupEntry[];
+        modelLabel(deviceType: string | null): string;
+    };
+    logger: { warn(...args: unknown[]): void };
+    metrics?: SyncServiceMetrics;
+}
+
+function createSyncService({ state, configStore, receiver, validation, hdhrModule, logger, metrics }: SyncServiceDeps) {
     const { validateSettings } = validation;
 
-    function getState() {
+    function getState(): AppState {
         return state.get();
     }
 
-    function updateState(mutator: any) {
+    function updateState(mutator: (state: AppState) => void): AppState {
         return state.update(mutator);
     }
 
-    function currentSettings() {
+    function currentSettings(): ValidatedSettings {
         const { ip, port, cronExpression, selectedListName } = getState().config;
         return { ip, port, cronExpression, selectedListName };
     }
 
-    function mergeSettings(overrides = {}) {
+    function mergeSettings(overrides: Record<string, unknown> | null = {}): ValidatedSettings {
         if (overrides === null || typeof overrides !== 'object' || Array.isArray(overrides)) {
             throw new HttpError(400, 'Invalid settings payload');
         }
@@ -38,17 +68,17 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         // keeping the old value. Keys that are absent leave the stored value.
         for (const key of Object.keys(merged)) {
             if (Object.prototype.hasOwnProperty.call(overrides, key)) {
-                merged[key] = overrides[key];
+                merged[key] = overrides[key] as string;
             }
         }
         return validateSettings(merged);
     }
 
-    async function persistState() {
+    async function persistState(): Promise<void> {
         await configStore.write(persistedSnapshot(getState()));
     }
 
-    function rebuildViews() {
+    function rebuildViews(): number {
         const snapshot = getState();
         const { m3u8, count } = buildM3u8(snapshot.config.channels, snapshot.config.mapping);
         updateState(s => {
@@ -59,14 +89,14 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         return count;
     }
 
-    async function performSync(candidate: any) {
+    async function performSync(candidate: ValidatedSettings): Promise<Awaited<ReturnType<typeof receiver.fetchChannels>> & { stale?: boolean }> {
         const startedAt = Date.now();
         updateState(s => { s.sync.lastAttemptAt = new Date().toISOString(); });
 
         // Snapshot taken after the attempt timestamp is recorded but before any
         // receiver result is applied. Used to roll back in-memory state if
         // persistence fails, so memory and disk stay consistent.
-        let preApplySnapshot = null;
+        let preApplySnapshot: AppState | null = null;
 
         try {
             const result = await receiver.fetchChannels(candidate);
@@ -109,7 +139,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             } catch (persistErr) {
                 // Roll back the in-memory changes so a failed write does not leave
                 // phantom state that differs from what is stored on disk.
-                if (preApplySnapshot && typeof state.commit === 'function') {
+                if (preApplySnapshot) {
                     state.commit(preApplySnapshot);
                 }
                 throw persistErr;
@@ -120,7 +150,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             }
             return result;
         } catch (err) {
-            const e = err as any;
+            const e = err instanceof Error ? err : new Error(String(err));
             updateState(s => {
                 s.sync.lastError = e.message;
                 s.sync.lastErrorAt = new Date().toISOString();
@@ -144,4 +174,4 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
     };
 }
 
-export { createSyncService };
+export { createSyncService, type SyncServiceMetrics };

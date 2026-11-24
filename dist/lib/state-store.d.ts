@@ -5,13 +5,13 @@
  * a single store. Every change builds a new snapshot and commits it atomically,
  * so readers never observe a half-updated state and old snapshots stay valid.
  */
-declare function deepFreeze(value: any, seen?: WeakSet<object>): any;
-/**
- * @param {any} initial
- */
-declare function createStateStore(initial: any): {
-    get(): any;
-    commit(next: any): void;
-    update(mutator: any): any;
+import type { AppState } from './state.js';
+declare function deepFreeze<T>(value: T, seen?: WeakSet<object>): T;
+export type { AppState } from './state.js';
+export type StateStore<T = AppState> = {
+    get(): T;
+    commit(next: T): void;
+    update(mutator: (state: T) => void): T;
 };
+declare function createStateStore<T = AppState>(initial: T): StateStore<T>;
 export { deepFreeze, createStateStore };

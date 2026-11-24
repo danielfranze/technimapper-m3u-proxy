@@ -6,7 +6,7 @@ import {  parseContainerList, parseChannelItems, escapeXml, xmlText  } from '../
 
 test('xmlText handles strings, arrays and xml2js text objects', () => {
     assert.equal(xmlText('hello'), 'hello');
-    assert.equal(xmlText(['hello']), 'hello');
+    assert.equal(xmlText(['hello'] as unknown as Parameters<typeof xmlText>[0]), 'hello');
     assert.equal(xmlText({ _: 'hello', $: {} }), 'hello');
     assert.equal(xmlText({ $: {} }), undefined);
 });

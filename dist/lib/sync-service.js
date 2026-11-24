@@ -2,14 +2,6 @@
 import { persistedSnapshot } from './state.js';
 import { buildM3u8 } from './m3u8.js';
 import { HttpError } from './validation.js';
-/**
- * Application service for receiver sync and playlist state.
- *
- * Extracting this from the HTTP layer keeps route handlers thin and makes the
- * sync flow reusable and testable without Express.
- *
- * @param {object} deps
- */
 function createSyncService({ state, configStore, receiver, validation, hdhrModule, logger, metrics }) {
     const { validateSettings } = validation;
     function getState() {
@@ -97,7 +89,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             catch (persistErr) {
                 // Roll back the in-memory changes so a failed write does not leave
                 // phantom state that differs from what is stored on disk.
-                if (preApplySnapshot && typeof state.commit === 'function') {
+                if (preApplySnapshot) {
                     state.commit(preApplySnapshot);
                 }
                 throw persistErr;
@@ -109,7 +101,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             return result;
         }
         catch (err) {
-            const e = err;
+            const e = err instanceof Error ? err : new Error(String(err));
             updateState(s => {
                 s.sync.lastError = e.message;
                 s.sync.lastErrorAt = new Date().toISOString();

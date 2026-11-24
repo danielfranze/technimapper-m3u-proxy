@@ -7,7 +7,7 @@ export function safeStringify(value) {
         return JSON.stringify(value);
     }
     catch (err) {
-        return `[unserializable: ${err.message}]`;
+        return `[unserializable: ${(err instanceof Error ? err : new Error(String(err))).message}]`;
     }
 }
 export function formatValue(value) {

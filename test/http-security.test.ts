@@ -38,6 +38,7 @@ interface FakeResponse {
     headers: Record<string, string>;
     body: unknown;
     set(name: string, value: string): FakeResponse;
+    setHeader(name: string, value: string): void;
     status(code: number): FakeResponse;
     json(payload: unknown): FakeResponse;
     send(payload: unknown): FakeResponse;
@@ -49,6 +50,7 @@ function fakeResponse(): FakeResponse {
         headers: {},
         body: undefined,
         set(name: string, value: string) { this.headers[name] = value; return this; },
+        setHeader(name: string, value: string) { this.headers[name] = value; },
         status(code: number) { this.statusCode = code; return this; },
         json(payload: unknown) { this.body = payload; return this; },
         send(payload: unknown) { this.body = payload; return this; }
@@ -233,27 +235,27 @@ test('createErrorHandler maps error types and status codes', () => {
     const parseError = fakeResponse();
     handler({ type: 'entity.parse.failed' }, fakeRequest(), parseError, () => {});
     assert.equal(parseError.statusCode, 400);
-    assert.equal((parseError.body as any).error, 'Invalid JSON payload');
+    assert.equal((parseError.body as Record<string, unknown>).error, 'Invalid JSON payload');
 
     const largeError = fakeResponse();
     handler({ type: 'entity.too.large' }, fakeRequest(), largeError, () => {});
     assert.equal(largeError.statusCode, 413);
-    assert.equal((largeError.body as any).error, 'Payload too large');
+    assert.equal((largeError.body as Record<string, unknown>).error, 'Payload too large');
 
     const httpError = fakeResponse();
     handler(new HttpError(404, 'missing'), fakeRequest(), httpError, () => {});
     assert.equal(httpError.statusCode, 404);
-    assert.equal((httpError.body as any).error, 'missing');
+    assert.equal((httpError.body as Record<string, unknown>).error, 'missing');
 
     const statusError = fakeResponse();
     const err = new Error('bad request') as Error & { status?: number };
     err.status = 400;
     handler(err, fakeRequest(), statusError, () => {});
     assert.equal(statusError.statusCode, 400);
-    assert.equal((statusError.body as any).error, 'Invalid request');
+    assert.equal((statusError.body as Record<string, unknown>).error, 'Invalid request');
 
     const unknownError = fakeResponse();
     handler(new Error('boom'), fakeRequest(), unknownError, () => {});
     assert.equal(unknownError.statusCode, 500);
-    assert.equal((unknownError.body as any).error, 'Internal server error');
+    assert.equal((unknownError.body as Record<string, unknown>).error, 'Internal server error');
 });

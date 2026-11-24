@@ -4,11 +4,15 @@
 
 const LEVELS = Object.freeze({ error: 0, warn: 1, info: 2 } as const);
 
+type LogLevel = keyof typeof LEVELS;
+type LogSink = { info(...args: unknown[]): void; warn(...args: unknown[]): void; error(...args: unknown[]): void };
+type LogFunction = (...args: unknown[]) => void;
+
 export function safeStringify(value: unknown): string {
     try {
         return JSON.stringify(value);
     } catch (err) {
-        return `[unserializable: ${(err as Error).message}]`;
+        return `[unserializable: ${(err instanceof Error ? err : new Error(String(err))).message}]`;
     }
 }
 
@@ -27,37 +31,37 @@ export function normalizeFormat(value: unknown): string {
     return String(value || 'text').toLowerCase() === 'json' ? 'json' : 'text';
 }
 
-export function defaultSink(): { info: (...args: any[]) => void; warn: (...args: any[]) => void; error: (...args: any[]) => void } {
+export function defaultSink(): LogSink {
     return {
-        info: (...args: any[]) => console.log(...args),
-        warn: (...args: any[]) => console.warn(...args),
-        error: (...args: any[]) => console.error(...args)
+        info: (...args: unknown[]) => console.log(...args),
+        warn: (...args: unknown[]) => console.warn(...args),
+        error: (...args: unknown[]) => console.error(...args)
     };
 }
 
 export interface LoggerOptions {
     level?: string;
     format?: string;
-    sink?: { info: (...args: any[]) => void; warn: (...args: any[]) => void; error: (...args: any[]) => void };
+    sink?: LogSink;
 }
 
 export function createLogger(options: LoggerOptions = {}): {
     level: string;
     format: string;
-    info: (...args: any[]) => void;
-    warn: (...args: any[]) => void;
-    error: (...args: any[]) => void;
+    info: LogFunction;
+    warn: LogFunction;
+    error: LogFunction;
 } {
     const level = normalizeLevel(options.level);
     const format = normalizeFormat(options.format);
     const sink = options.sink || defaultSink();
-    const threshold = (LEVELS as any)[level];
+    const threshold = LEVELS[level as LogLevel];
 
-    function write(kind: string, args: any[]) {
-        if ((LEVELS as any)[kind] > threshold) return;
+    function write(kind: LogLevel, args: unknown[]) {
+        if (LEVELS[kind] > threshold) return;
 
         const text = args.map(formatValue).join(' ');
-        const out = (sink as any)[kind] || sink.info;
+        const out = sink[kind] || sink.info;
         if (format === 'json') {
             out(safeStringify({ time: new Date().toISOString(), level: kind, msg: text }));
         } else {
@@ -68,9 +72,9 @@ export function createLogger(options: LoggerOptions = {}): {
     return {
         level,
         format,
-        info: (...args: any[]) => write('info', args),
-        warn: (...args: any[]) => write('warn', args),
-        error: (...args: any[]) => write('error', args)
+        info: (...args: unknown[]) => write('info', args),
+        warn: (...args: unknown[]) => write('warn', args),
+        error: (...args: unknown[]) => write('error', args)
     };
 }
 

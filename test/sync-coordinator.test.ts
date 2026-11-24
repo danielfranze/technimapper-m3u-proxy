@@ -37,7 +37,7 @@ test('sync coordinator rejects when the queue is full', async () => {
     let resolveFirst!: (value?: unknown) => void;
     const first = coordinator.request(() => new Promise(resolve => { resolveFirst = resolve; }));
     const second = coordinator.request(() => new Promise(resolve => setTimeout(() => resolve('queued done'), 0)));
-    await assert.rejects(coordinator.request(() => 'third'), /Sync queue is full/);
+    await assert.rejects(coordinator.request(async () => 'third'), /Sync queue is full/);
     resolveFirst('done');
     assert.equal(await first, 'done');
     assert.equal(await second, 'queued done');

@@ -6,14 +6,42 @@
  * Only one sync runs at a time. Additional requests are queued up to `maxQueue`;
  * when the queue is full the caller receives a "Sync queue is full" error.
  */
-function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxMs = 300000, now = Date.now } = {}) {
+
+interface SyncQueueItem {
+    run: () => Promise<unknown>;
+    resolve: (value: unknown) => void;
+    reject: (err: unknown) => void;
+}
+
+export interface SyncCoordinator {
+    request(run: () => Promise<unknown>): Promise<unknown>;
+    backoffRemainingMs(): number;
+    clearBackoff(): void;
+    reset(): void;
+    waitForIdle(): Promise<void>;
+    readonly active: boolean;
+    readonly queueLength: number;
+    readonly consecutiveFailures: number;
+}
+
+function createSyncCoordinator({
+    maxQueue = 4,
+    backoffBaseMs = 5000,
+    backoffMaxMs = 300000,
+    now = Date.now
+}: {
+    maxQueue?: number;
+    backoffBaseMs?: number;
+    backoffMaxMs?: number;
+    now?: () => number;
+} = {}): SyncCoordinator {
     let active = false;
-    let queue: any[] = [];
+    let queue: SyncQueueItem[] = [];
     let consecutiveFailures = 0;
     let nextAllowedAt = 0;
-    let idleWaiters: any[] = [];
+    let idleWaiters: Array<() => void> = [];
 
-    async function runOne(item: any) {
+    async function runOne(item: SyncQueueItem) {
         active = true;
         try {
             const result = await item.run();
@@ -33,7 +61,7 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
             if (!active && queue.length === 0) {
                 const waiters = idleWaiters;
                 idleWaiters = [];
-                waiters.forEach((resolve: any) => resolve());
+                waiters.forEach(resolve => resolve());
             }
         }
     }
@@ -41,23 +69,23 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
     function processQueue() {
         if (active || queue.length === 0) return;
         const item = queue.shift();
-        runOne(item);
+        if (item) void runOne(item);
     }
 
-    function request(run: any) {
+    function request(run: () => Promise<unknown>): Promise<unknown> {
         if (queue.length >= maxQueue) {
             return Promise.reject(new Error('Sync queue is full'));
         }
         if (now() < nextAllowedAt) {
             return Promise.reject(new Error('Sync is in backoff'));
         }
-        return new Promise((resolve: any, reject: any) => {
+        return new Promise<unknown>((resolve, reject) => {
             queue.push({ run, resolve, reject });
             processQueue();
         });
     }
 
-    function backoffRemainingMs() {
+    function backoffRemainingMs(): number {
         return Math.max(0, nextAllowedAt - now());
     }
 
@@ -73,16 +101,16 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
         nextAllowedAt = 0;
         const waiters = idleWaiters;
         idleWaiters = [];
-        waiters.forEach((resolve: any) => resolve());
+        waiters.forEach(resolve => resolve());
         // Reject any work that was queued but never ran, so callers do not hang.
-        queued.forEach((item: any) => {
-            try { item.reject(new Error('Sync coordinator reset')); } catch (err) { /* ignore */ }
+        queued.forEach(item => {
+            try { item.reject(new Error('Sync coordinator reset')); } catch { /* ignore */ }
         });
     }
 
-    function waitForIdle() {
+    function waitForIdle(): Promise<void> {
         if (!active && queue.length === 0) return Promise.resolve();
-        return new Promise((resolve: any) => {
+        return new Promise<void>(resolve => {
             idleWaiters.push(resolve);
         });
     }

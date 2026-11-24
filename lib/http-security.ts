@@ -9,41 +9,77 @@
  */
 
 import crypto from 'crypto';
-import {  HttpError  } from './validation.js';
+import { HttpError } from './validation.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-function clientKey(req: any) {
+/** Minimal request shape used by the middleware (structurally compatible with express.Request). */
+interface RequestLike {
+    ip?: string;
+    socket?: { remoteAddress?: string } | null;
+    path: string;
+    method: string;
+    get(name: string): string | undefined;
+}
+
+/** Minimal response shape used by the middleware (structurally compatible with express.Response). */
+interface ResponseLike {
+    setHeader(name: string, value: string): void;
+    set(name: string, value: string): unknown;
+    status(code: number): ResponseLike;
+    json(payload: unknown): ResponseLike;
+    send(payload?: unknown): ResponseLike;
+}
+
+type NextLike = (err?: unknown) => void;
+
+interface AuthCredentials {
+    user: string;
+    password: string;
+}
+
+function clientKey(req: RequestLike): string {
     return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-function safeEqual(a: any, b: any) {
+function safeEqual(a: string, b: string): boolean {
     const ha = crypto.createHash('sha256').update(String(a)).digest();
     const hb = crypto.createHash('sha256').update(String(b)).digest();
     return crypto.timingSafeEqual(ha, hb);
 }
 
-/** @param {string} requestPath */
-function isPublicPath(requestPath: any, publicPaths: any = [], publicPrefixes: any = ['/hdhr/']) {
+function isPublicPath(requestPath: string | undefined, publicPaths: string[] = [], publicPrefixes: string[] = ['/hdhr/']): boolean {
     const path = String(requestPath || '');
     if (publicPaths.includes(path)) return true;
-    return publicPrefixes.some((prefix: any) => path === prefix.slice(0, -1) || path.startsWith(prefix));
+    return publicPrefixes.some(prefix => path === prefix.slice(0, -1) || path.startsWith(prefix));
+}
+
+interface FailureLimiterResult {
+    status(key: string): number;
+    fail(key: string): void;
+    clear(key: string): void;
+    size(): number;
 }
 
 /**
  * Bounded map of failed authentication attempts. Only failures are counted, so
  * a legitimate client is not locked out by successful requests.
  */
-function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now }: any) {
-    const entries = new Map();
+function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now }: {
+    windowMs: number;
+    max: number;
+    maxEntries?: number;
+    now?: () => number;
+}): FailureLimiterResult {
+    const entries = new Map<string, { count: number; reset: number }>();
 
-    function prune(currentTime: any) {
+    function prune(currentTime: number) {
         for (const [key, entry] of entries) {
             if (entry.reset <= currentTime) entries.delete(key);
         }
     }
 
-    function status(key: any) {
+    function status(key: string): number {
         const currentTime = now();
         const entry = entries.get(key);
         if (!entry) return 0;
@@ -54,7 +90,7 @@ function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now
         return entry.count >= max ? Math.max(1, Math.ceil((entry.reset - currentTime) / 1000)) : 0;
     }
 
-    function fail(key: any) {
+    function fail(key: string) {
         const currentTime = now();
         if (entries.size >= maxEntries) prune(currentTime);
         if (entries.size >= maxEntries) {
@@ -70,7 +106,7 @@ function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now
         entry.count++;
     }
 
-    function clear(key: any) {
+    function clear(key: string) {
         entries.delete(key);
     }
 
@@ -89,16 +125,20 @@ function createAuth({
     publicPrefixes = ['/hdhr/'],
     failureWindowMs = 15 * 60 * 1000,
     failureMax = 20,
-    logger = console as any,
+    logger = console as { warn(...args: unknown[]): void; info(...args: unknown[]): void; error(...args: unknown[]): void },
     now = Date.now
-} = {}) {
+} = {}): {
+    (req: RequestLike, res: ResponseLike, next: NextLike): void;
+    enabled: boolean;
+    misconfigured: boolean;
+} {
     const hasUser = typeof user === 'string' && user.length > 0;
     const hasPassword = typeof password === 'string' && password.length > 0;
     const enabled = hasUser && hasPassword;
     const misconfigured = hasUser !== hasPassword;
     const failures = createFailureLimiter({ windowMs: failureWindowMs, max: failureMax, now });
 
-    function readCredentials(req: any) {
+    function readCredentials(req: RequestLike): AuthCredentials | null {
         const header = String(req.get('authorization') || '');
         const match = /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(header);
         if (!match) return null;
@@ -109,12 +149,13 @@ function createAuth({
         return { user: decoded.slice(0, separator), password: decoded.slice(separator + 1) };
     }
 
-    function middleware(req: any, res: any, next: any) {
+    function middleware(req: RequestLike, res: ResponseLike, next: NextLike) {
         if (isPublicPath(req.path, publicPaths, publicPrefixes)) return next();
 
         if (misconfigured) {
             res.set('Cache-Control', 'no-store');
-            return res.status(503).json({ error: 'Authentication is misconfigured' });
+            res.status(503).json({ error: 'Authentication is misconfigured' });
+            return;
         }
         if (!enabled) return next();
 
@@ -122,7 +163,8 @@ function createAuth({
         const retryAfter = failures.status(key);
         if (retryAfter > 0) {
             res.set('Retry-After', String(retryAfter));
-            return res.status(429).json({ error: 'Too many failed authentication attempts' });
+            res.status(429).json({ error: 'Too many failed authentication attempts' });
+            return;
         }
 
         const credentials = readCredentials(req);
@@ -134,7 +176,7 @@ function createAuth({
         failures.fail(key);
         logger.warn(`Authentication failed from ${key}.`);
         res.set('WWW-Authenticate', 'Basic realm="TechniMapper", charset="UTF-8"');
-        return res.status(401).send('Authentication required');
+        res.status(401).send('Authentication required');
     }
 
     middleware.enabled = enabled;
@@ -142,14 +184,29 @@ function createAuth({
     return middleware;
 }
 
+interface RateLimitResult {
+    limited: boolean;
+    retryAfter: number;
+}
+
 /**
  * Bounded fixed-window limiter. The map never grows without limit; the oldest
  * entry is evicted when `maxEntries` is reached.
  */
-function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, now = Date.now }: any) {
-    const hits = new Map();
+function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, now = Date.now }: {
+    windowMs: number;
+    max: number;
+    maxEntries?: number;
+    key?: (req: RequestLike) => string;
+    now?: () => number;
+}): {
+    (req: RequestLike, res: ResponseLike, next: NextLike): void;
+    consume(identifier: string): RateLimitResult;
+    size(): number;
+} {
+    const hits = new Map<string, { count: number; reset: number }>();
 
-    function consume(identifier: any) {
+    function consume(identifier: string): RateLimitResult {
         const currentTime = now();
         let entry = hits.get(identifier);
 
@@ -168,11 +225,11 @@ function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, 
         return { limited: true, retryAfter: Math.max(1, Math.ceil((entry.reset - currentTime) / 1000)) };
     }
 
-    function middleware(req: any, res: any, next: any) {
+    function middleware(req: RequestLike, res: ResponseLike, next: NextLike) {
         const result = consume(key(req));
         if (!result.limited) return next();
         res.set('Retry-After', String(result.retryAfter));
-        return res.status(429).json({ error: 'Too many requests' });
+        res.status(429).json({ error: 'Too many requests' });
     }
 
     middleware.consume = consume;
@@ -187,31 +244,39 @@ function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, 
  * blocks classic HTML form posts and `fetch()` calls without a body, which is
  * the practical CSRF vector for an endpoint that accepts an empty body.
  */
-function createOriginGuard() {
-    return (req: any, res: any, next: any) => {
+function createOriginGuard(): (req: RequestLike, res: ResponseLike, next: NextLike) => void {
+    return (req, res, next) => {
         if (SAFE_METHODS.has(req.method)) return next();
 
         const contentType = String(req.get('content-type') || '').toLowerCase();
         if (!contentType.startsWith('application/json')) {
-            return res.status(415).json({ error: 'Content-Type application/json required' });
+            res.status(415).json({ error: 'Content-Type application/json required' });
+            return;
         }
 
         const host = req.get('host');
-        if (!host) return res.status(400).json({ error: 'Missing Host header' });
+        if (!host) {
+            res.status(400).json({ error: 'Missing Host header' });
+            return;
+        }
 
         const origin = req.get('origin');
         const referer = req.get('referer');
         const source = origin || referer;
         if (!source) return next();
 
-        let sourceHost;
+        let sourceHost: string;
         try {
             sourceHost = new URL(source).host;
         } catch (err) {
-            return res.status(403).json({ error: 'Invalid origin' });
+            res.status(403).json({ error: 'Invalid origin' });
+            return;
         }
 
-        if (sourceHost.toLowerCase() !== host.toLowerCase()) return res.status(403).json({ error: 'Cross-origin request blocked' });
+        if (sourceHost.toLowerCase() !== host.toLowerCase()) {
+            res.status(403).json({ error: 'Cross-origin request blocked' });
+            return;
+        }
         return next();
     };
 }
@@ -220,8 +285,8 @@ function createOriginGuard() {
  * Static security headers. `Cache-Control: no-store` is applied to API and health
  * responses so proxies and browsers never keep stale configuration or status.
  */
-function securityHeaders({ hsts = false } = {}) {
-    return (req: any, res: any, next: any) => {
+function securityHeaders({ hsts = false }: { hsts?: boolean } = {}): (req: RequestLike, res: ResponseLike, next: NextLike) => void {
+    return (req, res, next) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Referrer-Policy', 'no-referrer');
@@ -241,19 +306,30 @@ function securityHeaders({ hsts = false } = {}) {
     };
 }
 
+interface HttpSecurityErrorLike {
+    type?: string;
+    status?: number;
+    message?: string;
+}
+
+interface HttpSecurityLogger {
+    error(prefix: string, err: unknown): void;
+}
+
 /**
  * Central Express error handler.
  *
  * Keeping this as a factory makes the status mapping testable without an HTTP
  * route that has to throw a synthetic error in production.
  */
-function createErrorHandler(logger: any = console) {
-    return (err: any, _req: any, res: any, _next: any) => {
-        if (err?.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON payload' });
-        if (err?.type === 'entity.too.large') return res.status(413).json({ error: 'Payload too large' });
-        if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
-        if (typeof err?.status === 'number' && err.status >= 400 && err.status < 500) {
-            return res.status(err.status).json({ error: 'Invalid request' });
+function createErrorHandler(logger: HttpSecurityLogger = { error: () => undefined }) {
+    return (err: HttpSecurityErrorLike | unknown, _req: RequestLike, res: ResponseLike, _next: NextLike) => {
+        const e = err as HttpSecurityErrorLike;
+        if (e?.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON payload' });
+        if (e?.type === 'entity.too.large') return res.status(413).json({ error: 'Payload too large' });
+        if (e instanceof HttpError) return res.status(e.status).json({ error: e.message });
+        if (typeof e?.status === 'number' && e.status >= 400 && e.status < 500) {
+            return res.status(e.status).json({ error: 'Invalid request' });
         }
         logger.error('Unhandled error:', err);
         return res.status(500).json({ error: 'Internal server error' });

@@ -6,6 +6,42 @@
  * points with an immutable snapshot store (see the architecture roadmap).
  */
 
+import type { LineupEntry } from './hdhr.js';
+
+interface Channel {
+    name: string;
+    url: string;
+}
+
+interface StateConfig {
+    ip: string;
+    port: string;
+    cronExpression: string;
+    selectedListName: string;
+    mapping: Record<string, string | number>;
+    channels: Channel[];
+    lastSync: string | null;
+    detectedModel: string | null;
+    [key: string]: unknown;
+}
+
+interface StateSync {
+    lastError: string | null;
+    lastErrorAt: string | null;
+    lastAttemptAt: string | null;
+    lastDurationMs: number | null;
+    consecutiveFailures: number;
+    [key: string]: unknown;
+}
+
+export interface AppState {
+    config: StateConfig;
+    sync: StateSync;
+    configured: boolean;
+    cachedM3u8: string | null;
+    lineupEntries: LineupEntry[];
+}
+
 const DEFAULT_CONFIG = Object.freeze({
     ip: '192.168.178.28',
     port: '9100',
@@ -17,17 +53,13 @@ const DEFAULT_CONFIG = Object.freeze({
     detectedModel: null
 });
 
-/**
- * @param {{ config?: Record<string, unknown>, sync?: Record<string, unknown>, configured?: boolean, cachedM3u8?: string | null, lineupEntries?: unknown[] }} [overrides]
- * @returns {any}
- */
-function createState(overrides: any = {}): any {
+function createState(overrides: Partial<AppState> = {}): AppState {
     const config = {
         ...DEFAULT_CONFIG,
         mapping: {},
         channels: [],
         ...(overrides.config || {})
-    };
+    } as StateConfig;
 
     return {
         config,
@@ -45,12 +77,8 @@ function createState(overrides: any = {}): any {
     };
 }
 
-/**
- * The subset of the state that belongs in mapping.json.
- * @param {any} state
- * @returns {Record<string, unknown>}
- */
-function persistedSnapshot(state: any): any {
+/** The subset of the state that belongs in mapping.json. */
+function persistedSnapshot(state: AppState): Record<string, unknown> {
     const config = state.config;
     return {
         ip: config.ip,
@@ -64,20 +92,31 @@ function persistedSnapshot(state: any): any {
     };
 }
 
+interface RepairDeps {
+    cronValidate(expr: string): boolean;
+    isAllowedReceiverIp(ip: string): boolean;
+    defaultCron?: string;
+    logger: { warn(...args: unknown[]): void };
+}
+
+interface ApplyPersistedDeps extends RepairDeps {
+    validateMapping(input: unknown): { mapping: Record<string, string | number>; invalid: string[] };
+    sortMapping(mapping: Record<string, string | number>, channelNames: string[]): Record<string, string | number>;
+    sanitizeModel(model: unknown): string | null;
+}
+
 /**
  * Replaces invalid persisted values (port, cron, list name) with defaults so that one corrupt
  * field cannot disable background sync. The receiver IP is left untouched (there is no safe default).
- * @param {any} state
- * @param {any} deps
- * @returns {boolean} true if anything was changed
+ * Returns true if anything was changed.
  */
-function repairPersistedSettings(state: any, deps: any): boolean {
+function repairPersistedSettings(state: AppState, deps: RepairDeps): boolean {
     const { cronValidate, isAllowedReceiverIp, defaultCron = '*/5 * * * *', logger } = deps;
     const config = state.config;
     let changed = false;
 
-    const fix = (field, fallback, reason) => {
-        logger.warn(`Persisted ${field} "${config[field]}" is invalid (${reason}) - resetting to "${fallback}".`);
+    const fix = (field: string, fallback: string, reason: string) => {
+        logger.warn(`Persisted ${field} "${String(config[field])}" is invalid (${reason}) - resetting to "${fallback}".`);
         config[field] = fallback;
         changed = true;
     };
@@ -101,30 +140,27 @@ function repairPersistedSettings(state: any, deps: any): boolean {
 /**
  * Applies a parsed mapping.json to the state. Invalid values are dropped or repaired;
  * nothing here talks to the receiver or the HTTP layer.
- *
- * @param {any} state
- * @param {unknown} parsed
- * @param {any} deps
- * @returns {{ changed: boolean, droppedMapping: number }}
  */
-function applyPersistedState(state: any, parsed: any, deps: any): { changed: boolean; droppedMapping: number } {
+function applyPersistedState(state: AppState, parsed: unknown, deps: ApplyPersistedDeps): { changed: boolean; droppedMapping: number } {
     const { validateMapping, sortMapping, sanitizeModel, logger } = deps;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
 
-    const { mapping, invalid } = validateMapping(parsed.mapping);
+    const record = parsed as Record<string, unknown>;
+    const { mapping, invalid } = validateMapping(record.mapping);
     if (invalid.length) logger.warn(`Dropped ${invalid.length} invalid mapping entries from disk.`);
 
-    const channels = Array.isArray(parsed.channels)
-        ? parsed.channels.filter(channel => channel && typeof channel.name === 'string' && typeof channel.url === 'string')
+    const rawChannels = record.channels;
+    const channels: Channel[] = Array.isArray(rawChannels)
+        ? rawChannels.filter((c): c is Channel => !!c && typeof c === 'object' && typeof (c as Channel).name === 'string' && typeof (c as Channel).url === 'string')
         : [];
 
     const config = state.config;
-    config.ip = typeof parsed.ip === 'string' ? parsed.ip : config.ip;
-    config.port = parsed.port !== undefined ? String(parsed.port) : config.port;
-    config.cronExpression = typeof parsed.cronExpression === 'string' ? parsed.cronExpression : config.cronExpression;
-    config.selectedListName = typeof parsed.selectedListName === 'string' ? parsed.selectedListName : config.selectedListName;
-    config.lastSync = typeof parsed.lastSync === 'string' ? parsed.lastSync : null;
-    config.detectedModel = sanitizeModel(parsed.detectedModel);
+    config.ip = typeof record.ip === 'string' ? record.ip : config.ip;
+    config.port = record.port !== undefined ? String(record.port) : config.port;
+    config.cronExpression = typeof record.cronExpression === 'string' ? record.cronExpression : config.cronExpression;
+    config.selectedListName = typeof record.selectedListName === 'string' ? record.selectedListName : config.selectedListName;
+    config.lastSync = typeof record.lastSync === 'string' ? record.lastSync : null;
+    config.detectedModel = sanitizeModel(record.detectedModel);
     config.mapping = sortMapping(mapping, channels.map(channel => channel.name));
     config.channels = channels;
     state.configured = true;
