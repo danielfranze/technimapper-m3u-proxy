@@ -6,7 +6,7 @@ test('syncs channels from the mock receiver', async ({ request }) => {
 
     const syncRes = await request.post('/api/fetch-channels', { data: {} });
     expect(syncRes.ok()).toBeTruthy();
-    const syncBody = await syncRes.json();
+    const syncBody = (await syncRes.json()) as { channels: string[] };
     expect(syncBody.channels).toContain('Das Erste HD');
     expect(syncBody.channels).toContain('ZDF HD');
 });
@@ -28,7 +28,7 @@ test('mapped channels appear in playlist and lineup after save-mapping', async (
     expect(playlist).toContain('ZDF HD');
 
     const lineupRes = await request.get('/hdhr/lineup.json');
-    const lineup = await lineupRes.json();
+    const lineup: unknown[] = await lineupRes.json();
     expect(lineup.length).toBe(2);
 });
 

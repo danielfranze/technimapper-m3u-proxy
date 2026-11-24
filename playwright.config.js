@@ -8,8 +8,8 @@ fs.mkdirSync(E2E_DATA_DIR, { recursive: true });
 
 export default defineConfig({
     testDir: './e2e',
-    globalSetup: './e2e/global-setup.js',
-    globalTeardown: './e2e/global-teardown.js',
+    globalSetup: './e2e/global-setup.ts',
+    globalTeardown: './e2e/global-teardown.ts',
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,

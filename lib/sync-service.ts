@@ -62,13 +62,13 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         if (overrides === null || typeof overrides !== 'object' || Array.isArray(overrides)) {
             throw new HttpError(400, 'Invalid settings payload');
         }
-        const merged = currentSettings();
+        const merged: Record<string, unknown> = { ...currentSettings() };
         // A key that is explicitly present overrides the stored value, even when
         // it is empty: validateSettings() then rejects it instead of silently
         // keeping the old value. Keys that are absent leave the stored value.
         for (const key of Object.keys(merged)) {
             if (Object.prototype.hasOwnProperty.call(overrides, key)) {
-                merged[key] = overrides[key] as string;
+                merged[key] = overrides[key];
             }
         }
         return validateSettings(merged);

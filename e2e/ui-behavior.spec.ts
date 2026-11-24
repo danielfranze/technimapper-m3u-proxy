@@ -107,7 +107,7 @@ test('dirty indicator disappears after successful save', async ({ page }) => {
 test('last sync time is displayed (Never or a date)', async ({ page }) => {
     await page.goto('/');
     const text = await page.locator('#last-sync-time').textContent();
-    expect(text === 'Never' || /\d/.test(text)).toBeTruthy();
+    expect(text === 'Never' || /\d/.test(text || '')).toBeTruthy();
 });
 
 test('parse preserves leading zeros in manual ID entry', async ({ page }) => {

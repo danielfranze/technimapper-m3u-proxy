@@ -8,7 +8,7 @@ import http from 'http';
 const MOCK_PORT = 9199;
 const DATA_DIR = path.join(os.tmpdir(), 'technimapper-e2e-mock');
 
-export default async () => {
+export default async (): Promise<void> => {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     const mapping = {
         ip: '127.0.0.1',
@@ -29,10 +29,10 @@ export default async () => {
         detached: true
     });
     child.unref();
-    fs.writeFileSync(path.join(DATA_DIR, 'mock.pid'), String(child.pid));
+    if (child.pid !== undefined) fs.writeFileSync(path.join(DATA_DIR, 'mock.pid'), String(child.pid));
     console.log('global-setup: started mock receiver pid', child.pid);
 
-    await new Promise((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
         const tryConnect = () => {
             const req = http.get(`http://127.0.0.1:${MOCK_PORT}/`, (res) => { res.resume(); resolve(); });
             req.on('error', () => setTimeout(tryConnect, 200));

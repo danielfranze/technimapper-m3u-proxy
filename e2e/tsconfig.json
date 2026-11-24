@@ -1,0 +1,9 @@
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "types": ["node"]
+    },
+    "include": ["*.spec.ts", "global-setup.ts", "global-teardown.ts"],
+    "exclude": []
+}
