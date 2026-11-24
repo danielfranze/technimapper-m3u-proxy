@@ -1,6 +1,6 @@
 {
   "name": "technisat-mapper",
-  "version": "2.0.0-rc.2",
+  "version": "2.0.0-rc.3",
   "description": "TechniSat IPTV Proxy",
   "main": "server.js",
   "private": true,
@@ -12,8 +12,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "check": "tsc --noEmit",
-    "test": "npm run build && node --test",
-    "coverage": "npm run build && node scripts/coverage.js",
+    "test": "npm run build && node --import tsx --test",
+    "coverage": "npm run build && node --import tsx scripts/coverage.js",
     "test:e2e": "playwright test",
     "test:all": "npm run build && npm test && npm run test:e2e"
   },
@@ -22,6 +22,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
     "@types/xml2js": "^0.4.14",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   },
   "dependencies": {

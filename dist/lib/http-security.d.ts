@@ -1,17 +1,12 @@
 declare function clientKey(req: any): any;
 declare function safeEqual(a: any, b: any): boolean;
 /** @param {string} requestPath */
-declare function isPublicPath(requestPath: any, publicPaths?: any[], publicPrefixes?: string[]): boolean;
+declare function isPublicPath(requestPath: any, publicPaths?: any, publicPrefixes?: any): any;
 /**
  * Bounded map of failed authentication attempts. Only failures are counted, so
  * a legitimate client is not locked out by successful requests.
  */
-declare function createFailureLimiter({ windowMs, max, maxEntries, now }: {
-    windowMs: any;
-    max: any;
-    maxEntries?: number;
-    now?: () => number;
-}): {
+declare function createFailureLimiter({ windowMs, max, maxEntries, now }: any): {
     status: (key: any) => number;
     fail: (key: any) => void;
     clear: (key: any) => void;
@@ -23,14 +18,14 @@ declare function createFailureLimiter({ windowMs, max, maxEntries, now }: {
  * credential is present, protected routes fail closed with 503.
  */
 declare function createAuth({ user, password, publicPaths, publicPrefixes, failureWindowMs, failureMax, logger, now }?: {
-    user?: string;
-    password?: string;
-    publicPaths?: any[];
-    publicPrefixes?: string[];
-    failureWindowMs?: number;
-    failureMax?: number;
-    logger?: Console;
-    now?: () => number;
+    user?: string | undefined;
+    password?: string | undefined;
+    publicPaths?: never[] | undefined;
+    publicPrefixes?: string[] | undefined;
+    failureWindowMs?: number | undefined;
+    failureMax?: number | undefined;
+    logger?: Console | undefined;
+    now?: (() => number) | undefined;
 }): {
     (req: any, res: any, next: any): any;
     enabled: boolean;
@@ -40,13 +35,7 @@ declare function createAuth({ user, password, publicPaths, publicPrefixes, failu
  * Bounded fixed-window limiter. The map never grows without limit; the oldest
  * entry is evicted when `maxEntries` is reached.
  */
-declare function createRateLimiter({ windowMs, max, maxEntries, key, now }: {
-    windowMs: any;
-    max: any;
-    maxEntries?: number;
-    key?: typeof clientKey;
-    now?: () => number;
-}): {
+declare function createRateLimiter({ windowMs, max, maxEntries, key, now }: any): {
     (req: any, res: any, next: any): any;
     consume: (identifier: any) => {
         limited: boolean;
@@ -67,7 +56,7 @@ declare function createOriginGuard(): (req: any, res: any, next: any) => any;
  * responses so proxies and browsers never keep stale configuration or status.
  */
 declare function securityHeaders({ hsts }?: {
-    hsts?: boolean;
+    hsts?: boolean | undefined;
 }): (req: any, res: any, next: any) => void;
 /**
  * Central Express error handler.
@@ -75,5 +64,5 @@ declare function securityHeaders({ hsts }?: {
  * Keeping this as a factory makes the status mapping testable without an HTTP
  * route that has to throw a synthetic error in production.
  */
-declare function createErrorHandler(logger?: Console): (err: any, req: any, res: any, next: any) => any;
+declare function createErrorHandler(logger?: any): (err: any, req: any, res: any, next: any) => any;
 export { clientKey, safeEqual, isPublicPath, createFailureLimiter, createAuth, createRateLimiter, createOriginGuard, securityHeaders, createErrorHandler };

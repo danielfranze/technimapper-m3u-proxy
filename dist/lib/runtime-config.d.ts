@@ -15,7 +15,7 @@ declare function intFromEnv(raw: any, fallback: number, options?: any): number;
  * @param {string|undefined} raw
  * @param {string[]} warnings
  */
-declare function parseTrustProxy(raw: any, warnings?: any[]): string | number | boolean;
+declare function parseTrustProxy(raw: any, warnings?: string[]): string | number | boolean;
 /**
  * @param {NodeJS.ProcessEnv} [env]
  * @returns {{
@@ -66,6 +66,6 @@ declare function loadRuntimeConfig(env?: any): {
     apiRateWindowMs: number;
     apiRateMax: number;
     maxRateEntries: number;
-    warnings: any[];
+    warnings: string[];
 };
 export { DEFAULT_PORT, DEFAULT_REQUEST_TIMEOUT_MS, DEFAULT_MAX_RESPONSE_BYTES, DEFAULT_CRON, DEFAULT_SHUTDOWN_TIMEOUT_MS, intFromEnv, parseTrustProxy, loadRuntimeConfig };

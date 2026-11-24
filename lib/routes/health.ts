@@ -31,13 +31,13 @@ function registerHealthRoutes(app, ctx) {
         };
     }
 
-    app.get('/health', (req, res) => res.json(healthPayload()));
+    app.get('/health', (req: any, res: any) => res.json(healthPayload()));
 
-    app.get('/health/live', (req, res) => {
+    app.get('/health/live', (req: any, res: any) => {
         res.json({ status: 'ok', version, uptimeSeconds: Math.round(process.uptime()) });
     });
 
-    app.get('/health/ready', (req, res) => {
+    app.get('/health/ready', (req: any, res: any) => {
         const payload = healthPayload();
         const ready = !getState().configured || (payload.playlistAvailable && payload.status === 'ok');
         res.status(ready ? 200 : 503).json({ ...payload, status: ready ? payload.status : 'degraded' });

@@ -28,7 +28,7 @@ class HttpError extends Error {
  */
 function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopback = false }: { cronValidate: (expr: string) => boolean; allowNonPrivateIp?: boolean; allowLoopback?: boolean }): any {
     /** Receiver must be a valid IPv4; loopback/link-local/multicast are always rejected. */
-    function isAllowedReceiverIp(ip) {
+    function isAllowedReceiverIp(ip: any) {
         if (typeof ip !== 'string' || !net.isIPv4(ip)) return false;
         const [a, b] = ip.split('.').map(Number);
         if (a === 0 || a >= 224) return false;                  // unspecified, multicast/reserved
@@ -43,7 +43,7 @@ function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopba
      * @param {unknown} raw
      * @returns {{ ip: string, port: string, cronExpression: string, selectedListName: string }}
      */
-    function validateSettings(raw) {
+    function validateSettings(raw: any) {
         if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
             throw new HttpError(400, 'Invalid settings payload');
         }
@@ -78,8 +78,8 @@ function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopba
      * @returns {{ mapping: Record<string, string | number>, invalid: string[] }}
      */
     function validateMapping(input: any): { mapping: Record<string, string | number>; invalid: string[] } {
-        const mapping = {};
-        const invalid = [];
+        const mapping: Record<string, string | number> = {};
+        const invalid: string[] = [];
         if (!input || typeof input !== 'object' || Array.isArray(input)) return { mapping, invalid: ['<payload>'] };
 
         for (const [name, value] of Object.entries(input)) {
@@ -105,7 +105,7 @@ function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopba
  * @param {Record<string, string | number>} mapping
  * @returns {string[]}
  */
-function findDuplicateIds(mapping) {
+function findDuplicateIds(mapping: Record<string, string | number>) {
     const seen = new Set();
     const dups = new Set();
     for (const v of Object.values(mapping)) {
@@ -121,7 +121,7 @@ function findDuplicateIds(mapping) {
  * @param {Record<string, string | number>} mapping
  * @returns {{ id: string, channels: string[] }[]}
  */
-function findDuplicateGroups(mapping) {
+function findDuplicateGroups(mapping: Record<string, string | number>) {
     const byId = new Map();
     for (const [name, value] of Object.entries(mapping)) {
         const id = String(value);
@@ -136,11 +136,11 @@ function findDuplicateGroups(mapping) {
  * stale entries ("orphans"). Without a known channel list nothing can be called stale.
  * @returns {{ active: Record<string, string|number>, orphans: string[] }}
  */
-function partitionMapping(mapping, channelNames) {
+function partitionMapping(mapping: Record<string, string | number>, channelNames: string[]) {
     if (!channelNames || channelNames.length === 0) return { active: { ...mapping }, orphans: [] };
     const known = new Set(channelNames);
-    const active = {};
-    const orphans = [];
+    const active: Record<string, string | number> = {};
+    const orphans: string[] = [];
     for (const [name, id] of Object.entries(mapping)) {
         if (known.has(name)) active[name] = id;
         else orphans.push(name);
@@ -153,9 +153,9 @@ function partitionMapping(mapping, channelNames) {
  * no longer exist (stale) follow, sorted alphabetically. Without a channel list the order is kept.
  * Purely cosmetic (lookups use the channel name) but keeps mapping.json readable and diffs stable.
  */
-function sortMapping(mapping, channelNames) {
+function sortMapping(mapping: Record<string, string | number>, channelNames: string[]) {
     if (!channelNames || channelNames.length === 0) return { ...mapping };
-    const sorted = {};
+    const sorted: Record<string, string | number> = {};
     for (const name of channelNames) {
         if (Object.hasOwn(mapping, name) && !Object.hasOwn(sorted, name)) sorted[name] = mapping[name];
     }

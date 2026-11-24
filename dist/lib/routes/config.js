@@ -103,10 +103,11 @@ function registerConfigRoutes(app, ctx) {
             });
         }
         catch (err) {
-            if (err instanceof validation_js_1.HttpError)
-                return next(err);
-            logger.error('[fetch-channels]', err.message);
-            return next(new validation_js_1.HttpError(502, err.message || 'Receiver request failed'));
+            const e = err;
+            if (e instanceof validation_js_1.HttpError)
+                return next(e);
+            logger.error('[fetch-channels]', e.message);
+            return next(new validation_js_1.HttpError(502, e.message || 'Receiver request failed'));
         }
     });
     app.get('/api/export-config', (req, res) => {

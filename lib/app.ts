@@ -2,7 +2,7 @@
 
 import crypto from 'crypto';
 import express from 'express';
-import compression from 'compression';
+const compression = require('compression');
 import path from 'node:path';
 
 declare module 'express-serve-static-core' {
@@ -35,7 +35,7 @@ import { createSyncService } from './sync-service.js';
  *
  * @param {any} deps
  */
-function createApp(deps) {
+function createApp(deps: any) {
     const {
         runtime,
         logger,
@@ -59,7 +59,7 @@ function createApp(deps) {
     const publicPaths = runtime.publicPaths || [...playlistPaths, '/health', '/health/live', '/health/ready'];
 
 
-    let cronTask = null;
+    let cronTask: any = null;
     let shuttingDown = false;
 
     const syncCoordinator = syncCoordinatorDep || createSyncCoordinator({
@@ -110,7 +110,7 @@ function createApp(deps) {
     app.use('/api', apiLimiter);
 
     app.use(express.static(publicDir, {
-        setHeaders: (res, filePath) => {
+        setHeaders: (res: any, filePath: any) => {
             // Bundled fonts rarely change: let browsers cache them for a week.
             if (filePath.endsWith('.woff2')) res.setHeader('Cache-Control', 'public, max-age=604800');
         }
@@ -163,14 +163,14 @@ function createApp(deps) {
                 selectedListName: snapshot.config.selectedListName
             });
         } catch (err) {
-            logger.error(`[Sync] Invalid stored settings: ${err.message}`);
+            logger.error(`[Sync] Invalid stored settings: ${(err as any).message}`);
             return;
         }
 
         try {
             await syncCoordinator.request(() => performSync(candidate));
         } catch (err) {
-            logger.error(`[Sync] ${err.message} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`);
+            logger.error(`[Sync] ${(err as any).message} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`);
         }
     }
 
@@ -192,7 +192,7 @@ function createApp(deps) {
         try {
             cronTask = cron.schedule(pattern, runScheduledSync);
         } catch (err) {
-            logger.error(`Failed to schedule background sync: ${err.message}`);
+            logger.error(`Failed to schedule background sync: ${(err as any).message}`);
             cronTask = null;
         }
         return cronTask;
@@ -235,7 +235,7 @@ function createApp(deps) {
     registerMetricsRoutes(app, ctx);
 
     // 404 for unknown API routes, then central error handler
-    app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+    app.use('/api', (req: any, res: any) => res.status(404).json({ error: 'Not found' }));
 
     app.use(createErrorHandler(logger));
 

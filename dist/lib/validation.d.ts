@@ -26,13 +26,13 @@ declare function createValidation({ cronValidate, allowNonPrivateIp, allowLoopba
  * @param {Record<string, string | number>} mapping
  * @returns {string[]}
  */
-declare function findDuplicateIds(mapping: any): unknown[];
+declare function findDuplicateIds(mapping: Record<string, string | number>): unknown[];
 /**
  * Returns [{ id, channels: [names] }] for every ID that is assigned to more than one channel.
  * @param {Record<string, string | number>} mapping
  * @returns {{ id: string, channels: string[] }[]}
  */
-declare function findDuplicateGroups(mapping: any): {
+declare function findDuplicateGroups(mapping: Record<string, string | number>): {
     id: any;
     channels: any;
 }[];
@@ -41,17 +41,14 @@ declare function findDuplicateGroups(mapping: any): {
  * stale entries ("orphans"). Without a known channel list nothing can be called stale.
  * @returns {{ active: Record<string, string|number>, orphans: string[] }}
  */
-declare function partitionMapping(mapping: any, channelNames: any): {
-    active: any;
-    orphans: any[];
-} | {
-    active: {};
-    orphans: any[];
+declare function partitionMapping(mapping: Record<string, string | number>, channelNames: string[]): {
+    active: Record<string, string | number>;
+    orphans: string[];
 };
 /**
  * Returns a copy of the mapping ordered like the receiver's channel list; entries of channels that
  * no longer exist (stale) follow, sorted alphabetically. Without a channel list the order is kept.
  * Purely cosmetic (lookups use the channel name) but keeps mapping.json readable and diffs stable.
  */
-declare function sortMapping(mapping: any, channelNames: any): any;
+declare function sortMapping(mapping: Record<string, string | number>, channelNames: string[]): Record<string, string | number>;
 export { HttpError, ID_REGEX, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping };

@@ -39,7 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createApp = createApp;
 const crypto_1 = __importDefault(require("crypto"));
 const express_1 = __importDefault(require("express"));
-const compression_1 = __importDefault(require("compression"));
+const compression = require('compression');
 const node_path_1 = __importDefault(require("node:path"));
 const hdhrModule = __importStar(require("./hdhr.js"));
 const state_store_js_1 = require("./state-store.js");
@@ -91,7 +91,7 @@ function createApp(deps) {
         next();
     });
     app.use((0, http_security_js_1.securityHeaders)({ hsts: runtime.hsts }));
-    app.use((0, compression_1.default)());
+    app.use(compression());
     const auth = (0, http_security_js_1.createAuth)({
         user: runtime.adminUser,
         password: runtime.adminPassword,

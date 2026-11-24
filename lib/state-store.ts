@@ -21,7 +21,7 @@ function deepFreeze(value, seen = new WeakSet()) {
 /**
  * @param {any} initial
  */
-function createStateStore(initial) {
+function createStateStore(initial: any) {
     let state = deepFreeze(initial);
 
     return {

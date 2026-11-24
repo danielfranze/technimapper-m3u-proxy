@@ -62,7 +62,7 @@ async function main() {
         });
         configStore.ensureDataDir();
     } catch (err) {
-        logger.error(err.message);
+        logger.error((err as any).message);
         logger.error('If you use a bind mount with a non-root container, run: chown -R 1000:1000 <host-data-dir>');
         process.exit(1);
     }
@@ -93,13 +93,13 @@ async function main() {
                 try {
                     await configStore.write(persistedSnapshot(stateStore.get()));
                 } catch (err) {
-                    logger.error('Failed to persist repaired mapping.json:', err.message);
+                    logger.error('Failed to persist repaired mapping.json:', (err as any).message);
                 }
             }
             logger.info('Configuration loaded from disk.');
         }
     } catch (err) {
-        logger.error('Failed to read mapping.json (using defaults):', err.message);
+        logger.error('Failed to read mapping.json (using defaults):', (err as any).message);
     }
 
     const receiver = createSoapReceiver({
@@ -137,8 +137,8 @@ async function main() {
 
     // Fail fast and visibly if the port is already in use or another listen error
     // occurs, instead of relying on the generic uncaught-exception path.
-    server.on('error', (err) => {
-        logger.error(`Server failed to listen on port ${runtime.port}: ${err.message}`);
+    server.on('error', (err: any) => {
+        logger.error(`Server failed to listen on port ${runtime.port}: ${(err as any).message}`);
         process.exit(1);
     });
 
@@ -162,7 +162,7 @@ async function main() {
             try {
                 await services.waitForSync(); // let a running sync finish (and persist) first
             } catch (err) {
-                logger.error('Running sync failed during shutdown:', err.message);
+                logger.error('Running sync failed during shutdown:', (err as any).message);
             }
             try { receiver.close(); } catch (err) { /* ignore */ }
             try { services.dispose(); } catch (err) { /* ignore */ }
@@ -174,20 +174,20 @@ async function main() {
 
     process.on('SIGTERM', () => shutdown('SIGTERM', 0));
     process.on('SIGINT', () => shutdown('SIGINT', 0));
-    process.on('unhandledRejection', (reason) => {
+    process.on('unhandledRejection', (reason: any) => {
         logger.error('Unhandled rejection:', reason);
         // Express 5 forwards rejected route promises, so an unhandled rejection
         // is a real bug: do not keep running in an unknown state.
         process.exit(1);
     });
-    process.on('uncaughtException', (err) => {
+    process.on('uncaughtException', (err: any) => {
         logger.error('Uncaught exception:', err);
         shutdown('uncaughtException', 1);
     });
 }
 
 if (require.main === module) {
-    main().catch((err) => {
+    main().catch((err: any) => {
         console.error('Fatal startup error:', err);
         process.exit(1);
     });

@@ -26,7 +26,7 @@ function registerConfigRoutes(app, ctx) {
     } = ctx;
     const { validateMapping } = validation;
 
-    app.get('/api/get-config', (req, res) => {
+    app.get('/api/get-config', (req: any, res: any) => {
         const snapshot = getState();
         res.json({
             version,
@@ -42,7 +42,7 @@ function registerConfigRoutes(app, ctx) {
         });
     });
 
-    app.post('/api/save-settings', async (req, res) => {
+    app.post('/api/save-settings', async (req: any, res: any) => {
         const settings = mergeSettings(req.body || {});
         const before = getState();
         updateState(s => {
@@ -87,13 +87,14 @@ function registerConfigRoutes(app, ctx) {
                 detectedModel: hdhrModule.modelLabel(result.detectedModel)
             });
         } catch (err) {
-            if (err instanceof HttpError) return next(err);
-            logger.error('[fetch-channels]', err.message);
-            return next(new HttpError(502, err.message || 'Receiver request failed'));
+            const e = err as any;
+            if (e instanceof HttpError) return next(e);
+            logger.error('[fetch-channels]', e.message);
+            return next(new HttpError(502, e.message || 'Receiver request failed'));
         }
     });
 
-    app.get('/api/export-config', (req, res) => {
+    app.get('/api/export-config', (req: any, res: any) => {
         const snapshot = getState();
         res.setHeader('Content-Disposition', 'attachment; filename="technimapper-config.json"');
         res.json({
@@ -104,7 +105,7 @@ function registerConfigRoutes(app, ctx) {
         });
     });
 
-    app.post('/api/import-config', async (req, res) => {
+    app.post('/api/import-config', async (req: any, res: any) => {
         const data = req.body;
         if (!data || typeof data !== 'object' || Array.isArray(data)) throw new HttpError(400, 'Invalid JSON payload');
 

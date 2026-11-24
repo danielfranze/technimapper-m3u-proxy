@@ -119,7 +119,7 @@ function discoverPayload(baseUrl, config, model) {
     };
 }
 function lineupPayload(entries, baseUrl) {
-    return entries.map(e => ({
+    return entries.map((e) => ({
         GuideNumber: e.guideNumber,
         GuideName: e.guideName,
         URL: `${baseUrl}/hdhr/stream/${encodeURIComponent(e.guideNumber)}`

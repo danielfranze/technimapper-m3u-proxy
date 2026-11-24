@@ -27,7 +27,7 @@ const DISCOVERY_TARGETS = Object.freeze([
 ]);
 exports.DISCOVERY_TARGETS = DISCOVERY_TARGETS;
 function escapeXml(str) {
-    return String(str).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+    return String(str).replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
 }
 /** xml2js returns either a string or { _: text, $: attrs }. */
 function xmlText(value) {
@@ -55,9 +55,9 @@ function parseContainerList(didl) {
 /** Extracts playable channel items from a DIDL-Lite payload. */
 function parseChannelItems(didl) {
     return asArray(didl && didl.item)
-        .map(item => ({ name: xmlText(item?.['dc:title']), url: xmlText(item?.['res']) }))
-        .filter(channel => channel.name && channel.url && m3u8_js_1.STREAM_URL_REGEX.test(channel.url.trim()))
-        .map(channel => ({ name: channel.name.trim(), url: channel.url.trim() }));
+        .map((item) => ({ name: xmlText(item?.['dc:title']), url: xmlText(item?.['res']) }))
+        .filter((channel) => channel.name && channel.url && m3u8_js_1.STREAM_URL_REGEX.test(channel.url.trim()))
+        .map((channel) => ({ name: channel.name.trim(), url: channel.url.trim() }));
 }
 /**
  * @param {{ requestTimeoutMs?: number, maxResponseBytes?: number, logger?: object, agent?: http.Agent }} [options]
@@ -113,7 +113,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                 res.on('end', () => {
                     if (settled)
                         return;
-                    if (res.statusCode < 200 || res.statusCode >= 300) {
+                    if ((res.statusCode || 0) < 200 || (res.statusCode || 0) >= 300) {
                         finish(new Error(`UPnP request failed with HTTP ${res.statusCode}`));
                         return;
                     }
@@ -189,7 +189,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                 logger.warn(`Discovery via ${target.type} failed: ${err.message}`);
             }
         }
-        throw new Error('No TechniSat Live-TV containers found' + (lastError ? ` (${lastError.message})` : '.'));
+        throw new Error('No TechniSat Live-TV containers found' + (lastError ? ` (${lastError?.message})` : '.'));
     }
     /** Reads channels from the receiver. Never mutates application state. */
     async function fetchChannels({ ip, port, selectedListName }) {

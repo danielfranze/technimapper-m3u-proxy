@@ -8,12 +8,12 @@
  */
 function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxMs = 300000, now = Date.now } = {}) {
     let active = false;
-    let queue = [];
+    let queue: any[] = [];
     let consecutiveFailures = 0;
     let nextAllowedAt = 0;
-    let idleWaiters = [];
+    let idleWaiters: any[] = [];
 
-    async function runOne(item) {
+    async function runOne(item: any) {
         active = true;
         try {
             const result = await item.run();
@@ -33,7 +33,7 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
             if (!active && queue.length === 0) {
                 const waiters = idleWaiters;
                 idleWaiters = [];
-                waiters.forEach((resolve) => resolve());
+                waiters.forEach((resolve: any) => resolve());
             }
         }
     }
@@ -44,14 +44,14 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
         runOne(item);
     }
 
-    function request(run) {
+    function request(run: any) {
         if (queue.length >= maxQueue) {
             return Promise.reject(new Error('Sync queue is full'));
         }
         if (now() < nextAllowedAt) {
             return Promise.reject(new Error('Sync is in backoff'));
         }
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve: any, reject: any) => {
             queue.push({ run, resolve, reject });
             processQueue();
         });
@@ -73,16 +73,16 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
         nextAllowedAt = 0;
         const waiters = idleWaiters;
         idleWaiters = [];
-        waiters.forEach((resolve) => resolve());
+        waiters.forEach((resolve: any) => resolve());
         // Reject any work that was queued but never ran, so callers do not hang.
-        queued.forEach((item) => {
+        queued.forEach((item: any) => {
             try { item.reject(new Error('Sync coordinator reset')); } catch (err) { /* ignore */ }
         });
     }
 
     function waitForIdle() {
         if (!active && queue.length === 0) return Promise.resolve();
-        return new Promise((resolve) => {
+        return new Promise((resolve: any) => {
             idleWaiters.push(resolve);
         });
     }

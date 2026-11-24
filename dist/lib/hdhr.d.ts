@@ -11,15 +11,15 @@ declare const LINEUP_STATUS: Readonly<{
 /** Reads the HDHR_* environment variables. Invalid values fall back to the defaults and produce a warning. */
 declare function resolveConfig(env?: any): {
     enabled: boolean;
-    friendlyName: string;
+    friendlyName: string | null;
     deviceId: "12345678";
     tunerCount: number;
-    warnings: any[];
+    warnings: string[];
 };
 /** Display name of the receiver family for the device type found by the UPnP discovery. */
 declare function modelLabel(deviceType: any): string;
 /** Accepts a persisted model label only if it is a plain, short string. */
-declare function sanitizeModel(value: any): string;
+declare function sanitizeModel(value: any): string | null;
 /** "TechniSat DIGIT ISIO STC", or just "TechniSat" as long as the model is not known yet. */
 declare function defaultFriendlyName(model: any): string;
 /** "001 Das Erste HD" -> "Das Erste HD" (only a leading number followed by whitespace is removed). */

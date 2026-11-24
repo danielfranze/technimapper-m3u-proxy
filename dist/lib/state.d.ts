@@ -11,9 +11,9 @@ declare const DEFAULT_CONFIG: Readonly<{
     cronExpression: "*/5 * * * *";
     selectedListName: "TV-Liste";
     mapping: Readonly<{}>;
-    channels: readonly any[];
-    lastSync: any;
-    detectedModel: any;
+    channels: readonly never[];
+    lastSync: null;
+    detectedModel: null;
 }>;
 /**
  * @param {{ config?: Record<string, unknown>, sync?: Record<string, unknown>, configured?: boolean, cachedM3u8?: string | null, lineupEntries?: unknown[] }} [overrides]

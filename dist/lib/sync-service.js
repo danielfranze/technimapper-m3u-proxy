@@ -111,8 +111,9 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             return result;
         }
         catch (err) {
+            const e = err;
             updateState(s => {
-                s.sync.lastError = err.message;
+                s.sync.lastError = e.message;
                 s.sync.lastErrorAt = new Date().toISOString();
                 s.sync.consecutiveFailures++;
                 s.sync.lastDurationMs = Date.now() - startedAt;

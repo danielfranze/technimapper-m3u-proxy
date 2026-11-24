@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const thresholds = { lines: 90, branches: 80, functions: 85 };
 
 const result = spawnSync(process.execPath, [
+    '--import', 'tsx',
     '--test',
     '--experimental-test-coverage',
     '--test-coverage-exclude=test/**',

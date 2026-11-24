@@ -25,7 +25,7 @@ const LINEUP_STATUS = Object.freeze({
 
 /** Reads the HDHR_* environment variables. Invalid values fall back to the defaults and produce a warning. */
 function resolveConfig(env: any = {}) {
-    const warnings = [];
+    const warnings: string[] = [];
 
     // Empty or "-" means "automatic": the name is then built from the detected receiver model (see defaultFriendlyName).
     const rawName = String(env.HDHR_FRIENDLY_NAME || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 64);
@@ -59,7 +59,7 @@ function modelLabel(deviceType: any): string {
 }
 
 /** Accepts a persisted model label only if it is a plain, short string. */
-function sanitizeModel(value: any): string {
+function sanitizeModel(value: any): string | null {
     if (typeof value !== 'string') return null;
     return value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60) || null;
 }
@@ -82,7 +82,7 @@ function guideName(name: any): string {
  * @returns {{ guideNumber: string, guideName: string, url: string }[]}
  */
 function buildLineup(channels: any, mapping: any): any {
-    const entries = [];
+    const entries: any[] = [];
     const seen = new Set();
     for (const ch of channels) {
         if (!Object.hasOwn(mapping, ch.name)) continue;
@@ -116,7 +116,7 @@ function discoverPayload(baseUrl: any, config: any, model: any): any {
 }
 
 function lineupPayload(entries: any, baseUrl: any): any {
-    return entries.map(e => ({
+    return entries.map((e: any) => ({
         GuideNumber: e.guideNumber,
         GuideName: e.guideName,
         URL: `${baseUrl}/hdhr/stream/${encodeURIComponent(e.guideNumber)}`

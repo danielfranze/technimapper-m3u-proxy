@@ -52,7 +52,7 @@ function createLogger(options = {}) {
     const sink = options.sink || defaultSink();
     const threshold = LEVELS[level];
     function write(kind, args) {
-        if (LEVELS[kind] > threshold)
+        if ((LEVELS[kind] ?? 99) > threshold)
             return;
         const text = args.map(formatValue).join(' ');
         const out = sink[kind] || sink.info;

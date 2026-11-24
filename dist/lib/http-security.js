@@ -35,7 +35,7 @@ function isPublicPath(requestPath, publicPaths = [], publicPrefixes = ['/hdhr/']
     const path = String(requestPath || '');
     if (publicPaths.includes(path))
         return true;
-    return publicPrefixes.some(prefix => path === prefix.slice(0, -1) || path.startsWith(prefix));
+    return publicPrefixes.some((prefix) => path === prefix.slice(0, -1) || path.startsWith(prefix));
 }
 /**
  * Bounded map of failed authentication attempts. Only failures are counted, so

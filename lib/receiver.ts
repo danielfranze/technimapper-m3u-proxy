@@ -19,24 +19,24 @@ const DISCOVERY_TARGETS = Object.freeze([
     { type: 'S_SERIES', parentObj: '3', path: '/ContentDirectory/Control' }
 ]);
 
-function escapeXml(str) {
-    return String(str).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+function escapeXml(str: any) {
+    return String(str).replace(/[<>&"']/g, (c: any) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' } as any)[c]) as string;
 }
 
 /** xml2js returns either a string or { _: text, $: attrs }. */
-function xmlText(value) {
+function xmlText(value: any) {
     if (Array.isArray(value)) value = value[0];
     if (value && typeof value === 'object') value = value._;
     return typeof value === 'string' ? value : undefined;
 }
 
-function asArray(value) {
+function asArray(value: any) {
     if (value === undefined || value === null) return [];
     return Array.isArray(value) ? value : [value];
 }
 
 /** Extracts the DIDL-Lite containers (channel lists) from a Browse response. */
-function parseContainerList(didl) {
+function parseContainerList(didl: any) {
     return asArray(didl && didl.container)
         .map(container => ({
             id: container?.['$']?.id || container?.id,
@@ -47,11 +47,11 @@ function parseContainerList(didl) {
 }
 
 /** Extracts playable channel items from a DIDL-Lite payload. */
-function parseChannelItems(didl) {
+function parseChannelItems(didl: any) {
     return asArray(didl && didl.item)
-        .map(item => ({ name: xmlText(item?.['dc:title']), url: xmlText(item?.['res']) }))
-        .filter(channel => channel.name && channel.url && STREAM_URL_REGEX.test(channel.url.trim()))
-        .map(channel => ({ name: channel.name.trim(), url: channel.url.trim() }));
+        .map((item: any) => ({ name: xmlText(item?.['dc:title']), url: xmlText(item?.['res']) }))
+        .filter((channel: any) => channel.name && channel.url && STREAM_URL_REGEX.test(channel.url.trim()))
+        .map((channel: any) => ({ name: (channel.name as string).trim(), url: (channel.url as string).trim() }));
 }
 
 /**
@@ -66,9 +66,9 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
     const upnpAgent = agent || new http.Agent({ keepAlive: false });
 
     function postSoap(ip, port, pathEndpoint, soapEnvelope) {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve: any, reject: any) => {
             let settled = false;
-            let totalTimer = null;
+            let totalTimer: any = null;
 
             const finish = (err: any, value?: any) => {
                 if (settled) return;
@@ -90,11 +90,11 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                     'Content-Length': Buffer.byteLength(soapEnvelope),
                     'Connection': 'close'
                 }
-            }, (res) => {
-                const chunks = [];
+            }, (res: any) => {
+                const chunks: any[] = [];
                 let size = 0;
 
-                res.on('data', (chunk) => {
+                res.on('data', (chunk: any) => {
                     if (settled) return;
                     size += chunk.length;
                     if (size > maxResponseBytes) {
@@ -107,7 +107,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
 
                 res.on('end', () => {
                     if (settled) return;
-                    if (res.statusCode < 200 || res.statusCode >= 300) {
+                    if ((res.statusCode || 0) < 200 || (res.statusCode || 0) >= 300) {
                         finish(new Error(`UPnP request failed with HTTP ${res.statusCode}`));
                         return;
                     }
@@ -136,7 +136,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
 </s:Envelope>`;
 
         const body = await postSoap(ip, port, pathEndpoint, soapEnvelope);
-        const result = await xml2js.parseStringPromise(body, { explicitArray: false });
+        const result = await xml2js.parseStringPromise(body as string, { explicitArray: false });
         const resultXml = xmlText(result?.['s:Envelope']?.['s:Body']?.['u:BrowseResponse']?.['Result']);
         if (!resultXml) throw new Error('UPnP SOAP Browse response invalid');
 
@@ -158,7 +158,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
  * @param {{ id: string, title: string }[]} lists
  * @returns {'S1'|'S2'|'S_SERIES'}
  */
-function detectSSeriesGeneration(lists) {
+function detectSSeriesGeneration(lists: any) {
     const titles = new Set(lists.map(list => list.title));
     if (titles.has('Astra-TV-Liste')) return 'S1';
     if (titles.has('TV-Liste') && lists.length === 5
@@ -182,12 +182,12 @@ function detectSSeriesGeneration(lists) {
                 return { deviceType, path: target.path, lists };
             }
             } catch (err) {
-                lastError = err;
-                logger.warn(`Discovery via ${target.type} failed: ${err.message}`);
+                lastError = err as any;
+                logger.warn(`Discovery via ${target.type} failed: ${(err as any).message}`);
             }
         }
 
-        throw new Error('No TechniSat Live-TV containers found' + (lastError ? ` (${lastError.message})` : '.'));
+        throw new Error('No TechniSat Live-TV containers found' + (lastError ? ` (${(lastError as any)?.message})` : '.'));
     }
 
     /** Reads channels from the receiver. Never mutates application state. */

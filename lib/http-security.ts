@@ -13,37 +13,37 @@ import {  HttpError  } from './validation.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
-function clientKey(req) {
+function clientKey(req: any) {
     return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-function safeEqual(a, b) {
+function safeEqual(a: any, b: any) {
     const ha = crypto.createHash('sha256').update(String(a)).digest();
     const hb = crypto.createHash('sha256').update(String(b)).digest();
     return crypto.timingSafeEqual(ha, hb);
 }
 
 /** @param {string} requestPath */
-function isPublicPath(requestPath, publicPaths = [], publicPrefixes = ['/hdhr/']) {
+function isPublicPath(requestPath: any, publicPaths: any = [], publicPrefixes: any = ['/hdhr/']) {
     const path = String(requestPath || '');
     if (publicPaths.includes(path)) return true;
-    return publicPrefixes.some(prefix => path === prefix.slice(0, -1) || path.startsWith(prefix));
+    return publicPrefixes.some((prefix: any) => path === prefix.slice(0, -1) || path.startsWith(prefix));
 }
 
 /**
  * Bounded map of failed authentication attempts. Only failures are counted, so
  * a legitimate client is not locked out by successful requests.
  */
-function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now }) {
+function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now }: any) {
     const entries = new Map();
 
-    function prune(currentTime) {
+    function prune(currentTime: any) {
         for (const [key, entry] of entries) {
             if (entry.reset <= currentTime) entries.delete(key);
         }
     }
 
-    function status(key) {
+    function status(key: any) {
         const currentTime = now();
         const entry = entries.get(key);
         if (!entry) return 0;
@@ -54,7 +54,7 @@ function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now
         return entry.count >= max ? Math.max(1, Math.ceil((entry.reset - currentTime) / 1000)) : 0;
     }
 
-    function fail(key) {
+    function fail(key: any) {
         const currentTime = now();
         if (entries.size >= maxEntries) prune(currentTime);
         if (entries.size >= maxEntries) {
@@ -70,7 +70,7 @@ function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now
         entry.count++;
     }
 
-    function clear(key) {
+    function clear(key: any) {
         entries.delete(key);
     }
 
@@ -98,7 +98,7 @@ function createAuth({
     const misconfigured = hasUser !== hasPassword;
     const failures = createFailureLimiter({ windowMs: failureWindowMs, max: failureMax, now });
 
-    function readCredentials(req) {
+    function readCredentials(req: any) {
         const header = String(req.get('authorization') || '');
         const match = /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(header);
         if (!match) return null;
@@ -109,7 +109,7 @@ function createAuth({
         return { user: decoded.slice(0, separator), password: decoded.slice(separator + 1) };
     }
 
-    function middleware(req, res, next) {
+    function middleware(req: any, res: any, next: any) {
         if (isPublicPath(req.path, publicPaths, publicPrefixes)) return next();
 
         if (misconfigured) {
@@ -146,10 +146,10 @@ function createAuth({
  * Bounded fixed-window limiter. The map never grows without limit; the oldest
  * entry is evicted when `maxEntries` is reached.
  */
-function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, now = Date.now }) {
+function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, now = Date.now }: any) {
     const hits = new Map();
 
-    function consume(identifier) {
+    function consume(identifier: any) {
         const currentTime = now();
         let entry = hits.get(identifier);
 
@@ -168,7 +168,7 @@ function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, 
         return { limited: true, retryAfter: Math.max(1, Math.ceil((entry.reset - currentTime) / 1000)) };
     }
 
-    function middleware(req, res, next) {
+    function middleware(req: any, res: any, next: any) {
         const result = consume(key(req));
         if (!result.limited) return next();
         res.set('Retry-After', String(result.retryAfter));
@@ -188,7 +188,7 @@ function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, 
  * the practical CSRF vector for an endpoint that accepts an empty body.
  */
 function createOriginGuard() {
-    return (req, res, next) => {
+    return (req: any, res: any, next: any) => {
         if (SAFE_METHODS.has(req.method)) return next();
 
         const contentType = String(req.get('content-type') || '').toLowerCase();
@@ -221,7 +221,7 @@ function createOriginGuard() {
  * responses so proxies and browsers never keep stale configuration or status.
  */
 function securityHeaders({ hsts = false } = {}) {
-    return (req, res, next) => {
+    return (req: any, res: any, next: any) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Referrer-Policy', 'no-referrer');
@@ -247,9 +247,9 @@ function securityHeaders({ hsts = false } = {}) {
  * Keeping this as a factory makes the status mapping testable without an HTTP
  * route that has to throw a synthetic error in production.
  */
-function createErrorHandler(logger = console) {
+function createErrorHandler(logger: any = console) {
     // eslint-disable-next-line no-unused-vars
-    return (err, req, res, next) => {
+    return (err: any, req: any, res: any, next: any) => {
         if (err?.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON payload' });
         if (err?.type === 'entity.too.large') return res.status(413).json({ error: 'Payload too large' });
         if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });

@@ -10,11 +10,11 @@ function registerPlaylistRoutes(app, ctx) {
     const { getState } = ctx;
     const playlistPaths = ctx.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];
 
-    function playlistEtag(content) {
+    function playlistEtag(content: any) {
         return `"${crypto.createHash('sha1').update(content).digest('hex')}"`;
     }
 
-    const servePlaylist = (req, res) => {
+    const servePlaylist = (req: any, res: any) => {
         const snapshot = getState();
         if (snapshot.cachedM3u8 === null) {
             // Never serve an empty playlist: clients that clean up missing channels would delete all of them.

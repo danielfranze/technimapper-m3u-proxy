@@ -48,7 +48,7 @@ function intFromEnv(raw: any, fallback: number, options: any = {}) {
  * @param {string|undefined} raw
  * @param {string[]} warnings
  */
-function parseTrustProxy(raw, warnings = []) {
+function parseTrustProxy(raw: any, warnings: string[] = []) {
     if (raw === undefined || raw === null || String(raw).trim() === '') return false;
 
     const text = String(raw).trim();
@@ -65,7 +65,7 @@ function parseTrustProxy(raw, warnings = []) {
 }
 
 /** @param {string|undefined} raw */
-function booleanFromEnv(raw) {
+function booleanFromEnv(raw: any) {
     return String(raw || '').trim().toLowerCase() === 'true';
 }
 
@@ -97,7 +97,7 @@ function booleanFromEnv(raw) {
  * }}
  */
 function loadRuntimeConfig(env: any = process.env) {
-    const warnings = [];
+    const warnings: string[] = [];
 
     const port = intFromEnv(env.PORT, DEFAULT_PORT, { min: 1, max: 65535, name: 'PORT', warnings });
     const requestTimeoutMs = intFromEnv(env.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, {

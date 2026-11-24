@@ -5,12 +5,12 @@ declare const DISCOVERY_TARGETS: readonly {
 }[];
 declare function escapeXml(str: any): string;
 /** xml2js returns either a string or { _: text, $: attrs }. */
-declare function xmlText(value: any): string;
+declare function xmlText(value: any): string | undefined;
 declare function asArray(value: any): any[];
 /** Extracts the DIDL-Lite containers (channel lists) from a Browse response. */
 declare function parseContainerList(didl: any): {
     id: any;
-    title: string;
+    title: string | undefined;
     childCount: number;
 }[];
 /** Extracts playable channel items from a DIDL-Lite payload. */
@@ -36,8 +36,8 @@ declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger
             name: string;
             url: string;
         }[];
-        selectedListName: string;
-        availableLists: string[];
+        selectedListName: string | undefined;
+        availableLists: (string | undefined)[];
         detectedModel: string;
     }>;
     browseUpnp: (ip: any, port: any, objectId: any, pathEndpoint: any) => Promise<any>;
@@ -46,7 +46,7 @@ declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger
         path: string;
         lists: {
             id: any;
-            title: string;
+            title: string | undefined;
             childCount: number;
         }[];
     }>;

@@ -5,10 +5,10 @@
  * when the queue is full the caller receives a "Sync queue is full" error.
  */
 declare function createSyncCoordinator({ maxQueue, backoffBaseMs, backoffMaxMs, now }?: {
-    maxQueue?: number;
-    backoffBaseMs?: number;
-    backoffMaxMs?: number;
-    now?: () => number;
+    maxQueue?: number | undefined;
+    backoffBaseMs?: number | undefined;
+    backoffMaxMs?: number | undefined;
+    now?: (() => number) | undefined;
 }): {
     request: (run: any) => Promise<unknown>;
     backoffRemainingMs: () => number;

@@ -13,11 +13,11 @@ function safeStringify(value: any): string {
     try {
         return JSON.stringify(value);
     } catch (err) {
-        return `[unserializable: ${err.message}]`;
+        return `[unserializable: ${(err as Error).message}]`;
     }
 }
 
-function formatValue(value) {
+function formatValue(value: any) {
     if (value instanceof Error) return value.stack || value.message;
     if (typeof value === 'string') return value;
     return safeStringify(value);
@@ -34,9 +34,9 @@ function normalizeFormat(value: any): string {
 
 function defaultSink(): any {
     return {
-        info: (...args) => console.log(...args),
-        warn: (...args) => console.warn(...args),
-        error: (...args) => console.error(...args)
+        info: (...args: any[]) => console.log(...args),
+        warn: (...args: any[]) => console.warn(...args),
+        error: (...args: any[]) => console.error(...args)
     };
 }
 
@@ -49,8 +49,8 @@ function createLogger(options: any = {}) {
     const sink = options.sink || defaultSink();
     const threshold = LEVELS[level];
 
-    function write(kind, args) {
-        if (LEVELS[kind] > threshold) return;
+    function write(kind: any, args: any[]) {
+        if (((LEVELS as any)[kind] ?? 99) > threshold) return;
 
         const text = args.map(formatValue).join(' ');
         const out = sink[kind] || sink.info;
@@ -64,9 +64,9 @@ function createLogger(options: any = {}) {
     return {
         level,
         format,
-        info: (...args) => write('info', args),
-        warn: (...args) => write('warn', args),
-        error: (...args) => write('error', args)
+        info: (...args: any[]) => write('info', args),
+        warn: (...args: any[]) => write('warn', args),
+        error: (...args: any[]) => write('error', args)
     };
 }
 

@@ -8,7 +8,7 @@
 const STREAM_URL_REGEX = /^https?:\/\/[^\s\x00-\x1f\x7f"<>]+$/;
 
 /** Removes control characters and quotes so values can never break out of an M3U8 attribute/line. */
-function sanitizeM3u8Text(str) {
+function sanitizeM3u8Text(str: any) {
     return String(str).replace(/[\u0000-\u001f\u007f"]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 

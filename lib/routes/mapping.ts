@@ -11,7 +11,7 @@ function registerMappingRoutes(app, ctx) {
     const { getState, updateState, state: stateStore, persistState, rebuildViews, validation } = ctx;
     const { validateMapping } = validation;
 
-    app.post('/api/save-mapping', async (req, res) => {
+    app.post('/api/save-mapping', async (req: any, res: any) => {
         const { mapping, invalid } = validateMapping(req.body?.mapping);
         if (invalid.length) {
             throw new HttpError(400, `Invalid channel ID for: ${invalid.slice(0, 5).join(', ')}${invalid.length > 5 ? ', ...' : ''}. Allowed: letters, digits, "_", "-", "." (max. 32 chars, not "." or "..").`);

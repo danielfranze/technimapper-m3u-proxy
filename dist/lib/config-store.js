@@ -70,9 +70,10 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = node_fs
             }
             catch (err) {
                 await removeTemp();
-                if (!['EBUSY', 'EXDEV', 'EPERM'].includes(err.code))
-                    throw err;
-                logger.warn(`Atomic rename of ${path_1.default.basename(configFile)} failed (${err.code}) - writing in place.`);
+                const e = err;
+                if (!['EBUSY', 'EXDEV', 'EPERM'].includes(e.code || ''))
+                    throw e;
+                logger.warn(`Atomic rename of ${path_1.default.basename(configFile)} failed (${e.code}) - writing in place.`);
                 await promises.writeFile(configFile, json, 'utf8');
             }
         });

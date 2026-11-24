@@ -26,7 +26,7 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }: {
             fsModule.mkdirSync(dataDir, { recursive: true });
             fsModule.accessSync(dataDir, fsModule.constants.W_OK);
         } catch (err) {
-            throw new Error(`Data directory "${dataDir}" is not writable: ${err.message}`);
+            throw new Error(`Data directory "${dataDir}" is not writable: ${(err as any).message}`);
         }
     }
 
@@ -54,7 +54,7 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }: {
      * If CONFIG_FILE is a single-file Docker bind mount, rename() fails with
      * EBUSY/EXDEV/EPERM; in that case the file is written in place.
      */
-    async function write(data) {
+    async function write(data: any) {
         const run = writeChain.then(async () => {
             const json = JSON.stringify(data, null, 2);
             const tempFile = `${configFile}.${process.pid}.${++writeCounter}.tmp`;
@@ -67,8 +67,9 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }: {
                 await promises.rename(tempFile, configFile);
             } catch (err) {
                 await removeTemp();
-                if (!['EBUSY', 'EXDEV', 'EPERM'].includes(err.code)) throw err;
-                logger.warn(`Atomic rename of ${path.basename(configFile)} failed (${err.code}) - writing in place.`);
+                const e = err as any;
+                if (!['EBUSY', 'EXDEV', 'EPERM'].includes(e.code || '')) throw e;
+                logger.warn(`Atomic rename of ${path.basename(configFile)} failed (${e.code}) - writing in place.`);
                 await promises.writeFile(configFile, json, 'utf8');
             }
         });

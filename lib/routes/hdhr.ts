@@ -15,7 +15,7 @@ function registerHdhrRoutes(app, ctx) {
 
     const hdhrRouter = express.Router();
 
-    const withBaseUrl = handler => (req, res) => {
+    const withBaseUrl = handler => (req: any, res: any) => {
         const baseUrl = hdhrModule.baseUrlFrom(req.protocol, req.get('host'));
         if (!baseUrl) return res.status(400).json({ error: 'Invalid Host header' });
         return handler(req, res, baseUrl);
@@ -27,12 +27,12 @@ function registerHdhrRoutes(app, ctx) {
     });
 
     hdhrRouter.get('/discover.json', withBaseUrl((req, res, baseUrl) => res.json(hdhrModule.discoverPayload(baseUrl, hdhrConfig, getState().config.detectedModel))));
-    hdhrRouter.get('/lineup_status.json', (req, res) => res.json(hdhrModule.LINEUP_STATUS));
+    hdhrRouter.get('/lineup_status.json', (req: any, res: any) => res.json(hdhrModule.LINEUP_STATUS));
     hdhrRouter.get('/lineup.json', withBaseUrl((req, res, baseUrl) => res.json(hdhrModule.lineupPayload(getState().lineupEntries, baseUrl))));
 
-    hdhrRouter.post('/lineup.post', (req, res) => res.sendStatus(200));
+    hdhrRouter.post('/lineup.post', (req: any, res: any) => res.sendStatus(200));
 
-    hdhrRouter.get('/stream/:id', (req, res) => {
+    hdhrRouter.get('/stream/:id', (req: any, res: any) => {
         const entry = getState().lineupEntries.find(item => item.guideNumber === req.params.id);
         if (!entry) return res.status(404).type('text/plain').send('Stream not found');
         return res.redirect(302, entry.url);

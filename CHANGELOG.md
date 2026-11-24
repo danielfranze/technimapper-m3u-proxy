@@ -3,6 +3,20 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [2.0.0-rc.3]
+
+### Added
+- Strong typing for `lib/state.ts` and `lib/validation.ts` (interfaces, explicit return types).
+- TypeScript build step (`tsc` → `dist/`) with `strict: true`.
+
+### Changed
+- All backend files converted to `.ts`.
+- Test imports updated to `dist/lib/*.js`.
+
+### Fixed
+- Dockerfile multi-stage build (data dir path, static assets).
+- `formatSync` test made locale-independent.
+
 ## [2.0.0-rc.2]
 
 ### Added

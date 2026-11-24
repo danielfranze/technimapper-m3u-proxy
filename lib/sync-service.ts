@@ -19,7 +19,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         return state.get();
     }
 
-    function updateState(mutator) {
+    function updateState(mutator: any) {
         return state.update(mutator);
     }
 
@@ -59,7 +59,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         return count;
     }
 
-    async function performSync(candidate) {
+    async function performSync(candidate: any) {
         const startedAt = Date.now();
         updateState(s => { s.sync.lastAttemptAt = new Date().toISOString(); });
 
@@ -120,8 +120,9 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             }
             return result;
         } catch (err) {
+            const e = err as any;
             updateState(s => {
-                s.sync.lastError = err.message;
+                s.sync.lastError = e.message;
                 s.sync.lastErrorAt = new Date().toISOString();
                 s.sync.consecutiveFailures++;
                 s.sync.lastDurationMs = Date.now() - startedAt;
