@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {  HttpError, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping  } from '../dist/lib/validation.js';
 
 // Simple stand-in for node-cron's validate(): five whitespace-separated fields.
-const fakeCron = (s) => typeof s === 'string' && s.trim().split(/\s+/).length === 5;
+const fakeCron = (s: unknown): boolean => typeof s === 'string' && s.trim().split(/\s+/).length === 5;
 
 const strict = createValidation({ cronValidate: fakeCron });
 const permissive = createValidation({ cronValidate: fakeCron, allowNonPrivateIp: true });
@@ -21,7 +21,7 @@ test('isAllowedReceiverIp accepts private IPv4 ranges', () => {
 test('isAllowedReceiverIp rejects loopback, link-local, multicast, public and malformed values', () => {
     for (const ip of ['127.0.0.1', '0.0.0.0', '169.254.169.254', '224.0.0.1', '8.8.8.8', '172.32.0.1',
         '999.1.1.1', '192.168.1', 'localhost', '', null, undefined, 42]) {
-        assert.equal(strict.isAllowedReceiverIp(ip), false, String(ip));
+        assert.equal(strict.isAllowedReceiverIp(ip as unknown), false, String(ip));
     }
 });
 
@@ -41,7 +41,7 @@ test('validateSettings rejects bad ports', () => {
     for (const port of ['0', '65536', '70000', 'abc', '', '12.5', '-1']) {
         assert.throws(
             () => strict.validateSettings({ ip: '192.168.1.10', port, cronExpression: '* * * * *', selectedListName: 'x' }),
-            (e) => e instanceof HttpError && e.status === 400 && /port/i.test(e.message),
+            (e: unknown) => e instanceof HttpError && e.status === 400 && /port/i.test(e.message),
             `port ${port}`
         );
     }
@@ -50,7 +50,7 @@ test('validateSettings rejects bad ports', () => {
 test('validateSettings rejects the port number used as cron expression (regression)', () => {
     assert.throws(
         () => strict.validateSettings({ ip: '192.168.1.10', port: '9100', cronExpression: '9100', selectedListName: 'x' }),
-        (e) => e instanceof HttpError && /cron/i.test(e.message) && e.message.includes('9100')
+        (e: unknown) => e instanceof HttpError && /cron/i.test(e.message) && e.message.includes('9100')
     );
 });
 
@@ -76,13 +76,13 @@ test('validateMapping flags unusable IDs', () => {
 });
 
 test('validateMapping rejects __proto__ keys and non-object payloads', () => {
-    const polluted = JSON.parse('{"__proto__": 1, "ok": 2}');
+    const polluted = JSON.parse('{"__proto__": 1, "ok": 2}') as Record<string, unknown>;
     const { mapping, invalid } = strict.validateMapping(polluted);
     assert.deepEqual(mapping, { ok: 2 });
     assert.deepEqual(invalid, ['__proto__']);
     assert.deepEqual(strict.validateMapping(null).invalid, ['<payload>']);
     assert.deepEqual(strict.validateMapping([1, 2]).invalid, ['<payload>']);
-    assert.equal(({}).polluted, undefined);
+    assert.equal(({} as Record<string, unknown>).polluted, undefined);
 });
 
 test('findDuplicateIds reports IDs used more than once, comparing numbers and strings alike', () => {
@@ -136,8 +136,8 @@ test('sortMapping copes with duplicate channel names and prototype-like names', 
 });
 
 test('validateSettings rejects non-object payloads', () => {
-    const strict = createValidation({ cronValidate: () => true });
+    const strictLocal = createValidation({ cronValidate: () => true });
     for (const bad of [null, undefined, 42, 'x', [1, 2]]) {
-        assert.throws(() => strict.validateSettings(bad), (e) => e instanceof HttpError && e.status === 400);
+        assert.throws(() => strictLocal.validateSettings(bad), (e: unknown) => e instanceof HttpError && e.status === 400);
     }
 });

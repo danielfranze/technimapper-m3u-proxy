@@ -34,7 +34,7 @@ test('sync coordinator serializes work and clears backoff after a later success'
 
 test('sync coordinator rejects when the queue is full', async () => {
     const coordinator = createSyncCoordinator({ maxQueue: 1 });
-    let resolveFirst;
+    let resolveFirst!: (value?: unknown) => void;
     const first = coordinator.request(() => new Promise(resolve => { resolveFirst = resolve; }));
     const second = coordinator.request(() => new Promise(resolve => setTimeout(() => resolve('queued done'), 0)));
     await assert.rejects(coordinator.request(() => 'third'), /Sync queue is full/);
@@ -73,7 +73,7 @@ test('sync coordinator clearBackoff removes an active backoff', async () => {
 
 test('sync coordinator reset rejects queued work and clears state', async () => {
     const coordinator = createSyncCoordinator({ backoffBaseMs: 1000, backoffMaxMs: 1000 });
-    let resolveFirst;
+    let resolveFirst!: (value?: unknown) => void;
     const first = coordinator.request(() => new Promise(resolve => { resolveFirst = resolve; }));
     const queued = coordinator.request(async () => 'queued done');
 

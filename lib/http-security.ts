@@ -85,11 +85,11 @@ function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now
 function createAuth({
     user = '',
     password = '',
-    publicPaths = [],
+    publicPaths = [] as string[],
     publicPrefixes = ['/hdhr/'],
     failureWindowMs = 15 * 60 * 1000,
     failureMax = 20,
-    logger = console,
+    logger = console as any,
     now = Date.now
 } = {}) {
     const hasUser = typeof user === 'string' && user.length > 0;

@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {  createState, persistedSnapshot, applyPersistedState  } from '../dist/lib/state.js';
-import {  createDeps, fakeCron  } from '../test-helpers/state-deps.ts';
+import {  createDeps  } from '../test-helpers/state-deps.ts';
 
 const logger = { warn() {}, info() {}, error() {} };
 const deps = createDeps(logger);

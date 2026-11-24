@@ -2,26 +2,31 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import http from 'http';
+import http from 'node:http';
 import {  createSoapReceiver, escapeXml  } from '../dist/lib/receiver.js';
 
 const quietLogger = { info() {}, warn() {}, error() {} };
 
-function startServer(handler) {
+interface StartedServer {
+    server: http.Server;
+    port: number;
+}
+
+function startServer(handler: http.RequestListener): Promise<StartedServer> {
     return new Promise((resolve, reject) => {
         const server = http.createServer(handler);
         server.listen(0, '127.0.0.1', () => {
-            resolve({ server, port: server.address().port });
+            resolve({ server, port: (server.address() as { port: number }).port });
         });
         server.on('error', reject);
     });
 }
 
-function stopServer(server) {
-    return new Promise(resolve => { if (typeof server.closeAllConnections === "function") server.closeAllConnections(); server.close(resolve); });
+function stopServer(server: http.Server): Promise<void> {
+    return new Promise(resolve => { if (typeof server.closeAllConnections === "function") server.closeAllConnections(); server.close(() => resolve()); });
 }
 
-function soapResponse(resultInner) {
+function soapResponse(resultInner: string): string {
     return `<?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
   <s:Body><u:BrowseResponse xmlns:u="urn:schemas-upnp-org:service:ContentDirectory:1">
@@ -33,7 +38,7 @@ function soapResponse(resultInner) {
 </s:Envelope>`;
 }
 
-const discoveryInner = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
+const discoveryInner: string = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
   <container id="0$3$41$47" parentID="0$3$41" restricted="1" childCount="316" searchable="1">
     <dc:title>Astra-TV-Liste</dc:title>
     <upnp:class>object.container</upnp:class>
@@ -44,7 +49,7 @@ const discoveryInner = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" x
   </container>
 </DIDL-Lite>`;
 
-const listInner = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
+const listInner: string = `<DIDL-Lite xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/" xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/">
   <item id="0$3$41$47R268" parentID="0$3$41$47" restricted="1">
     <dc:title>001 Das Erste HD</dc:title>
     <res protocolInfo="http-get:*:video/mpeg:*">http://192.168.178.230:9100/disk/NON-DLNA-OP01-FLAGS8d100000/O0I268.ts</res>
@@ -78,7 +83,7 @@ test('STC SOAP flow returns channels from a mock receiver', async () => {
         assert.deepEqual(result.availableLists, ['Astra-TV-Liste', 'TV-Liste']);
         assert.equal(result.detectedModel, 'STC');
         assert.equal(result.channels.length, 2);
-        assert.deepEqual(result.channels.map(channel => channel.name), ['001 Das Erste HD', '002 ZDF HD']);
+        assert.deepEqual(result.channels.map((channel: { name: string }) => channel.name), ['001 Das Erste HD', '002 ZDF HD']);
         assert.match(result.channels[0].url, /O0I268\.ts$/);
     } finally {
         await stopServer(server);

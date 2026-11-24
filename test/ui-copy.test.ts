@@ -4,29 +4,36 @@ import path from 'node:path';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
 
-const html = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
-const css = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'styles.css'), 'utf8');
-const script = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
-const grab = (pattern) => {
+const html: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
+const css: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'styles.css'), 'utf8');
+const script: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
+
+const grab = (pattern: RegExp): string => {
     const m = script.match(pattern);
     assert.ok(m, `not found in index.html: ${pattern}`);
     return m[0];
 };
 
+interface CopyLogic {
+    COPY_SOURCES: Record<string, string>;
+    loadCopySource(): string;
+    copyUrlFor(source: string): string;
+    COPY_SOURCE_KEY: string;
+}
+
 /** Loads the URL logic of the copy button with stubbed browser APIs. */
-function loadCopyLogic({ stored, storageThrows = false } = {}) {
+function loadCopyLogic({ stored, storageThrows = false }: { stored?: string; storageThrows?: boolean } = {}): CopyLogic {
     const factory = new Function('BACKEND_URL', 'localStorage', `
         ${grab(/    const COPY_SOURCES = \{[\s\S]*?\n    \};\n/)}
         ${grab(/    const COPY_SOURCE_KEY = '[^']+';\n/)}
         ${grab(/    function loadCopySource\(\) \{[\s\S]*?\n    \}\n/)}
         ${grab(/    function copyUrlFor\(source\) \{[\s\S]*?\n    \}\n/)}
         return { COPY_SOURCES, loadCopySource, copyUrlFor, COPY_SOURCE_KEY };
-    `);
+    `) as (backendUrl: string, storage: { getItem(key: string): string | null }) => CopyLogic;
     const localStorage = {
-        getItem: () => { if (storageThrows) throw new Error('blocked'); return stored === undefined ? null : stored; }
+        getItem: (): string | null => { if (storageThrows) throw new Error('blocked'); return stored === undefined ? null : stored; }
     };
     return factory('http://192.168.178.11:9191', localStorage);
 }

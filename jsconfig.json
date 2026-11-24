@@ -7,7 +7,6 @@
         "strict": false,
         "noImplicitAny": false,
         "noEmit": true,
-        "baseUrl": ".",
         "paths": {
             "lib/*": ["./lib/*"]
         }

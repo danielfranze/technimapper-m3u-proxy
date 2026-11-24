@@ -22,7 +22,7 @@ test('state store update clones before mutating', () => {
     const store = createStateStore({ items: [1, 2] });
     const before = store.get();
 
-    const after = store.update(draft => { draft.items.push(3); draft.items[0] = 9; });
+    const after = store.update((draft: { items: number[] }) => { draft.items.push(3); draft.items[0] = 9; });
 
     assert.deepEqual(before.items, [1, 2]);
     assert.deepEqual(after.items, [9, 2, 3]);

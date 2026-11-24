@@ -12,33 +12,51 @@ import {
 } from '../dist/lib/http-security.js';
 import { HttpError } from '../dist/lib/validation.js';
 
-const quietLogger = { warn() {}, info() {}, error() {} };
+const quietLogger: { warn(...args: unknown[]): void; info(...args: unknown[]): void; error(...args: unknown[]): void } = { warn() {}, info() {}, error() {} };
 
-function fakeRequest({ method = 'GET', path = '/api/get-config', ip = '192.168.1.50', headers = {} } = {}) {
+interface FakeRequest {
+    method: string;
+    path: string;
+    ip: string;
+    socket: { remoteAddress: string };
+    get(name: string): string | undefined;
+}
+
+function fakeRequest({ method = 'GET', path = '/api/get-config', ip = '192.168.1.50', headers = {} as Record<string, string> }: { method?: string; path?: string; ip?: string; headers?: Record<string, string> } = {}): FakeRequest {
     const normalized = Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]));
     return {
         method,
         path,
         ip,
         socket: { remoteAddress: ip },
-        get(name) { return normalized[String(name).toLowerCase()]; }
+        get(name: string) { return normalized[String(name).toLowerCase()]; }
     };
 }
 
-function fakeResponse() {
-    const response = {
+interface FakeResponse {
+    statusCode: number;
+    headers: Record<string, string>;
+    body: unknown;
+    set(name: string, value: string): FakeResponse;
+    status(code: number): FakeResponse;
+    json(payload: unknown): FakeResponse;
+    send(payload: unknown): FakeResponse;
+}
+
+function fakeResponse(): FakeResponse {
+    const response: FakeResponse = {
         statusCode: 200,
         headers: {},
         body: undefined,
-        set(name, value) { this.headers[name] = value; return this; },
-        status(code) { this.statusCode = code; return this; },
-        json(payload) { this.body = payload; return this; },
-        send(payload) { this.body = payload; return this; }
+        set(name: string, value: string) { this.headers[name] = value; return this; },
+        status(code: number) { this.statusCode = code; return this; },
+        json(payload: unknown) { this.body = payload; return this; },
+        send(payload: unknown) { this.body = payload; return this; }
     };
     return response;
 }
 
-const basic = (user, password) => `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
+const basic = (user: string, password: string): string => `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
 
 test('public paths are explicit and /hdhr is matched as a prefix', () => {
     const paths = ['/health', '/playlist.m3u8'];
@@ -104,7 +122,7 @@ test('failed authentication is throttled before credentials are checked', () => 
 test('rate limiter is bounded and returns 429 with Retry-After', () => {
     let now = 1000;
     const limiter = createRateLimiter({ windowMs: 1000, max: 2, maxEntries: 2, now: () => now });
-    const key = request => request.ip;
+    const key = (request: FakeRequest) => request.ip;
 
     const first = fakeResponse();
     let next = 0;
@@ -216,27 +234,27 @@ test('createErrorHandler maps error types and status codes', () => {
     const parseError = fakeResponse();
     handler({ type: 'entity.parse.failed' }, fakeRequest(), parseError, () => {});
     assert.equal(parseError.statusCode, 400);
-    assert.equal(parseError.body.error, 'Invalid JSON payload');
+    assert.equal((parseError.body as any).error, 'Invalid JSON payload');
 
     const largeError = fakeResponse();
     handler({ type: 'entity.too.large' }, fakeRequest(), largeError, () => {});
     assert.equal(largeError.statusCode, 413);
-    assert.equal(largeError.body.error, 'Payload too large');
+    assert.equal((largeError.body as any).error, 'Payload too large');
 
     const httpError = fakeResponse();
     handler(new HttpError(404, 'missing'), fakeRequest(), httpError, () => {});
     assert.equal(httpError.statusCode, 404);
-    assert.equal(httpError.body.error, 'missing');
+    assert.equal((httpError.body as any).error, 'missing');
 
     const statusError = fakeResponse();
-    const err = new Error('bad request');
+    const err = new Error('bad request') as Error & { status?: number };
     err.status = 400;
     handler(err, fakeRequest(), statusError, () => {});
     assert.equal(statusError.statusCode, 400);
-    assert.equal(statusError.body.error, 'Invalid request');
+    assert.equal((statusError.body as any).error, 'Invalid request');
 
     const unknownError = fakeResponse();
     handler(new Error('boom'), fakeRequest(), unknownError, () => {});
     assert.equal(unknownError.statusCode, 500);
-    assert.equal(unknownError.body.error, 'Internal server error');
+    assert.equal((unknownError.body as any).error, 'Internal server error');
 });

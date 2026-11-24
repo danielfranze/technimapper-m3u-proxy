@@ -3,11 +3,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {  createState, applyPersistedState, persistedSnapshot  } from '../dist/lib/state.js';
-import {  createDeps, fakeCron  } from '../test-helpers/state-deps.ts';
+import {  createDeps  } from '../test-helpers/state-deps.ts';
 
 test('applyPersistedState handles missing and invalid persisted fields', () => {
-    const warnings = [];
-    const logger = { warn: (...args) => warnings.push(args.join(' ')), info() {}, error() {} };
+    const warnings: string[] = [];
+    const logger = { warn: (...args: unknown[]) => warnings.push(args.join(' ')), info() {}, error() {} };
     const deps = createDeps(logger);
 
     const state = createState({ config: { ip: '192.168.1.10', port: '9100', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' } });

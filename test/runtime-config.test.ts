@@ -2,7 +2,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import path from 'path';
+import path from 'node:path';
 import {  loadRuntimeConfig, parseTrustProxy, intFromEnv  } from '../dist/lib/runtime-config.js';
 
 test('runtime config uses safe defaults and warns about missing authentication', () => {
@@ -19,7 +19,7 @@ test('runtime config uses safe defaults and warns about missing authentication',
 });
 
 test('invalid numeric environment values fall back instead of crashing', () => {
-    const warnings = [];
+    const warnings: string[] = [];
     assert.equal(intFromEnv('abc', 9191, { name: 'PORT', warnings }), 9191);
     assert.equal(intFromEnv('0', 9191, { min: 1, max: 65535, name: 'PORT', warnings }), 9191);
     assert.equal(intFromEnv('70000', 9191, { min: 1, max: 65535, name: 'PORT', warnings }), 9191);
@@ -37,7 +37,7 @@ test('TRUST_PROXY accepts boolean, hop counts and named ranges', () => {
 });
 
 test('an invalid TRUST_PROXY is downgraded with a warning', () => {
-    const warnings = [];
+    const warnings: string[] = [];
     assert.equal(parseTrustProxy('not-a-proxy', warnings), false);
     assert.equal(warnings.length, 1);
     assert.match(warnings[0], /TRUST_PROXY/);
@@ -62,7 +62,7 @@ test('only one admin credential produces a fail-closed warning', () => {
 });
 
 test('runtime config handles empty numeric values and comma-separated trust proxies', () => {
-    const warnings = [];
+    const warnings: string[] = [];
     assert.equal(intFromEnv('', 9191, { name: 'PORT', warnings }), 9191);
     assert.equal(intFromEnv('   ', 9191, { name: 'PORT', warnings }), 9191);
     assert.equal(parseTrustProxy('127.0.0.1, 10.0.0.1', warnings), '127.0.0.1, 10.0.0.1');

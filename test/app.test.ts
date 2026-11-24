@@ -3,8 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {  createHarness  } from '../test-helpers/harness.ts';
+import type { Server } from 'node:http';
 
-const fakeCron = value => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
+type Harness = ReturnType<typeof createHarness>;
 
 const BASE_CONFIG = {
     ip: '192.168.1.10',
@@ -18,39 +19,39 @@ const CHANNELS = [
     { name: 'B', url: 'http://192.168.1.20/b' }
 ];
 
-async function withServer(harness, fn) {
-    const server = harness.app.listen(0, '127.0.0.1');
-    await new Promise((resolve, reject) => {
+async function withServer(harness: Harness, fn: (base: string, harness: Harness) => Promise<void>): Promise<void> {
+    const server: Server = harness.app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve, reject) => {
         server.once('error', reject);
         server.once('listening', resolve);
     });
 
-    const base = `http://127.0.0.1:${server.address().port}`;
+    const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
     try {
         return await fn(base, harness);
     } finally {
-        await new Promise(resolve => {
-            server.close(resolve);
+        await new Promise<void>((resolve) => {
+            server.close(() => resolve());
             if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
         });
         harness.services.dispose();
     }
 }
 
-const postJson = (base, path, body, headers = {}) => fetch(base + path, {
+const postJson = (base: string, path: string, body: unknown, headers: Record<string, string> = {}): Promise<Response> => fetch(base + path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },
     body: typeof body === 'string' ? body : JSON.stringify(body)
 });
 
-const basic = (user, password) => `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
+const basic = (user: string, password: string): string => `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
 
 test('health endpoints report status, liveness and readiness', async () => {
     const harness = createHarness();
     await withServer(harness, async (base) => {
         const health = await fetch(base + '/health');
         assert.equal(health.status, 200);
-        const body = await health.json();
+        const body = await health.json() as Record<string, unknown>;
         assert.equal(body.status, 'ok');
         assert.equal(body.configured, false);
         assert.equal(body.playlistAvailable, false);
@@ -69,11 +70,11 @@ test('a configured instance without a playlist is degraded and not ready', async
     await withServer(harness, async (base) => {
         const health = await fetch(base + '/health');
         assert.equal(health.status, 200);
-        assert.equal((await health.json()).status, 'degraded');
+        assert.equal(((await health.json()) as Record<string, unknown>).status, 'degraded');
 
         const ready = await fetch(base + '/health/ready');
         assert.equal(ready.status, 503);
-        assert.equal((await ready.json()).status, 'degraded');
+        assert.equal(((await ready.json()) as Record<string, unknown>).status, 'degraded');
 
         const playlist = await fetch(base + '/playlist.m3u8');
         assert.equal(playlist.status, 503);
@@ -91,7 +92,7 @@ test('HDHomeRun discovery, lineup and stream redirect work', async () => {
     harness.services.rebuildViews();
 
     await withServer(harness, async (base) => {
-        const discover = await (await fetch(base + '/hdhr/discover.json')).json();
+        const discover = await (await fetch(base + '/hdhr/discover.json')).json() as Record<string, unknown>;
         assert.equal(discover.BaseURL, `${base}/hdhr`);
         assert.equal(discover.LineupURL, `${base}/hdhr/lineup.json`);
         assert.equal(discover.FriendlyName, 'TechniSat DIGIT ISIO STC');
@@ -131,7 +132,7 @@ test('a single configured auth credential fails closed', async () => {
         assert.equal((await fetch(base + '/health')).status, 200);
         const res = await fetch(base + '/api/get-config');
         assert.equal(res.status, 503);
-        assert.match((await res.json()).error, /misconfigured/);
+        assert.match(((await res.json()) as Record<string, string>).error, /misconfigured/);
     });
 });
 
@@ -181,19 +182,19 @@ test('save-mapping rebuilds playlist and lineup and reports duplicates and orpha
         });
         assert.equal(saved.status, 200);
 
-        const body = await saved.json();
+        const body = await saved.json() as Record<string, unknown>;
         assert.deepEqual(body.duplicateGroups, [{ id: '1', channels: ['A', 'B'] }]);
         assert.deepEqual(body.orphans, ['Old']);
         assert.equal(harness.writes.length, 1);
 
         const playlist = await fetch(base + '/playlist.m3u8');
         assert.equal(playlist.status, 200);
-        assert.match(playlist.headers.get('content-type'), /audio\/x-mpegurl/);
+        assert.match(playlist.headers.get('content-type') || '', /audio\/x-mpegurl/);
         const text = await playlist.text();
         assert.match(text, /tvg-id="1"/);
         assert.match(text, /http:\/\/192\.168\.1\.20\/a/);
 
-        const lineup = await (await fetch(base + '/hdhr/lineup.json')).json();
+        const lineup = await (await fetch(base + '/hdhr/lineup.json')).json() as unknown[];
         assert.equal(lineup.length, 1, 'duplicate IDs appear only once in the lineup');
     });
 });
@@ -206,7 +207,7 @@ test('invalid mapping IDs are rejected without changing state', async () => {
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-mapping', { mapping: { A: 'bad id' } });
         assert.equal(res.status, 400);
-        assert.match((await res.json()).error, /Invalid channel ID/);
+        assert.match(((await res.json()) as Record<string, string>).error, /Invalid channel ID/);
         assert.deepEqual(harness.state.get().config.mapping, { A: 1 });
         assert.equal(harness.writes.length, 0);
     });
@@ -218,7 +219,7 @@ test('export and import round-trip settings and mapping', async () => {
     });
 
     await withServer(harness, async (base) => {
-        const exported = await (await fetch(base + '/api/export-config')).json();
+        const exported = await (await fetch(base + '/api/export-config')).json() as Record<string, any>;
         assert.equal(exported.config.ip, '192.168.1.10');
         assert.deepEqual(exported.mapping, { A: 1 });
 
@@ -249,7 +250,7 @@ test('a failed sync keeps the last known playlist and records the error', async 
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/fetch-channels', {});
         assert.equal(res.status, 502);
-        assert.match((await res.json()).error, /receiver unreachable/);
+        assert.match(((await res.json()) as Record<string, string>).error, /receiver unreachable/);
         assert.equal(harness.state.get().cachedM3u8, before, 'the last known playlist must survive a failed sync');
         assert.equal(harness.state.get().sync.consecutiveFailures, 1);
         assert.match(harness.state.get().sync.lastError, /receiver unreachable/);
@@ -276,7 +277,7 @@ test('two concurrent sync requests are serialized', async () => {
         fetchChannels: async () => {
             active++;
             maxActive = Math.max(maxActive, active);
-            await new Promise(resolve => setTimeout(resolve, 20));
+            await new Promise<void>(resolve => setTimeout(resolve, 20));
             active--;
             return {
                 channels: CHANNELS,
@@ -307,7 +308,7 @@ test('a persistence failure returns 500 without leaving a broken response', asyn
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-mapping', { mapping: { A: 1 } });
         assert.equal(res.status, 500);
-        assert.equal((await res.json()).error, 'Internal server error');
+        assert.equal(((await res.json()) as Record<string, string>).error, 'Internal server error');
     });
 });
 
@@ -329,11 +330,11 @@ test('malformed JSON and unknown API routes use the central error handling', asy
     await withServer(harness, async (base) => {
         const badJson = await postJson(base, '/api/save-mapping', '{not json');
         assert.equal(badJson.status, 400);
-        assert.equal((await badJson.json()).error, 'Invalid JSON payload');
+        assert.equal(((await badJson.json()) as Record<string, string>).error, 'Invalid JSON payload');
 
         const notFound = await fetch(base + '/api/does-not-exist');
         assert.equal(notFound.status, 404);
-        assert.equal((await notFound.json()).error, 'Not found');
+        assert.equal(((await notFound.json()) as Record<string, string>).error, 'Not found');
     });
 });
 
@@ -342,15 +343,15 @@ test('save-settings rejects non-object payloads', async () => {
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-settings', [1, 2]);
         assert.equal(res.status, 400);
-        assert.match((await res.json()).error, /Invalid settings payload/);
+        assert.match(((await res.json()) as Record<string, string>).error, /Invalid settings payload/);
     });
 });
 
 test('a sync whose settings change mid-flight is discarded instead of overwriting them', async () => {
-    let resolveFetch;
+    let resolveFetch: (value: Record<string, unknown>) => void = () => {};
     const harness = createHarness({
         state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
-        fetchChannels: () => new Promise(resolve => { resolveFetch = resolve; })
+        fetchChannels: () => new Promise<Record<string, unknown>>(resolve => { resolveFetch = resolve; })
     });
     harness.services.rebuildViews();
     const before = harness.state.get().cachedM3u8;
@@ -372,7 +373,7 @@ test('a sync whose settings change mid-flight is discarded instead of overwritin
 
         const syncRes = await syncPromise;
         assert.equal(syncRes.status, 409);
-        assert.match((await syncRes.json()).error, /changed during sync/i);
+        assert.match(((await syncRes.json()) as Record<string, string>).error, /changed during sync/i);
 
         // The stale sync must not have overwritten the new target or the playlist.
         assert.equal(harness.state.get().config.ip, '192.168.1.99');
@@ -389,7 +390,7 @@ test('a persistence failure rolls back in-memory mapping state', async () => {
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-mapping', { mapping: { A: 1 } });
         assert.equal(res.status, 500);
-        assert.equal((await res.json()).error, 'Internal server error');
+        assert.equal(((await res.json()) as Record<string, string>).error, 'Internal server error');
         // In-memory state must not retain the failed write.
         assert.deepEqual(harness.state.get().config.mapping, {});
     });
@@ -404,7 +405,7 @@ test('a persistence failure rolls back in-memory settings state', async () => {
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-settings', { ip: '192.168.1.99' });
         assert.equal(res.status, 500);
-        assert.equal((await res.json()).error, 'Internal server error');
+        assert.equal(((await res.json()) as Record<string, string>).error, 'Internal server error');
         assert.equal(harness.state.get().config.ip, BASE_CONFIG.ip);
     });
 });

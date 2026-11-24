@@ -4,10 +4,9 @@ import path from 'node:path';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
 
-const dockerfile = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'Dockerfile'), 'utf8');
+const dockerfile: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'Dockerfile'), 'utf8');
 
 test('Dockerfile installs dependencies from the lockfile, then removes package managers from the runtime image', () => {
     const install = dockerfile.indexOf('npm ci --omit=dev');

@@ -7,22 +7,22 @@ import {  createSoapReceiver, escapeXml  } from '../dist/lib/receiver.js';
 
 const quietLogger = { info() {}, warn() {}, error() {} };
 
-function startServer(handler) {
+function startServer(handler: http.RequestListener): Promise<{ server: http.Server; port: number }> {
     return new Promise((resolve, reject) => {
         const server = http.createServer(handler);
-        server.listen(0, '127.0.0.1', () => resolve({ server, port: server.address().port }));
+        server.listen(0, "127.0.0.1", () => resolve({ server, port: (server.address() as { port: number }).port }));
         server.on('error', reject);
     });
 }
 
-function stopServer(server) {
+function stopServer(server: http.Server): Promise<void> {
     return new Promise(resolve => {
         if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
-        server.close(resolve);
+        server.close(() => resolve());
     });
 }
 
-function soapResponse(resultInner) {
+function soapResponse(resultInner: string): string {
     return `<?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
   <s:Body><u:BrowseResponse xmlns:u="urn:schemas-upnp-org:service:ContentDirectory:1">

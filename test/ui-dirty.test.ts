@@ -4,21 +4,37 @@ import path from 'node:path';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
 
-const html = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
-const script = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
+const html: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
+const script: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
 
-const grab = (name, isAsync = false) => {
+const grab = (name: string, isAsync: boolean = false): string => {
     const m = script.match(new RegExp(`    ${isAsync ? 'async ' : ''}function ${name}\\([\\s\\S]*?\\n    \\}\\n`));
     assert.ok(m, `function ${name} not found in index.html`);
     return m[0];
 };
 
+interface DirtyUi {
+    isDirty(): boolean;
+    mappingsEqual(a: Record<string, string | number>, b: Record<string, string | number>): boolean;
+    updateId(name: string, value: string): void;
+    saveMapping(): Promise<boolean>;
+    load(current: Record<string, string | number>, saved: Record<string, string | number>, channels?: string[]): void;
+    current(): Record<string, string | number>;
+    saved(): Record<string, string | number>;
+}
+
+interface DirtyUiStubs {
+    showToast: (...args: unknown[]) => void;
+    renderTable: () => void;
+    fetch: (url: string, options?: unknown) => Promise<{ ok: boolean; json(): Promise<unknown> }>;
+    document: { querySelectorAll(selector: string): unknown[] };
+}
+
 /** Loads the unsaved-changes logic of the web UI with stubbed browser APIs. */
-function loadUi({ fetchImpl } = {}) {
-    const toasts = [];
+function loadUi({ fetchImpl }: { fetchImpl?: () => Promise<{ ok: boolean; json(): Promise<unknown> }> } = {}): { ui: DirtyUi; toasts: unknown[][] } {
+    const toasts: unknown[][] = [];
     const factory = new Function('stubs', `
         let currentMapping = {};
         let savedMapping = {};
@@ -32,9 +48,9 @@ function loadUi({ fetchImpl } = {}) {
         return { isDirty, mappingsEqual, updateId, saveMapping,
             load(current, saved, channels = []) { currentMapping = current; savedMapping = saved; detectedChannels = channels; },
             current: () => currentMapping, saved: () => savedMapping };
-    `);
+    `) as (stubs: DirtyUiStubs) => DirtyUi;
     const ui = factory({
-        showToast: (...args) => toasts.push(args),
+        showToast: (...args: unknown[]) => toasts.push(args),
         renderTable: () => {},
         fetch: fetchImpl || (async () => ({ ok: true, json: async () => ({ success: true, duplicateGroups: [], orphans: [] }) })),
         document: { querySelectorAll: () => [] }
@@ -78,5 +94,5 @@ test('a failed save returns false and keeps the changes marked as unsaved', asyn
     ui.load({ A: 'bad id' }, {});
     assert.equal(await ui.saveMapping(), false);
     assert.equal(ui.isDirty(), true);
-    assert.equal(toasts.at(-1)[1], 'error');
+    assert.equal(toasts.at(-1)![1], 'error');
 });

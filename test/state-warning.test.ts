@@ -3,11 +3,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {  createState, applyPersistedState  } from '../dist/lib/state.js';
-import {  createDeps, fakeCron  } from '../test-helpers/state-deps.ts';
+import {  createDeps  } from '../test-helpers/state-deps.ts';
 
 test('repairPersistedSettings warns about a disallowed receiver IP', () => {
-    const warnings = [];
-    const logger = { warn: (...args) => warnings.push(args.join(' ')), info() {}, error() {} };
+    const warnings: string[] = [];
+    const logger = { warn: (...args: unknown[]) => warnings.push(args.join(' ')), info() {}, error() {} };
     const deps = createDeps(logger);
 
     const state = createState();

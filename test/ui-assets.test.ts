@@ -4,18 +4,17 @@ import path from 'node:path';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
 
-const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
-const html = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
-const css = fs.readFileSync(path.join(publicDir, 'app', 'styles.css'), 'utf8');
-const server = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'server.ts'), 'utf8');
-const security = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http-security.ts'), 'utf8');
+const publicDir: string = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
+const html: string = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
+const css: string = fs.readFileSync(path.join(publicDir, 'app', 'styles.css'), 'utf8');
+const server: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'server.ts'), 'utf8');
+const security: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http-security.ts'), 'utf8');
 
 test('index.html does not reference external hosts', () => {
     const urls = [...html.matchAll(/(?:href|src)\s*=\s*"(https?:\/\/[^"]+)"|url\(\s*['"]?(https?:\/\/[^)'"]+)/g)]
-        .map(m => m[1] || m[2]);
+        .map((m: RegExpMatchArray) => m[1] || m[2]);
     assert.deepEqual(urls, []);
     assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(html));
 });
@@ -36,7 +35,7 @@ test('index.html has no inline event handlers or style attributes', () => {
 });
 
 test('every font referenced in styles.css exists and is a WOFF2 file', () => {
-    const files = [...css.matchAll(/url\('(\.\.\/fonts\/[^']+)'\)/g)].map(m => m[1].replace(/^\.\.\//, ''));
+    const files = [...css.matchAll(/url\('(\.\.\/fonts\/[^']+)'\)/g)].map((m: RegExpMatchArray) => m[1].replace(/^\.\.\//, ''));
     assert.ok(files.length >= 4, 'expected at least 4 @font-face sources');
     for (const file of files) {
         const full = path.join(publicDir, file);

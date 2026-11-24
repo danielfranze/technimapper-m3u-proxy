@@ -6,13 +6,13 @@ import {  createValidation  } from '../dist/lib/validation.js';
 import {  createLogger  } from '../dist/lib/logger.js';
 import { createApp } from '../dist/lib/app.js';
 
-const fakeCron = value => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
+const fakeCron = (value: string): boolean => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
 
-function quietLogger() {
+function quietLogger(): ReturnType<typeof createLogger> {
     return createLogger({ level: 'error', sink: { info() {}, warn() {}, error() {} } });
 }
 
-function baseRuntime(overrides = {}) {
+function baseRuntime(overrides: Record<string, unknown> = {}): Record<string, unknown> {
     return {
         playlistPaths: ['/playlist.m3u8', '/playlist.m3u'],
         publicPaths: ['/playlist.m3u8', '/playlist.m3u', '/health', '/health/live', '/health/ready'],
@@ -30,25 +30,41 @@ function baseRuntime(overrides = {}) {
     };
 }
 
-/**
- * Builds the standard integration-test harness used by the app-level tests.
- * @param {{ state?: object, runtime?: object, fetchChannels?: Function, channels?: any[], syncCoordinator?: any, hdhrEnabled?: boolean, version?: string }} [options]
- */
-function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetchChannels, channels, syncCoordinator, hdhrEnabled, version } = {}) {
+interface HarnessOptions {
+    state?: Record<string, unknown>;
+    runtime?: Record<string, unknown>;
+    fetchChannels?: (settings: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    channels?: { name: string; url: string }[];
+    syncCoordinator?: unknown;
+    hdhrEnabled?: boolean;
+    version?: string;
+}
+
+function createHarness(options: HarnessOptions = {}): {
+    app: ReturnType<typeof createApp>['app'];
+    services: ReturnType<typeof createApp>['services'];
+    state: ReturnType<typeof createStateStore>;
+    writes: unknown[];
+    calls: Record<string, unknown>[];
+    configStore: { write(data: unknown): void; read(): null; ensureDataDir(): void };
+    scheduled: () => number;
+    CHANNELS: { name: string; url: string }[];
+} {
+    const { state: stateOverrides, runtime: runtimeOverrides, fetchChannels, channels, syncCoordinator, hdhrEnabled, version } = options;
     const CHANNELS = channels || [{ name: 'A', url: 'http://192.168.1.20/a' }, { name: 'B', url: 'http://192.168.1.20/b' }];
     const state = createStateStore(createState(stateOverrides || {}));
-    const writes = [];
-    const calls = [];
+    const writes: unknown[] = [];
+    const calls: Record<string, unknown>[] = [];
     let scheduled = 0;
 
     const configStore = {
-        write(data) { writes.push(data); },
+        write(data: unknown) { writes.push(data); },
         read() { return null; },
         ensureDataDir() {}
     };
 
     const receiver = {
-        async fetchChannels(settings) {
+        async fetchChannels(settings: Record<string, unknown>) {
             calls.push({ ...settings });
             if (fetchChannels) return fetchChannels(settings);
             return {
@@ -71,7 +87,7 @@ function createHarness({ state: stateOverrides, runtime: runtimeOverrides, fetch
 
     const validation = createValidation({ cronValidate: fakeCron });
     const { app, services } = createApp({
-        runtime: baseRuntime(runtimeOverrides),
+        runtime: baseRuntime(runtimeOverrides || {}),
         logger: quietLogger(),
         state,
         configStore,

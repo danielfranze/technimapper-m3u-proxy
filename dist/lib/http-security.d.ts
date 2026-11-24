@@ -20,11 +20,11 @@ declare function createFailureLimiter({ windowMs, max, maxEntries, now }: any): 
 declare function createAuth({ user, password, publicPaths, publicPrefixes, failureWindowMs, failureMax, logger, now }?: {
     user?: string | undefined;
     password?: string | undefined;
-    publicPaths?: never[] | undefined;
+    publicPaths?: string[] | undefined;
     publicPrefixes?: string[] | undefined;
     failureWindowMs?: number | undefined;
     failureMax?: number | undefined;
-    logger?: Console | undefined;
+    logger?: any;
     now?: (() => number) | undefined;
 }): {
     (req: any, res: any, next: any): any;

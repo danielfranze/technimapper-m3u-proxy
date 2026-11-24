@@ -4,10 +4,9 @@ import path from 'node:path';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
 
-const read = (file) => fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', file), 'utf8');
+const read = (file: string): string => fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', file), 'utf8');
 
 test('the default port 9191 is used consistently by the server, the Dockerfile and the compose file', () => {
     assert.match(read('lib/runtime-config.ts'), /intFromEnv\(env\.PORT, DEFAULT_PORT/);

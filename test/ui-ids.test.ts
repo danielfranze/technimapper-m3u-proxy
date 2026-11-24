@@ -4,19 +4,31 @@ import path from 'node:path';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
 
-const html = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
-const script = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
+const html: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
+const script: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
 
-const grab = (name) => {
+const grab = (name: string): string => {
     const match = script.match(new RegExp(`    function ${name}\\([\\s\\S]*?\\n    \\}\\n`));
     assert.ok(match, `function ${name} not found in index.html`);
     return match[0];
 };
 
-function loadUi() {
+interface IdsUi {
+    updateId(name: string, value: string): void;
+    autoFillFromName(): void;
+    load(mapping: Record<string, string | number>, channels?: string[]): void;
+    current(): Record<string, string | number>;
+}
+
+interface IdsUiStubs {
+    showToast(...args: unknown[]): void;
+    renderTable(): void;
+    updateDirtyIndicator(): void;
+}
+
+function loadUi(): IdsUi {
     const factory = new Function('stubs', `
         let currentMapping = {};
         let detectedChannels = [];
@@ -31,7 +43,7 @@ function loadUi() {
             load(mapping, channels = []) { currentMapping = mapping; detectedChannels = channels; },
             current: () => currentMapping
         };
-    `);
+    `) as (stubs: IdsUiStubs) => IdsUi;
 
     return factory({ showToast() {}, renderTable() {}, updateDirtyIndicator() {} });
 }
