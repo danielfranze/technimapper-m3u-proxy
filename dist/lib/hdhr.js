@@ -1,4 +1,7 @@
-'use strict';
+"use strict";
+/**
+ * Pure helpers for the HDHomeRun emulation (no Express, no I/O) so they can be unit-tested in isolation.
+ */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LINEUP_STATUS = exports.DEFAULTS = void 0;
 exports.resolveConfig = resolveConfig;
@@ -10,10 +13,6 @@ exports.buildLineup = buildLineup;
 exports.baseUrlFrom = baseUrlFrom;
 exports.discoverPayload = discoverPayload;
 exports.lineupPayload = lineupPayload;
-/**
- * Pure helpers for the HDHomeRun emulation (no Express, no I/O) so they can be unit-tested in isolation.
- * Plex and Jellyfin read /discover.json, /lineup_status.json and /lineup.json and follow the stream URLs.
- */
 const m3u8_js_1 = require("./m3u8.js");
 const DEFAULTS = Object.freeze({
     deviceId: '12345678',
@@ -21,7 +20,6 @@ const DEFAULTS = Object.freeze({
 });
 exports.DEFAULTS = DEFAULTS;
 const DEVICE_ID_REGEX = /^[0-9A-Fa-f]{8}$/;
-// host[:port] or [ipv6][:port] - nothing else may end up in URLs that we hand to clients
 const HOST_REGEX = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
 const LINEUP_STATUS = Object.freeze({
     ScanInProgress: 0,
@@ -30,10 +28,8 @@ const LINEUP_STATUS = Object.freeze({
     SourceList: Object.freeze(['Cable'])
 });
 exports.LINEUP_STATUS = LINEUP_STATUS;
-/** Reads the HDHR_* environment variables. Invalid values fall back to the defaults and produce a warning. */
 function resolveConfig(env = {}) {
     const warnings = [];
-    // Empty or "-" means "automatic": the name is then built from the detected receiver model (see defaultFriendlyName).
     const rawName = String(env.HDHR_FRIENDLY_NAME || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 64);
     const friendlyName = rawName === '' || rawName === '-' ? null : rawName;
     let deviceId = DEFAULTS.deviceId;
@@ -53,7 +49,6 @@ function resolveConfig(env = {}) {
     }
     return { enabled: env.HDHR_ENABLED !== 'false', friendlyName, deviceId, tunerCount, warnings };
 }
-/** Display name of the receiver family for the device type found by the UPnP discovery. */
 function modelLabel(deviceType) {
     switch (deviceType) {
         case 'STC': return 'DIGIT ISIO STC';
@@ -63,27 +58,18 @@ function modelLabel(deviceType) {
         default: return 'DIGIT ISIO S/S1/S2';
     }
 }
-/** Accepts a persisted model label only if it is a plain, short string. */
 function sanitizeModel(value) {
     if (typeof value !== 'string')
         return null;
     return value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60) || null;
 }
-/** "TechniSat DIGIT ISIO STC", or just "TechniSat" as long as the model is not known yet. */
 function defaultFriendlyName(model) {
     return model ? `TechniSat ${model}` : 'TechniSat';
 }
-/** "001 Das Erste HD" -> "Das Erste HD" (only a leading number followed by whitespace is removed). */
 function guideName(name) {
     const original = String(name).trim();
     return original.replace(/^\d+\s+/, '').trim() || original;
 }
-/**
- * Builds the tuner lineup from the receiver's channels and the user's mapping.
- * The mapped ID is the GuideNumber (and the key of the stream URL). If two channels end up with the same
- * GuideNumber the first one wins, so every stream URL is unambiguous.
- * @returns {{ guideNumber: string, guideName: string, url: string }[]}
- */
 function buildLineup(channels, mapping) {
     const entries = [];
     const seen = new Set();
@@ -99,7 +85,6 @@ function buildLineup(channels, mapping) {
     }
     return entries;
 }
-/** "http://host:port" from the request, or null if the Host header contains anything unexpected. */
 function baseUrlFrom(protocol, host) {
     if (typeof host !== 'string' || !HOST_REGEX.test(host))
         return null;

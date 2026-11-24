@@ -1,11 +1,8 @@
-'use strict';
-
 /**
  * Pure helpers for the HDHomeRun emulation (no Express, no I/O) so they can be unit-tested in isolation.
- * Plex and Jellyfin read /discover.json, /lineup_status.json and /lineup.json and follow the stream URLs.
  */
 
-import {  STREAM_URL_REGEX  } from './m3u8.js';
+import { STREAM_URL_REGEX } from './m3u8.js';
 
 const DEFAULTS = Object.freeze({
     deviceId: '12345678',
@@ -13,7 +10,6 @@ const DEFAULTS = Object.freeze({
 });
 
 const DEVICE_ID_REGEX = /^[0-9A-Fa-f]{8}$/;
-// host[:port] or [ipv6][:port] - nothing else may end up in URLs that we hand to clients
 const HOST_REGEX = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
 
 const LINEUP_STATUS = Object.freeze({
@@ -23,15 +19,38 @@ const LINEUP_STATUS = Object.freeze({
     SourceList: Object.freeze(['Cable'])
 });
 
-/** Reads the HDHR_* environment variables. Invalid values fall back to the defaults and produce a warning. */
-function resolveConfig(env: any = {}) {
+export interface HdhrConfig {
+    enabled: boolean;
+    friendlyName: string | null;
+    deviceId: string;
+    tunerCount: number;
+    warnings: string[];
+}
+
+export interface LineupEntry {
+    guideNumber: string;
+    guideName: string;
+    url: string;
+}
+
+export interface HdhrChannel {
+    name: string;
+    url: string;
+}
+
+export interface LineupPayloadEntry {
+    GuideNumber: string;
+    GuideName: string;
+    URL: string;
+}
+
+export function resolveConfig(env: Record<string, string | undefined> = {}): HdhrConfig {
     const warnings: string[] = [];
 
-    // Empty or "-" means "automatic": the name is then built from the detected receiver model (see defaultFriendlyName).
     const rawName = String(env.HDHR_FRIENDLY_NAME || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 64);
     const friendlyName = rawName === '' || rawName === '-' ? null : rawName;
 
-    let deviceId = DEFAULTS.deviceId;
+    let deviceId: string = DEFAULTS.deviceId;
     if (env.HDHR_DEVICE_ID) {
         if (DEVICE_ID_REGEX.test(env.HDHR_DEVICE_ID)) deviceId = env.HDHR_DEVICE_ID.toUpperCase();
         else warnings.push(`HDHR_DEVICE_ID "${env.HDHR_DEVICE_ID}" is invalid (8 hex digits expected) - using ${DEFAULTS.deviceId}.`);
@@ -47,8 +66,7 @@ function resolveConfig(env: any = {}) {
     return { enabled: env.HDHR_ENABLED !== 'false', friendlyName, deviceId, tunerCount, warnings };
 }
 
-/** Display name of the receiver family for the device type found by the UPnP discovery. */
-function modelLabel(deviceType: any): string {
+export function modelLabel(deviceType: string | null): string {
     switch (deviceType) {
         case 'STC': return 'DIGIT ISIO STC';
         case 'S': return 'DIGIT ISIO S';
@@ -58,32 +76,23 @@ function modelLabel(deviceType: any): string {
     }
 }
 
-/** Accepts a persisted model label only if it is a plain, short string. */
-function sanitizeModel(value: any): string | null {
+export function sanitizeModel(value: unknown): string | null {
     if (typeof value !== 'string') return null;
     return value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60) || null;
 }
 
-/** "TechniSat DIGIT ISIO STC", or just "TechniSat" as long as the model is not known yet. */
-function defaultFriendlyName(model: any): string {
+export function defaultFriendlyName(model: string | null): string {
     return model ? `TechniSat ${model}` : 'TechniSat';
 }
 
-/** "001 Das Erste HD" -> "Das Erste HD" (only a leading number followed by whitespace is removed). */
-function guideName(name: any): string {
+export function guideName(name: string): string {
     const original = String(name).trim();
     return original.replace(/^\d+\s+/, '').trim() || original;
 }
 
-/**
- * Builds the tuner lineup from the receiver's channels and the user's mapping.
- * The mapped ID is the GuideNumber (and the key of the stream URL). If two channels end up with the same
- * GuideNumber the first one wins, so every stream URL is unambiguous.
- * @returns {{ guideNumber: string, guideName: string, url: string }[]}
- */
-function buildLineup(channels: any, mapping: any): any {
-    const entries: any[] = [];
-    const seen = new Set();
+export function buildLineup(channels: HdhrChannel[], mapping: Record<string, string | number>): LineupEntry[] {
+    const entries: LineupEntry[] = [];
+    const seen = new Set<string>();
     for (const ch of channels) {
         if (!Object.hasOwn(mapping, ch.name)) continue;
         const guideNumber = String(mapping[ch.name]).trim().replace(/^ts-ch/, '');
@@ -95,13 +104,12 @@ function buildLineup(channels: any, mapping: any): any {
     return entries;
 }
 
-/** "http://host:port" from the request, or null if the Host header contains anything unexpected. */
-function baseUrlFrom(protocol: any, host: any): string | null {
+export function baseUrlFrom(protocol: string, host: string): string | null {
     if (typeof host !== 'string' || !HOST_REGEX.test(host)) return null;
     return `${protocol === 'https' ? 'https' : 'http'}://${host}`;
 }
 
-function discoverPayload(baseUrl: any, config: any, model: any): any {
+export function discoverPayload(baseUrl: string, config: HdhrConfig, model: string | null): Record<string, unknown> {
     return {
         FriendlyName: config.friendlyName || defaultFriendlyName(model),
         ModelNumber: 'HDHR4-2DT',
@@ -115,15 +123,12 @@ function discoverPayload(baseUrl: any, config: any, model: any): any {
     };
 }
 
-function lineupPayload(entries: any, baseUrl: any): any {
-    return entries.map((e: any) => ({
+export function lineupPayload(entries: LineupEntry[], baseUrl: string): LineupPayloadEntry[] {
+    return entries.map((e: LineupEntry) => ({
         GuideNumber: e.guideNumber,
         GuideName: e.guideName,
         URL: `${baseUrl}/hdhr/stream/${encodeURIComponent(e.guideNumber)}`
     }));
 }
 
-export {
-    DEFAULTS, LINEUP_STATUS, resolveConfig, modelLabel, sanitizeModel, defaultFriendlyName,
-    guideName, buildLineup, baseUrlFrom, discoverPayload, lineupPayload
-};
+export { DEFAULTS, LINEUP_STATUS };

@@ -1,3 +1,6 @@
+/**
+ * Pure helpers for the HDHomeRun emulation (no Express, no I/O) so they can be unit-tested in isolation.
+ */
 declare const DEFAULTS: Readonly<{
     deviceId: "12345678";
     tunerCount: 2;
@@ -8,31 +11,34 @@ declare const LINEUP_STATUS: Readonly<{
     Source: "Cable";
     SourceList: readonly string[];
 }>;
-/** Reads the HDHR_* environment variables. Invalid values fall back to the defaults and produce a warning. */
-declare function resolveConfig(env?: any): {
+export interface HdhrConfig {
     enabled: boolean;
     friendlyName: string | null;
-    deviceId: "12345678";
+    deviceId: string;
     tunerCount: number;
     warnings: string[];
-};
-/** Display name of the receiver family for the device type found by the UPnP discovery. */
-declare function modelLabel(deviceType: any): string;
-/** Accepts a persisted model label only if it is a plain, short string. */
-declare function sanitizeModel(value: any): string | null;
-/** "TechniSat DIGIT ISIO STC", or just "TechniSat" as long as the model is not known yet. */
-declare function defaultFriendlyName(model: any): string;
-/** "001 Das Erste HD" -> "Das Erste HD" (only a leading number followed by whitespace is removed). */
-declare function guideName(name: any): string;
-/**
- * Builds the tuner lineup from the receiver's channels and the user's mapping.
- * The mapped ID is the GuideNumber (and the key of the stream URL). If two channels end up with the same
- * GuideNumber the first one wins, so every stream URL is unambiguous.
- * @returns {{ guideNumber: string, guideName: string, url: string }[]}
- */
-declare function buildLineup(channels: any, mapping: any): any;
-/** "http://host:port" from the request, or null if the Host header contains anything unexpected. */
-declare function baseUrlFrom(protocol: any, host: any): string | null;
-declare function discoverPayload(baseUrl: any, config: any, model: any): any;
-declare function lineupPayload(entries: any, baseUrl: any): any;
-export { DEFAULTS, LINEUP_STATUS, resolveConfig, modelLabel, sanitizeModel, defaultFriendlyName, guideName, buildLineup, baseUrlFrom, discoverPayload, lineupPayload };
+}
+export interface LineupEntry {
+    guideNumber: string;
+    guideName: string;
+    url: string;
+}
+export interface HdhrChannel {
+    name: string;
+    url: string;
+}
+export interface LineupPayloadEntry {
+    GuideNumber: string;
+    GuideName: string;
+    URL: string;
+}
+export declare function resolveConfig(env?: Record<string, string | undefined>): HdhrConfig;
+export declare function modelLabel(deviceType: string | null): string;
+export declare function sanitizeModel(value: unknown): string | null;
+export declare function defaultFriendlyName(model: string | null): string;
+export declare function guideName(name: string): string;
+export declare function buildLineup(channels: HdhrChannel[], mapping: Record<string, string | number>): LineupEntry[];
+export declare function baseUrlFrom(protocol: string, host: string): string | null;
+export declare function discoverPayload(baseUrl: string, config: HdhrConfig, model: string | null): Record<string, unknown>;
+export declare function lineupPayload(entries: LineupEntry[], baseUrl: string): LineupPayloadEntry[];
+export { DEFAULTS, LINEUP_STATUS };

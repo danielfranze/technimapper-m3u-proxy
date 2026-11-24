@@ -1,60 +1,49 @@
-'use strict';
-
 /**
  * JSON persistence adapter for mapping.json.
- *
- * The rest of the application only sees `read()` and `write()`. `write()` is
- * asynchronous so the event loop is not blocked by file I/O on the request path.
- *
- * Writes are serialized through a promise chain: concurrent calls are queued
- * instead of racing on the same temporary file. Each write uses a unique
- * temporary file name so two in-flight writes can never share or truncate the
- * same intermediate file.
  */
-import fs from 'node:fs';
-const fsp = fs.promises;
-import path from 'path';
 
-/**
- * @param {{ dataDir: string, configFile: string, logger: { warn: Function, error: Function }, fsModule?: typeof fs }} options
- */
-function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }: { dataDir: string; configFile: string; logger: any; fsModule?: any }) {
+import fs from 'node:fs';
+import path from 'node:path';
+
+const fsp = fs.promises;
+
+export interface ConfigStore {
+    ensureDataDir: () => void;
+    exists: () => boolean;
+    read: () => any;
+    write: (data: any) => Promise<void>;
+}
+
+export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }: {
+    dataDir: string;
+    configFile: string;
+    logger: { warn: (...args: any[]) => void; error: (...args: any[]) => void };
+    fsModule?: any;
+}): ConfigStore {
     const promises = fsModule.promises || fsp;
 
-    function ensureDataDir() {
+    function ensureDataDir(): void {
         try {
             fsModule.mkdirSync(dataDir, { recursive: true });
             fsModule.accessSync(dataDir, fsModule.constants.W_OK);
         } catch (err) {
-            throw new Error(`Data directory "${dataDir}" is not writable: ${(err as any).message}`);
+            throw new Error(`Data directory "${dataDir}" is not writable: ${(err as Error).message}`);
         }
     }
 
-    function exists() {
+    function exists(): boolean {
         return fsModule.existsSync(configFile);
     }
 
-    /** @returns {object|null} parsed JSON, or null when no config exists yet */
-    function read() {
+    function read(): any {
         if (!exists()) return null;
         return JSON.parse(fsModule.readFileSync(configFile, 'utf8'));
     }
 
-    /**
-     * Serializes all writes so concurrent callers cannot interleave on the same
-     * temporary file or overtake each other's rename. The chain is never broken
-     * by a rejected write: a failure is reported to its caller but the next
-     * write still runs.
-     */
-    let writeChain = Promise.resolve();
+    let writeChain: Promise<void> = Promise.resolve();
     let writeCounter = 0;
 
-    /**
-     * Writes asynchronously. Prefers an atomic write (temp file + rename).
-     * If CONFIG_FILE is a single-file Docker bind mount, rename() fails with
-     * EBUSY/EXDEV/EPERM; in that case the file is written in place.
-     */
-    async function write(data: any) {
+    async function write(data: any): Promise<void> {
         const run = writeChain.then(async () => {
             const json = JSON.stringify(data, null, 2);
             const tempFile = `${configFile}.${process.pid}.${++writeCounter}.tmp`;
@@ -67,20 +56,16 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }: {
                 await promises.rename(tempFile, configFile);
             } catch (err) {
                 await removeTemp();
-                const e = err as any;
-                if (!['EBUSY', 'EXDEV', 'EPERM'].includes(e.code || '')) throw e;
+                const e = err as { code?: string; message?: string };
+                if (!['EBUSY', 'EXDEV', 'EPERM'].includes(e.code || '')) throw err;
                 logger.warn(`Atomic rename of ${path.basename(configFile)} failed (${e.code}) - writing in place.`);
                 await promises.writeFile(configFile, json, 'utf8');
             }
         });
 
-        // Keep the chain alive even when a write rejects, so one failed write
-        // does not stall every subsequent write.
         writeChain = run.catch(() => {});
         return run;
     }
 
     return { ensureDataDir, exists, read, write };
 }
-
-export { createJsonConfigStore };

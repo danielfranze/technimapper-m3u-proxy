@@ -1,30 +1,20 @@
-'use strict';
-
 /**
  * Pure M3U8 playlist generation helpers (no I/O) so they can be unit-tested in isolation.
  */
 
-// Only plain http(s) URLs without whitespace, control characters, quotes or angle brackets.
-const STREAM_URL_REGEX = /^https?:\/\/[^\s\x00-\x1f\x7f"<>]+$/;
+export const STREAM_URL_REGEX = /^https?:\/\/[^\s\x00-\x1f\x7f"<>]+$/;
 
-/** Removes control characters and quotes so values can never break out of an M3U8 attribute/line. */
-function sanitizeM3u8Text(str: any) {
+export function sanitizeM3u8Text(str: string): string {
     return String(str).replace(/[\u0000-\u001f\u007f"]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/**
- * Builds the playlist from channels + mapping.
- * @param {{name: string, url: string}[]} channels
- * @param {Record<string, string|number>} mapping channel name -> channel ID
- * @returns {{ m3u8: string, count: number }}
- */
-function buildM3u8(channels, mapping) {
-    let m3u8 = '#EXTM3U\n';   // the header line is part of the format, also for .m3u8 files
+export function buildM3u8(channels: { name: string; url: string }[], mapping: Record<string, string | number>): { m3u8: string; count: number } {
+    let m3u8 = '#EXTM3U\n';
     let count = 0;
 
     for (const ch of channels) {
         if (!Object.hasOwn(mapping, ch.name)) continue;
-        const id = sanitizeM3u8Text(mapping[ch.name]);
+        const id = sanitizeM3u8Text(String(mapping[ch.name]));
         const url = String(ch.url).trim();
         if (!id || !STREAM_URL_REGEX.test(url)) continue;
 
@@ -35,5 +25,3 @@ function buildM3u8(channels, mapping) {
     }
     return { m3u8, count };
 }
-
-export { STREAM_URL_REGEX, sanitizeM3u8Text, buildM3u8 };

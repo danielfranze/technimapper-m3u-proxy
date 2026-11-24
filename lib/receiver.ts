@@ -65,7 +65,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
     // a few milliseconds slower but reliable across all receiver generations.
     const upnpAgent = agent || new http.Agent({ keepAlive: false });
 
-    function postSoap(ip, port, pathEndpoint, soapEnvelope) {
+    function postSoap(ip: string, port: string | number, pathEndpoint: string, soapEnvelope: string): Promise<string> {
         return new Promise((resolve: any, reject: any) => {
             let settled = false;
             let totalTimer: any = null;
@@ -80,7 +80,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
 
             const req = http.request({
                 hostname: ip,
-                port: parseInt(port, 10),
+                port: parseInt(String(port), 10),
                 path: pathEndpoint,
                 method: 'POST',
                 agent: upnpAgent,
@@ -126,7 +126,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
         });
     }
 
-    async function browseUpnp(ip, port, objectId, pathEndpoint) {
+    async function browseUpnp(ip: string, port: string | number, objectId: string, pathEndpoint: string): Promise<any> {
         const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
   <s:Body><u:Browse xmlns:u="urn:schemas-upnp-org:service:ContentDirectory:1">
@@ -168,7 +168,7 @@ function detectSSeriesGeneration(lists: any) {
 }
 
 /** Discovers available Live-TV channel lists across the known device series. */
-    async function discoverTvLists(ip, port) {
+    async function discoverTvLists(ip: string, port: string | number): Promise<any> {
         let lastError = null;
 
         for (const target of DISCOVERY_TARGETS) {
@@ -191,7 +191,7 @@ function detectSSeriesGeneration(lists: any) {
     }
 
     /** Reads channels from the receiver. Never mutates application state. */
-    async function fetchChannels({ ip, port, selectedListName }) {
+    async function fetchChannels({ ip, port, selectedListName }: { ip: string; port: string | number; selectedListName: string }): Promise<any> {
         const discovery = await discoverTvLists(ip, port);
 
         let targetList = discovery.lists.find(list => list.title === selectedListName);

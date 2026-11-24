@@ -1,26 +1,15 @@
-'use strict';
+"use strict";
+/**
+ * JSON persistence adapter for mapping.json.
+ */
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createJsonConfigStore = createJsonConfigStore;
-/**
- * JSON persistence adapter for mapping.json.
- *
- * The rest of the application only sees `read()` and `write()`. `write()` is
- * asynchronous so the event loop is not blocked by file I/O on the request path.
- *
- * Writes are serialized through a promise chain: concurrent calls are queued
- * instead of racing on the same temporary file. Each write uses a unique
- * temporary file name so two in-flight writes can never share or truncate the
- * same intermediate file.
- */
 const node_fs_1 = __importDefault(require("node:fs"));
+const node_path_1 = __importDefault(require("node:path"));
 const fsp = node_fs_1.default.promises;
-const path_1 = __importDefault(require("path"));
-/**
- * @param {{ dataDir: string, configFile: string, logger: { warn: Function, error: Function }, fsModule?: typeof fs }} options
- */
 function createJsonConfigStore({ dataDir, configFile, logger, fsModule = node_fs_1.default }) {
     const promises = fsModule.promises || fsp;
     function ensureDataDir() {
@@ -35,25 +24,13 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = node_fs
     function exists() {
         return fsModule.existsSync(configFile);
     }
-    /** @returns {object|null} parsed JSON, or null when no config exists yet */
     function read() {
         if (!exists())
             return null;
         return JSON.parse(fsModule.readFileSync(configFile, 'utf8'));
     }
-    /**
-     * Serializes all writes so concurrent callers cannot interleave on the same
-     * temporary file or overtake each other's rename. The chain is never broken
-     * by a rejected write: a failure is reported to its caller but the next
-     * write still runs.
-     */
     let writeChain = Promise.resolve();
     let writeCounter = 0;
-    /**
-     * Writes asynchronously. Prefers an atomic write (temp file + rename).
-     * If CONFIG_FILE is a single-file Docker bind mount, rename() fails with
-     * EBUSY/EXDEV/EPERM; in that case the file is written in place.
-     */
     async function write(data) {
         const run = writeChain.then(async () => {
             const json = JSON.stringify(data, null, 2);
@@ -72,13 +49,11 @@ function createJsonConfigStore({ dataDir, configFile, logger, fsModule = node_fs
                 await removeTemp();
                 const e = err;
                 if (!['EBUSY', 'EXDEV', 'EPERM'].includes(e.code || ''))
-                    throw e;
-                logger.warn(`Atomic rename of ${path_1.default.basename(configFile)} failed (${e.code}) - writing in place.`);
+                    throw err;
+                logger.warn(`Atomic rename of ${node_path_1.default.basename(configFile)} failed (${e.code}) - writing in place.`);
                 await promises.writeFile(configFile, json, 'utf8');
             }
         });
-        // Keep the chain alive even when a write rejects, so one failed write
-        // does not stall every subsequent write.
         writeChain = run.catch(() => { });
         return run;
     }

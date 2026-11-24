@@ -1,15 +1,18 @@
 /**
- * @param {{ dataDir: string, configFile: string, logger: { warn: Function, error: Function }, fsModule?: typeof fs }} options
+ * JSON persistence adapter for mapping.json.
  */
-declare function createJsonConfigStore({ dataDir, configFile, logger, fsModule }: {
-    dataDir: string;
-    configFile: string;
-    logger: any;
-    fsModule?: any;
-}): {
+export interface ConfigStore {
     ensureDataDir: () => void;
-    exists: () => any;
+    exists: () => boolean;
     read: () => any;
     write: (data: any) => Promise<void>;
-};
-export { createJsonConfigStore };
+}
+export declare function createJsonConfigStore({ dataDir, configFile, logger, fsModule }: {
+    dataDir: string;
+    configFile: string;
+    logger: {
+        warn: (...args: any[]) => void;
+        error: (...args: any[]) => void;
+    };
+    fsModule?: any;
+}): ConfigStore;

@@ -1,17 +1,15 @@
-'use strict';
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.LEVELS = void 0;
-exports.createLogger = createLogger;
-exports.normalizeLevel = normalizeLevel;
-exports.normalizeFormat = normalizeFormat;
-exports.safeStringify = safeStringify;
-exports.defaultSink = defaultSink;
+"use strict";
 /**
  * Small dependency-free logger.
- *
- * The text format stays close to the previous output; the JSON format is one
- * object per line so it can be consumed by log collectors (Loki, ELK, ...).
  */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LEVELS = void 0;
+exports.safeStringify = safeStringify;
+exports.formatValue = formatValue;
+exports.normalizeLevel = normalizeLevel;
+exports.normalizeFormat = normalizeFormat;
+exports.defaultSink = defaultSink;
+exports.createLogger = createLogger;
 const LEVELS = Object.freeze({ error: 0, warn: 1, info: 2 });
 exports.LEVELS = LEVELS;
 function safeStringify(value) {
@@ -43,16 +41,13 @@ function defaultSink() {
         error: (...args) => console.error(...args)
     };
 }
-/**
- * @param {{ level?: string, format?: string, sink?: { info: Function, warn: Function, error: Function } }} [options]
- */
 function createLogger(options = {}) {
     const level = normalizeLevel(options.level);
     const format = normalizeFormat(options.format);
     const sink = options.sink || defaultSink();
     const threshold = LEVELS[level];
     function write(kind, args) {
-        if ((LEVELS[kind] ?? 99) > threshold)
+        if (LEVELS[kind] > threshold)
             return;
         const text = args.map(formatValue).join(' ');
         const out = sink[kind] || sink.info;

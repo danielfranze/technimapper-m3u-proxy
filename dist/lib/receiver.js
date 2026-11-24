@@ -86,7 +86,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
             };
             const req = http_1.default.request({
                 hostname: ip,
-                port: parseInt(port, 10),
+                port: parseInt(String(port), 10),
                 path: pathEndpoint,
                 method: 'POST',
                 agent: upnpAgent,

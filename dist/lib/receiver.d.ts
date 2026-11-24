@@ -28,28 +28,12 @@ declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger
     agent?: any;
 }): {
     fetchChannels: ({ ip, port, selectedListName }: {
-        ip: any;
-        port: any;
-        selectedListName: any;
-    }) => Promise<{
-        channels: {
-            name: string;
-            url: string;
-        }[];
-        selectedListName: string | undefined;
-        availableLists: (string | undefined)[];
-        detectedModel: string;
-    }>;
-    browseUpnp: (ip: any, port: any, objectId: any, pathEndpoint: any) => Promise<any>;
-    discoverTvLists: (ip: any, port: any) => Promise<{
-        deviceType: string;
-        path: string;
-        lists: {
-            id: any;
-            title: string | undefined;
-            childCount: number;
-        }[];
-    }>;
+        ip: string;
+        port: string | number;
+        selectedListName: string;
+    }) => Promise<any>;
+    browseUpnp: (ip: string, port: string | number, objectId: string, pathEndpoint: string) => Promise<any>;
+    discoverTvLists: (ip: string, port: string | number) => Promise<any>;
     close: () => any;
 };
 export { DISCOVERY_TARGETS, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
