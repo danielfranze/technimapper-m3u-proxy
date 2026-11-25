@@ -303,7 +303,7 @@
         margin-bottom: 20px; 
     }
 
-    /* Standardisierte Steuerung für Desktop vs. Mobile Layouts */
+    /* Standardized controls for desktop vs. mobile layouts */
     .desktop-view { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; }
     .mobile-view { display: none; }
 

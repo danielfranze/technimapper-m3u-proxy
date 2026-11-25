@@ -45,17 +45,18 @@ test('validateMapping accepts all generated valid names and reports invalid ones
         const { mapping, invalid } = validateMapping(input);
         for (const [name, id] of Object.entries(mapping)) {
             assert.ok(typeof id === 'string' || typeof id === 'number', `id type for ${name}`);
+            assert.notEqual(name, '__proto__', 'prototype keys must never be accepted');
         }
-        // Every name that yields a canonical ID must be accepted.
-        for (const [name, id] of entries) {
-            if (name === '__proto__') continue; // rejected by design
+        // Every name that yields a canonical ID must be accepted. For duplicate names,
+        // Object.fromEntries keeps the last occurrence (documented behaviour).
+        const lastByName = new Map<string, string | number>();
+        for (const [name, id] of entries) lastByName.set(name, id);
+        for (const [name, id] of lastByName) {
+            if (name === '__proto__') continue;
             const isValidNumber = typeof id === 'number' && Number.isSafeInteger(id) && id >= 0;
             const isValidString = typeof id === 'string' && ID_REGEX.test(id);
             if (isValidNumber && String(id).length <= 15) assert.equal(mapping[name], id, `name ${name} accepted`);
             else if (isValidString) assert.equal(mapping[name], id, `name ${name} accepted`);
-        }
-        for (const name of Object.keys(mapping)) {
-            assert.notEqual(name, '__proto__', 'prototype keys must never be accepted');
         }
         assert.ok(invalid.length >= 0, 'invalid names are reported');
     }));
