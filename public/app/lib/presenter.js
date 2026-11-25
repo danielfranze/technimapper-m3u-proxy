@@ -197,7 +197,7 @@ export function exportConfig() {
 /** Asynchronously fetches initial server configuration parameters and populates input fields. */
 export async function loadInitialConfig() {
     try {
-        const { data: config } = await getJson('/api/get-config');
+        const { data: config } = await getJson('/api/config');
         const setValue = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
 
         const versionEl = document.getElementById('versionLabel');
@@ -224,7 +224,7 @@ export async function loadInitialConfig() {
 export async function updateSyncTime() {
     if (document.hidden) return;
     try {
-        const { data } = await getJson('/api/get-config');
+        const { data } = await getJson('/api/config');
         const el = document.getElementById('last-sync-time');
         const badge = document.getElementById('syncBadge');
         if (!el) return;

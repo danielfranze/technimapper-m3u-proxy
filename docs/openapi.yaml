@@ -1,0 +1,522 @@
+openapi: 3.0.3
+info:
+  title: TechniMapper API
+  description: >
+    API of TechniMapper (M3U8 proxy & HDHomeRun tuner emulation for TechniSat receivers).
+    Object names use camelCase; channel IDs are strings or numbers.
+  version: 2.0.0
+  license:
+    name: MIT
+    url: https://github.com/danielfranze/technimapper-m3u-proxy/blob/main/LICENSE
+servers:
+  - url: http://<server>:9191
+    description: TechniMapper instance (default port 9191)
+
+tags:
+  - name: health
+    description: Process liveness/readiness probes
+  - name: config
+    description: Receiver settings, sync, persistence
+  - name: mapping
+    description: Channel ID mapping management
+  - name: playlist
+    description: M3U8 playlist serving
+  - name: hdhr
+    description: HDHomeRun tuner emulation (Plex/Jellyfin)
+  - name: metrics
+    description: Prometheus metrics
+
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: basic
+      description: HTTP Basic Auth (ADMIN_USER/ADMIN_PASSWORD). Optional; routes are open if not configured.
+  schemas:
+    Settings:
+      type: object
+      required: [ip, port, cronExpression, selectedListName]
+      properties:
+        ip: { type: string, format: ipv4, description: Private IPv4 of the TechniSat receiver }
+        port: { type: string, pattern: '^[0-9]{1,5}$', description: UPnP port (e.g. "9100") }
+        cronExpression: { type: string, example: '*/5 * * * *' }
+        selectedListName: { type: string, maxLength: 200 }
+        lastSync: { type: string, format: date-time, nullable: true }
+        lastError: { type: string, nullable: true }
+        lastErrorAt: { type: string, format: date-time, nullable: true }
+        lastDurationMs: { type: integer, nullable: true }
+        consecutiveFailures: { type: integer, minimum: 0 }
+        hdhrEnabled: { type: boolean }
+        channels: { type: array, items: { $ref: '#/components/schemas/Channel' } }
+    Channel:
+      type: object
+      required: [name, url]
+      properties:
+        name: { type: string }
+        url: { type: string, format: uri }
+    ChannelList:
+      type: object
+      required: [id, title]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        childCount: { type: integer, minimum: 0 }
+    LineupEntry:
+      type: object
+      required: [GuideNumber, GuideName, URL]
+      properties:
+        GuideNumber: { type: string }
+        GuideName: { type: string }
+        URL: { type: string, format: uri }
+    GetConfig:
+      type: object
+      properties:
+        version: { type: string }
+        ip: { type: string }
+        port: { type: string }
+        cronExpression: { type: string }
+        selectedListName: { type: string }
+        lastSync: { type: string, format: date-time, nullable: true }
+        lastError: { type: string, nullable: true }
+        lastErrorAt: { type: string, format: date-time, nullable: true }
+        consecutiveFailures: { type: integer }
+        hdhrEnabled: { type: boolean }
+    FetchChannelsResult:
+      type: object
+      required: [channels, selectedListName, availableLists, detectedModel]
+      properties:
+        channels: { type: array, items: { $ref: '#/components/schemas/Channel' } }
+        selectedListName: { type: string }
+        availableLists: { type: array, items: { type: string } }
+        detectedModel: { type: string, enum: [STC, S, S1, S2, S_SERIES] }
+    Mapping:
+      type: object
+      description: Channel name -> ID (string or number)
+      additionalProperties:
+        oneOf:
+          - type: string
+            pattern: '^[A-Za-z0-9_.\-]{1,32}$'
+          - type: integer
+            minimum: 0
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
+paths:
+  # ---------------------------------------------------------------- health
+  /health:
+    get:
+      tags: [health]
+      summary: Full health payload
+      responses:
+        '200':
+          description: "Health payload (status: ok or degraded)"
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version, configured, playlistAvailable, channels, mappedChannels, uptimeSeconds]
+                properties:
+                  status: { type: string, enum: [ok, degraded], example: ok }
+                  version: { type: string, example: 2.0.0 }
+                  configured: { type: boolean }
+                  playlistAvailable: { type: boolean }
+                  lastSync: { type: string, format: date-time, nullable: true }
+                  lastError: { type: string, nullable: true }
+                  lastErrorAt: { type: string, format: date-time, nullable: true }
+                  lastDurationMs: { type: integer, nullable: true }
+                  consecutiveFailures: { type: integer, minimum: 0 }
+                  channels: { type: integer, minimum: 0 }
+                  mappedChannels: { type: integer, minimum: 0 }
+                  uptimeSeconds: { type: integer, minimum: 0 }
+                  syncQueueLength: { type: integer, minimum: 0 }
+                  syncBackoffMs: { type: integer, minimum: 0 }
+        '401':
+          description: If ADMIN_USER/ADMIN_PASSWORD are set and requests are unauthenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /health/live:
+    get:
+      tags: [health]
+      summary: Liveness probe (LB/k8s compatible, unauthenticated)
+      responses:
+        '200':
+          description: Liveness OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  version: { type: string }
+                  uptimeSeconds: { type: integer, minimum: 0 }
+  /health/liveness:
+    get:
+      tags: [health]
+      summary: Alias for /health/live (Kubernetes convention)
+      responses:
+        '200':
+          description: Same as /health/live
+  /health/ready:
+    get:
+      tags: [health]
+      summary: Readiness probe (503 when degraded)
+      responses:
+        '200':
+          description: Ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok, degraded] }
+        '503':
+          description: Degraded (no playlist, or receiver not reachable)
+
+  # ---------------------------------------------------------------- config
+  /api/save-settings:
+    post:
+      tags: [config]
+      summary: Save receiver settings without contacting the receiver
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: Saved (returns saved settings)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  ip: { type: string }
+                  port: { type: string }
+                  cronExpression: { type: string }
+                  selectedListName: { type: string }
+        '400':
+          description: Invalid settings payload
+
+  /api/config:
+    get:
+      tags: [config]
+      summary: Get current settings + sync status
+      responses:
+        '200':
+          description: Current settings and sync status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [version, ip, port, cronExpression, selectedListName]
+                properties:
+                  version: { type: string }
+                  ip: { type: string }
+                  port: { type: string }
+                  cronExpression: { type: string }
+                  selectedListName: { type: string }
+                  lastSync: { type: string, format: date-time, nullable: true }
+                  lastError: { type: string, nullable: true }
+                  lastErrorAt: { type: string, format: date-time, nullable: true }
+                  consecutiveFailures: { type: integer, minimum: 0 }
+                  hdhrEnabled: { type: boolean }
+        '401':
+          description: Unauthenticated when ADMIN_USER/ADMIN_PASSWORD are set
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+    post:
+      tags: [config]
+      summary: Save receiver settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ip, port, cronExpression, selectedListName]
+              properties:
+                ip: { type: string, format: ipv4 }
+                port: { type: string }
+                cronExpression: { type: string }
+                selectedListName: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Saved (returns saved settings)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  ip: { type: string }
+                  port: { type: string }
+                  cronExpression: { type: string }
+                  selectedListName: { type: string }
+        '400':
+          description: Invalid settings payload
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/fetch-channels:
+    post:
+      tags: [config]
+      summary: Trigger sync to receiver and return detected channels
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ip: { type: string }
+                port: { type: string }
+                cronExpression: { type: string }
+                selectedListName: { type: string }
+      responses:
+        '200':
+          description: Channels synced from the receiver
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [channels, availableLists, selectedListName, mapping, detectedModel]
+                properties:
+                  channels: { type: array, items: { type: string } }
+                  availableLists: { type: array, items: { type: string } }
+                  selectedListName: { type: string }
+                  mapping:
+                    type: object
+                    additionalProperties:
+                      oneOf:
+                        - type: string
+                        - type: integer
+                  detectedModel: { type: string, enum: [STC, S, S1, S2, S_SERIES] }
+        '400':
+          description: Invalid receiver address
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '502':
+          description: Receiver request failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/export-config:
+    get:
+      tags: [config]
+      summary: Export settings and mapping as JSON download
+      responses:
+        '200':
+          description: "JSON file (Content-Disposition: attachment)"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version: { type: string }
+                  exportedAt: { type: string, format: date-time }
+                  config: { $ref: '#/components/schemas/Settings' }
+                  mapping: { $ref: '#/components/schemas/Mapping' }
+
+  /api/import-config:
+    post:
+      tags: [config]
+      summary: Import settings and mapping from a JSON file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                config: { $ref: '#/components/schemas/Settings' }
+                mapping: { $ref: '#/components/schemas/Mapping' }
+      responses:
+        '200':
+          description: Imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+        '400':
+          description: Invalid JSON payload / invalid channel ID in import
+
+  # ---------------------------------------------------------------- mapping
+  /api/save-mapping:
+    post:
+      tags: [mapping]
+      summary: Save the channel name -> ID mapping
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mapping: { $ref: '#/components/schemas/Mapping' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success: { type: boolean }
+                  mappedCount: { type: integer, minimum: 0 }
+                  duplicates: { type: array, items: { type: string } }
+                  duplicateGroups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        channels: { type: array, items: { type: string } }
+                  orphans: { type: array, items: { type: string } }
+        '400':
+          description: Invalid channel ID for channel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  # ---------------------------------------------------------------- playlist
+  /playlist.m3u8:
+    get:
+      tags: [playlist]
+      summary: Serve the M3U8 playlist (last synced data)
+      parameters:
+        - name: If-None-Match
+          in: header
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: M3U8 playlist with mapped channels
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            audio/x-mpegurl:
+              schema: { type: string }
+        '304':
+          description: Not modified (ETag match)
+        '503':
+          description: "No playlist available yet (Retry-After: 60)"
+
+  /playlist.m3u:
+    get:
+      tags: [playlist]
+      summary: Alias for /playlist.m3u8
+      responses:
+        '200':
+          description: Same as /playlist.m3u8
+
+  # ---------------------------------------------------------------- hdhr
+  /hdhr/discover.json:
+    get:
+      tags: [hdhr]
+      summary: HDHomeRun device description (BaseURL/LineupURL/DeviceID)
+      responses:
+        '200':
+          description: Tuner description
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [FriendlyName, BaseURL, LineupURL, TunerCount]
+                properties:
+                  FriendlyName: { type: string, example: 'TechniSat DIGIT ISIO STC' }
+                  ModelNumber: { type: string, example: HDHR4-2DT }
+                  FirmwareName: { type: string }
+                  FirmwareVersion: { type: string, example: '20260101' }
+                  DeviceID: { type: string, example: '12345678' }
+                  DeviceAuth: { type: string }
+                  BaseURL: { type: string, format: uri }
+                  LineupURL: { type: string, format: uri }
+                  TunerCount: { type: integer, minimum: 1, maximum: 16 }
+  /hdhr/lineup.json:
+    get:
+      tags: [hdhr]
+      summary: List of mapped channels (HDHomeRun lineup)
+      responses:
+        '200':
+          description: Array of LineupEntry (duplicates deduplicated by ID)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LineupEntry' }
+  /hdhr/lineup_status.json:
+    get:
+      tags: [hdhr]
+      summary: Tuner scan status
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [idle, scanning, scanned, tuner_scanning, tuner_scan_failed] }
+  /hdhr/lineup.post:
+    post:
+      tags: [hdhr]
+      summary: Scan tuning (HDHomeRun standard endpoint; returns 200)
+      responses:
+        '200':
+          description: Empty 200 response
+  /hdhr/stream/{id}:
+    get:
+      tags: [hdhr]
+      summary: 302 redirect to the stream URL of a mapped channel
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '302':
+          description: Redirect to the channel stream URL
+        '404':
+          description: Stream not found
+          content:
+            text/plain:
+              schema: { type: string }
+
+  # ---------------------------------------------------------------- metrics
+  /metrics:
+    get:
+      tags: [metrics]
+      summary: Prometheus text metrics
+      responses:
+        '200':
+          description: Prometheus exposition text
+          content:
+            text/plain; version=0.0.4:
+              schema: { type: string }
+
+  # ---------------------------------------------------------------- docs
+  /api/docs:
+    get:
+      tags: []
+      summary: Interactive API documentation (Redoc)
+      responses:
+        '200':
+          description: HTML page with Redoc UI
+          content:
+            text/html:
+              schema: { type: string }

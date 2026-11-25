@@ -151,12 +151,15 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 | `GET /playlist.m3u8` | public | Optional M3U8 playlist. `503` + `Retry-After` while nothing is synced/mapped. |
 | `GET /health` | public | Aggregated status JSON (`ok` or `degraded`, last sync, last error). |
 | `GET /health/live` | public | Process liveness for container orchestrators. Always `200` while the process is alive. |
+| `GET /health/liveness` | public | Alias for `/health/live`. |
 | `GET /health/ready` | public | Readiness. `503` when a configured instance has no usable playlist, otherwise `200`. |
-| `GET /api/get-config` | Basic Auth¹ | Current settings, version, last sync, last error. |
+| `GET /api/config` | Basic Auth¹ | Current settings, version, last sync, last error. |
 | `POST /api/save-settings` | Basic Auth¹ | Validates and saves receiver settings without contacting the receiver. |
 | `POST /api/fetch-channels` | Basic Auth¹ | Syncs with the configured receiver. Changing the receiver address requires `/api/save-settings` first. |
 | `POST /api/save-mapping` | Basic Auth¹ | Saves the channel-name → ID mapping. |
 | `GET /api/export-config` / `POST /api/import-config` | Basic Auth¹ | Backup and restore of settings and mapping. |
+| `GET /metrics` | Basic Auth¹ | Prometheus text metrics (`technimapper_*`). |
+| `GET /api/docs` | Basic Auth¹ | Interactive API documentation (Redoc); full spec: [docs/openapi.yaml](docs/openapi.yaml). |
 
 ¹ Only enforced if `ADMIN_USER` and `ADMIN_PASSWORD` are set. State-changing `/api/*` requests must use `Content-Type: application/json` and a same-origin `Origin`/`Referer` (when the client sends one); cross-origin attempts are rejected.
 
@@ -233,7 +236,9 @@ npm start         # http://localhost:9191
 ```
 
 * `server.ts` – composition root: environment, adapters, startup and graceful shutdown
-* `lib/app.ts` – Express app factory (`createApp`, routes, sync orchestration)
+* `lib/app.ts` – Express app factory (`createApp`, sync orchestration)
+* `lib/app/types.ts` – shared `AppDeps`/`RouteContext` types for the app
+* `lib/shutdown.ts` – graceful-shutdown orchestration (server, sync, cron)
 * `lib/state.ts` – application state, persisted snapshot and repair logic
 * `lib/state-store.ts` – immutable `StateStore` class (`get`/`commit`/`update`)
 * `lib/config-store.ts` – atomic `mapping.json` persistence

@@ -13,6 +13,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "check": "tsc --noEmit",
+    "check:tests": "npx tsc --noEmit -p test && npx tsc --noEmit -p test-helpers",
     "test": "npm run build && node --import tsx --test",
     "coverage": "npm run build && node --import tsx scripts/coverage.js",
     "test:e2e": "playwright test",
@@ -24,8 +25,10 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
     "@types/xml2js": "^0.4.14",
+    "fast-check": "^4.11.0",
     "tsx": "^4.23.15",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "yaml": "^2.9.1"
   },
   "dependencies": {
     "compression": "^1.8.2",

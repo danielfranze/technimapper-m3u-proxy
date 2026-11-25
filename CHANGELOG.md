@@ -10,11 +10,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - `public/app/lib/api.js` – central `getJson`/`postJson` helpers.
 - CSS variables for colors that used to be inline (`--accent-muted`, `--danger-muted`, …); `updateModelBadge` uses classes instead of inline styles.
 - Bugfix in the auto-fill logic: `/^\d+/` instead of `/^\\d+/` – IDs are now correctly extracted from names.
+- API documentation: `docs/openapi.yaml` (OpenAPI 3.0 spec with full schemas, statuses, examples).
+- `lib/shutdown.ts` – graceful-shutdown orchestration (server, sync, cron).
+- `test/server-boot.test.ts` – integration test: server boots, serves health endpoints, graceful exit on SIGTERM.
+- `test/validation-property.test.ts` – property-based tests (fast-check) for `validateSettings`/`isAllowedReceiverIp`/`validateMapping`.
+- `test/openapi.test.ts` – validates `docs/openapi.yaml` + parity with routes in code.
+- `npm run check:tests` script (`tsc -p test && tsc -p test-helpers`) + CI job "Type checks (tests, helpers, e2e)".
 
 ### Changed
-- Refactoring rounds: rounds 5–8 (OOP, domain modules, middleware split, error helpers, MVP split).
-- Tests (`test/ui-*.ts`) adapted to the new frontend structure.
-- `npm run build && npm test && npm run test:e2e` – all green (149 + 23 E2E tests).
+- API: `GET /api/get-config` renamed to `GET /api/config` (frontend and tests updated).
+- Health: added `GET /health/liveness` (alias for `/health/live`).
+- `GET /health/live` kept for compatibility.
+- `GET /metrics` is now documented as auth-protected when `ADMIN_USER`/`ADMIN_PASSWORD` are set.
+- README HTTP endpoints table expanded (health/live/liveness, metrics, openapi link).
+- Architecture: app composition split into `lib/app.ts` + `lib/app/types.ts` + `lib/routes/index.ts`.
+- Refactoring rounds: rounds 5–8 (OOP, domain modules, middleware split, error helpers, MVP split, app/composition split).
+- Tests (`test/ui-*.ts`) adapted to the new frontend structure; consolidated duplicate syntax tests.
+- `npm run build && npm test && npm run test:e2e` – all green (166 + 23 E2E tests).
 
 ## [2.0.0-rc.4]
 

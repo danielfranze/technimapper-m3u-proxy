@@ -43,6 +43,7 @@ import { createStateStore } from './lib/state-store.js';
 import { createValidation, sortMapping } from './lib/validation.js';
 import * as hdhr from './lib/hdhr.js';
 import { createApp } from './lib/app.js';
+import { runShutdown, installShutdownHandlers } from './lib/shutdown.js';
 const APP_VERSION = packageJson.version;
 import { errorMessage } from './lib/error-message.js';
 async function main() {
@@ -135,42 +136,21 @@ async function main() {
         process.exit(1);
     });
     let shuttingDown = false;
-    function shutdown(signal, exitCode = 0) {
+    function shutdown(signal) {
         if (shuttingDown)
             return;
         shuttingDown = true;
-        logger.info(`${signal} received - shutting down gracefully.`);
         services.beginShutdown();
-        // Hard stop if something still hangs. The budget is larger than the
-        // maximum SOAP sync duration so a running sync can persist its result.
-        const hardStop = setTimeout(() => {
-            logger.error('Graceful shutdown timed out - forcing exit.');
-            process.exit(1);
-        }, runtime.shutdownTimeoutMs);
-        hardStop.unref();
-        server.close(async () => {
-            try {
-                await services.waitForSync(); // let a running sync finish (and persist) first
-            }
-            catch (err) {
-                logger.error('Running sync failed during shutdown:', errorMessage(err));
-            }
-            try {
-                receiver.close();
-            }
-            catch { /* ignore */ }
-            try {
-                services.dispose();
-            }
-            catch { /* ignore */ }
-            clearTimeout(hardStop);
-            process.exit(exitCode);
-        });
-        if (typeof server.closeIdleConnections === 'function')
-            server.closeIdleConnections();
+        void runShutdown(signal, {
+            server,
+            waitForSync: services.waitForSync,
+            stopBackgroundCron: services.stopBackgroundCron,
+            dispose: services.dispose,
+            logger,
+            shutdownTimeoutMs: runtime.shutdownTimeoutMs
+        }).finally(() => process.exit(0));
     }
-    process.on('SIGTERM', () => shutdown('SIGTERM', 0));
-    process.on('SIGINT', () => shutdown('SIGINT', 0));
+    installShutdownHandlers(shutdown);
     process.on('unhandledRejection', (reason) => {
         logger.error('Unhandled rejection:', reason);
         // Express 5 forwards rejected route promises, so an unhandled rejection
@@ -179,7 +159,7 @@ async function main() {
     });
     process.on('uncaughtException', (err) => {
         logger.error('Uncaught exception:', err);
-        shutdown('uncaughtException', 1);
+        shutdown('uncaughtException');
     });
 }
 // In ESM, always run main (this file is the entry point).

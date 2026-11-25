@@ -112,14 +112,14 @@ test('Basic Auth protects the API but keeps public routes open', async () => {
     const harness = createHarness({ runtime: { adminUser: 'admin', adminPassword: 'secret' } });
     await withServer(harness, async (base) => {
         assert.equal((await fetch(base + '/health')).status, 200);
-        assert.equal((await fetch(base + '/api/get-config')).status, 401);
+        assert.equal((await fetch(base + '/api/config')).status, 401);
 
-        const unauthorized = await fetch(base + '/api/get-config', {
+        const unauthorized = await fetch(base + '/api/config', {
             headers: { Authorization: basic('admin', 'wrong') }
         });
         assert.equal(unauthorized.status, 401);
 
-        const authorized = await fetch(base + '/api/get-config', {
+        const authorized = await fetch(base + '/api/config', {
             headers: { Authorization: basic('admin', 'secret') }
         });
         assert.equal(authorized.status, 200);
@@ -130,7 +130,7 @@ test('a single configured auth credential fails closed', async () => {
     const harness = createHarness({ runtime: { adminUser: 'admin', adminPassword: '' } });
     await withServer(harness, async (base) => {
         assert.equal((await fetch(base + '/health')).status, 200);
-        const res = await fetch(base + '/api/get-config');
+        const res = await fetch(base + '/api/config');
         assert.equal(res.status, 503);
         assert.match(((await res.json()) as Record<string, string>).error, /misconfigured/);
     });
@@ -261,9 +261,9 @@ test('a failed sync keeps the last known playlist and records the error', async 
 test('API rate limiting returns 429 after the configured budget', async () => {
     const harness = createHarness({ runtime: { apiRateMax: 2, apiRateWindowMs: 60000 } });
     await withServer(harness, async (base) => {
-        assert.equal((await fetch(base + '/api/get-config')).status, 200);
-        assert.equal((await fetch(base + '/api/get-config')).status, 200);
-        const limited = await fetch(base + '/api/get-config');
+        assert.equal((await fetch(base + '/api/config')).status, 200);
+        assert.equal((await fetch(base + '/api/config')).status, 200);
+        const limited = await fetch(base + '/api/config');
         assert.equal(limited.status, 429);
         assert.ok(Number(limited.headers.get('retry-after')) >= 1);
     });

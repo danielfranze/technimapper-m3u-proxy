@@ -56,7 +56,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
     } = ctx;
     const { validateMapping } = validation;
 
-    app.get('/api/get-config', (_req: Request, res: Response) => {
+    app.get('/api/config', (_req: Request, res: Response) => {
         const snapshot = getState();
         res.json({
             version,

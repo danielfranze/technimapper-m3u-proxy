@@ -9,7 +9,7 @@ import * as hdhrModule from '../hdhr.js';
 function registerConfigRoutes(app, ctx) {
     const { getState, updateState, state: stateStore, currentSettings, mergeSettings, persistState, startBackgroundCron, syncCoordinator, validation, version, hdhrConfig, logger, performSync } = ctx;
     const { validateMapping } = validation;
-    app.get('/api/get-config', (_req, res) => {
+    app.get('/api/config', (_req, res) => {
         const snapshot = getState();
         res.json({
             version,

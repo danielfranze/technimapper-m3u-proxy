@@ -29,9 +29,12 @@ function registerHealthRoutes(app, ctx) {
         };
     }
     app.get('/health', (_req, res) => res.json(healthPayload()));
-    app.get('/health/live', (_req, res) => {
+    const livenessPayload = (_req, res) => {
         res.json({ status: 'ok', version, uptimeSeconds: Math.round(process.uptime()) });
-    });
+    };
+    app.get('/health/live', livenessPayload);
+    // Alias for /health/live, following Kubernetes/LB naming conventions.
+    app.get('/health/liveness', livenessPayload);
     app.get('/health/ready', (_req, res) => {
         const payload = healthPayload();
         const ready = !getState().configured || (payload.playlistAvailable && payload.status === 'ok');

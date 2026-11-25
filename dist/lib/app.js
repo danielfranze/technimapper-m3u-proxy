@@ -8,14 +8,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import * as hdhrModule from './hdhr.js';
 import { errorMessage } from './error-message.js';
 import { createSyncCoordinator } from './sync-coordinator.js';
-import { securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler } from './http-security.js';
-import { registerHealthRoutes } from './routes/health.js';
-import { registerConfigRoutes } from './routes/config.js';
-import { registerMappingRoutes } from './routes/mapping.js';
-import { registerPlaylistRoutes } from './routes/playlist.js';
-import { registerHdhrRoutes } from './routes/hdhr.js';
-import { registerMetricsRoutes } from './routes/metrics.js';
+import { securityHeaders, createAuth, createRateLimiter, createOriginGuard } from './http-security.js';
 import { createSyncService } from './sync-service.js';
+import { registerAllRoutes } from './routes/index.js';
+/**
+ * HTTP application factory.
+ *
+ * `createApp()` wires the HTTP boundary around an application state store.
+ * It never starts a listener, which is what makes integration tests possible:
+ * tests can call it with fake receiver, persistence and cron implementations.
+ */
 function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] }, publicDir = path.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep }) {
     const state = stateDep;
     const { validateSettings, validateMapping } = validation;
@@ -178,15 +180,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
         stopBackgroundCron,
         playlistPaths
     };
-    registerHealthRoutes(app, ctx);
-    registerConfigRoutes(app, ctx);
-    registerMappingRoutes(app, ctx);
-    registerPlaylistRoutes(app, ctx);
-    registerHdhrRoutes(app, ctx);
-    registerMetricsRoutes(app, ctx);
-    // 404 for unknown API routes, then central error handler
-    app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
-    app.use(createErrorHandler(logger));
+    registerAllRoutes(app, ctx);
     return {
         app,
         state,

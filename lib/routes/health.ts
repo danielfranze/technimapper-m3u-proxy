@@ -42,9 +42,12 @@ function registerHealthRoutes(app: Express, ctx: HealthCtx): void {
 
     app.get('/health', (_req: Request, res: Response) => res.json(healthPayload()));
 
-    app.get('/health/live', (_req: Request, res: Response) => {
+    const livenessPayload = (_req: Request, res: Response) => {
         res.json({ status: 'ok', version, uptimeSeconds: Math.round(process.uptime()) });
-    });
+    };
+    app.get('/health/live', livenessPayload);
+    // Alias for /health/live, following Kubernetes/LB naming conventions.
+    app.get('/health/liveness', livenessPayload);
 
     app.get('/health/ready', (_req: Request, res: Response) => {
         const payload = healthPayload();

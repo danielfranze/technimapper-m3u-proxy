@@ -28,6 +28,8 @@ jobs:
       - run: npm ci
       - name: Syntax check
         run: npm run check
+      - name: Type checks (tests, helpers, e2e)
+        run: npm run check:tests && npx tsc --noEmit -p e2e
       - name: Unit & integration tests
         run: npm test
       - name: Coverage report

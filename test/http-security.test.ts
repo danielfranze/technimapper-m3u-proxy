@@ -22,7 +22,7 @@ interface FakeRequest {
     get(name: string): string | undefined;
 }
 
-function fakeRequest({ method = 'GET', path = '/api/get-config', ip = '192.168.1.50', headers = {} as Record<string, string> }: { method?: string; path?: string; ip?: string; headers?: Record<string, string> } = {}): FakeRequest {
+function fakeRequest({ method = 'GET', path = '/api/config', ip = '192.168.1.50', headers = {} as Record<string, string> }: { method?: string; path?: string; ip?: string; headers?: Record<string, string> } = {}): FakeRequest {
     const normalized = Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]));
     return {
         method,
@@ -64,7 +64,7 @@ test('public paths are explicit and /hdhr is matched as a prefix', () => {
     const paths = ['/health', '/playlist.m3u8'];
     assert.equal(isPublicPath('/health', paths), true);
     assert.equal(isPublicPath('/playlist.m3u8', paths), true);
-    assert.equal(isPublicPath('/api/get-config', paths), false);
+    assert.equal(isPublicPath('/api/config', paths), false);
     assert.equal(isPublicPath('/hdhr', [], ['/hdhr/']), true);
     assert.equal(isPublicPath('/hdhr/lineup.json', [], ['/hdhr/']), true);
     assert.equal(isPublicPath('/hdhrx', [], ['/hdhr/']), false);

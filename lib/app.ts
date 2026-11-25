@@ -14,23 +14,14 @@ declare module 'express-serve-static-core' {
 }
 
 import * as hdhrModule from './hdhr.js';
-import { createLogger } from './logger.js';
-import { loadRuntimeConfig } from './runtime-config.js';
-import { createValidation } from './validation.js';
-import { createSoapReceiver } from './receiver.js';
 import { errorMessage } from './error-message.js';
 import type { StateStore } from './state-store.js';
 import { createSyncCoordinator } from './sync-coordinator.js';
-import { securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler } from './http-security.js';
-import { registerHealthRoutes } from './routes/health.js';
-import { registerConfigRoutes } from './routes/config.js';
-import { registerMappingRoutes } from './routes/mapping.js';
-import { registerPlaylistRoutes } from './routes/playlist.js';
-import { registerHdhrRoutes } from './routes/hdhr.js';
-import { registerMetricsRoutes } from './routes/metrics.js';
+import { securityHeaders, createAuth, createRateLimiter, createOriginGuard } from './http-security.js';
 import { createSyncService } from './sync-service.js';
-import type { ConfigStore } from './config-store.js';
-import type { HdhrConfig } from './hdhr.js';
+import { registerAllRoutes } from './routes/index.js';
+import type { AppDeps, RouteContext, CronHandle, Receiver, AppRuntime, CronScheduler, Logger } from './app/types.js';
+
 /**
  * HTTP application factory.
  *
@@ -38,27 +29,6 @@ import type { HdhrConfig } from './hdhr.js';
  * It never starts a listener, which is what makes integration tests possible:
  * tests can call it with fake receiver, persistence and cron implementations.
  */
-
-type Logger = ReturnType<typeof createLogger>;
-type SyncCoordinator = ReturnType<typeof createSyncCoordinator>;
-type AppRuntime = ReturnType<typeof loadRuntimeConfig>;
-type Receiver = ReturnType<typeof createSoapReceiver>;
-type Validation = Pick<ReturnType<typeof createValidation>, 'validateSettings' | 'validateMapping'>;type CronHandle = { stop(): void; destroy?(): void } | null;
-type CronScheduler = { validate(expr: string): boolean; schedule(pattern: string, fn: () => void): CronHandle };
-
-interface AppDeps {
-    runtime: AppRuntime;
-    logger: Logger;
-    state: StateStore;
-    configStore: ConfigStore;
-    receiver: Receiver;
-    validation: Validation;
-    cron: CronScheduler;
-    version: string;
-    hdhrConfig?: HdhrConfig;
-    publicDir?: string;
-    syncCoordinator?: SyncCoordinator;
-}
 
 function createApp({
     runtime,
@@ -223,7 +193,7 @@ function createApp({
     // -----------------------------------------------------------------------
     // Route registration (kept in separate modules for readability)
     // -----------------------------------------------------------------------
-    const ctx = {
+    const ctx: RouteContext = {
         runtime,
         logger,
         state,
@@ -249,17 +219,7 @@ function createApp({
         playlistPaths
     };
 
-    registerHealthRoutes(app, ctx);
-    registerConfigRoutes(app, ctx);
-    registerMappingRoutes(app, ctx);
-    registerPlaylistRoutes(app, ctx);
-    registerHdhrRoutes(app, ctx);
-    registerMetricsRoutes(app, ctx);
-
-    // 404 for unknown API routes, then central error handler
-    app.use('/api', (_req: express.Request, res: express.Response) => res.status(404).json({ error: 'Not found' }));
-
-    app.use(createErrorHandler(logger));
+    registerAllRoutes(app, ctx);
 
     return {
         app,
@@ -283,4 +243,4 @@ function createApp({
 }
 
 export { createApp };
-export type { AppDeps, AppRuntime, Receiver, CronHandle, CronScheduler };
+export type { AppDeps, AppRuntime, Receiver, CronHandle, CronScheduler, Logger };
