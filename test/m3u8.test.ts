@@ -21,7 +21,7 @@ test('buildM3u8 emits header and entries only for mapped channels', () => {
         '#EXTINF:-1 tvg-id="1" tvg-name="Das Erste HD" tvg-chno="1" cuid="1" group-title="TechniSat",Das Erste HD'
     );
     assert.equal(lines[2], 'http://192.168.1.10:8080/stream/1');
-    assert.match(lines[3], /tvg-id="ts-ch2".*tvg-chno="2"/);
+    assert.match(lines[3] ?? '', /tvg-id="ts-ch2".*tvg-chno="2"/);
     assert.ok(!m3u8.includes('Unmapped'));
 });
 
@@ -32,11 +32,11 @@ test('buildM3u8 returns count 0 when nothing is mapped (caller must answer 503)'
 
 test('buildM3u8 cannot be tricked by line breaks or quotes in channel names', () => {
     const evil: { name: string; url: string }[] = [{ name: 'Evil"\r\n#EXTINF:-1,Injected\nhttp://evil.example/x', url: 'http://192.168.1.10/s' }];
-    const { m3u8, count } = buildM3u8(evil, { [evil[0].name]: 9 });
+    const { m3u8, count } = buildM3u8(evil, { [evil[0]!.name]: 9 });
     assert.equal(count, 1);
     const lines = m3u8.trimEnd().split('\n');
     assert.equal(lines.length, 3); // header, one EXTINF, one URL - nothing injected
-    assert.ok(!lines[1].includes('"\r'));
+    assert.ok(!(lines[1] ?? '').includes('"\r'));
     assert.equal(lines[2], 'http://192.168.1.10/s');
 });
 

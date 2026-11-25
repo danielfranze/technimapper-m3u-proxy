@@ -84,7 +84,9 @@ test('STC SOAP flow returns channels from a mock receiver', async () => {
         assert.equal(result.detectedModel, 'STC');
         assert.equal(result.channels.length, 2);
         assert.deepEqual(result.channels.map((channel: { name: string }) => channel.name), ['001 Das Erste HD', '002 ZDF HD']);
-        assert.match(result.channels[0].url, /O0I268\.ts$/);
+        const firstChannel = result.channels[0];
+        assert.ok(firstChannel);
+        assert.match(firstChannel.url, /O0I268\.ts$/);
     } finally {
         await stopServer(server);
     }

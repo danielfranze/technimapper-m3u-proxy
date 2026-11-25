@@ -26,7 +26,7 @@ function extractRoutes(src: string): string[] {
     const out = new Set<string>();
     const re = /(?:app\.get|app\.post|router\.get|router\.post)\(\s*(['"])([^'"]+)\1/g;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(src))) out.add(m[2]);
+    while ((m = re.exec(src))) out.add(m[2]!);
     return [...out];
 }
 
@@ -51,7 +51,7 @@ test('openapi.yaml statuses match the statuses we assert in app.test.ts', () => 
     const codes = new Set<string>();
     const re = /status,?\s*\)?\.?\s*(?:\(\s*|status\s*,\s*)(\d{3})/g;
     let m: RegExpExecArray | null;
-    while ((m = re.exec(appTests))) codes.add(m[1]);
+    while ((m = re.exec(appTests))) codes.add(m[1]!);
     const documentedCodes = new Set<string>(
         Object.values(openapi.paths).flatMap(ops => Object.values(ops).flatMap(op => Object.keys(op.responses || {})))
     );

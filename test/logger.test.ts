@@ -43,7 +43,9 @@ test('the default sink is used when none is provided and non-string values are s
         console.log = originalLog;
     }
     assert.equal(captured.length, 1);
-    assert.match(String(captured[0][1]), /"ok":1/);
+    const capturedEntry = captured[0];
+    assert.ok(capturedEntry);
+    assert.match(String(capturedEntry[1]), /"ok":1/);
 });
 
 test('non-string values are serialized through a custom sink', () => {
@@ -51,7 +53,9 @@ test('non-string values are serialized through a custom sink', () => {
     const logger = createLogger({ level: 'info', sink: { info: (...args: unknown[]) => calls.push(args), warn() {}, error() {} } });
     logger.info({ ok: 1 });
     assert.equal(calls.length, 1);
-    assert.match(String(calls[0][1]), /"ok":1/);
+    const call = calls[0];
+    assert.ok(call);
+    assert.match(String(call[1]), /"ok":1/);
 });
 
 test('the logger filters levels and supports text and JSON output', () => {
@@ -59,12 +63,16 @@ test('the logger filters levels and supports text and JSON output', () => {
     textLogger.info('should be hidden');
     textLogger.warn('visible');
     assert.deepEqual(textCalls.map((call: [string, unknown[]]) => call[0]), ['warn']);
-    assert.equal(textCalls[0][1][1], 'visible');
+    const textEntry = textCalls[0];
+    assert.ok(textEntry);
+    assert.equal(textEntry[1][1], 'visible');
 
     const { logger: jsonLogger, calls: jsonCalls } = recordingLogger('info', 'json');
     jsonLogger.error(new Error('boom'));
     assert.equal(jsonCalls.length, 1);
-    const payload = JSON.parse(String(jsonCalls[0][1][0]));
+    const jsonEntry = jsonCalls[0];
+    assert.ok(jsonEntry);
+    const payload = JSON.parse(String(jsonEntry[1][0]));
     assert.equal(payload.level, 'error');
     assert.match(payload.msg, /boom/);
 });

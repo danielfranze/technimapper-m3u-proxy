@@ -88,14 +88,18 @@ function sortMapping(mapping, channelNames) {
         return { ...mapping };
     const sorted = {};
     for (const name of channelNames) {
-        if (Object.hasOwn(mapping, name) && !Object.hasOwn(sorted, name))
-            sorted[name] = mapping[name];
+        const value = mapping[name];
+        if (value !== undefined && Object.hasOwn(mapping, name) && !Object.hasOwn(sorted, name))
+            sorted[name] = value;
     }
     const rest = Object.keys(mapping).filter(name => !Object.hasOwn(sorted, name));
     // Unknown/stale entries keep their current (insertion) order instead of being
     // re-sorted alphabetically, so the user's manual ordering is preserved.
-    for (const name of rest)
-        sorted[name] = mapping[name];
+    for (const name of rest) {
+        const value = mapping[name];
+        if (value !== undefined)
+            sorted[name] = value;
+    }
     return sorted;
 }
 export { validateMapping, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping };

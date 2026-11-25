@@ -35,7 +35,9 @@ test('buildLineup lists only mapped channels, in receiver order, with the mapped
 test('buildLineup keeps stream URLs unambiguous: the first channel wins when an ID is used twice', () => {
     const lineup = buildLineup(channels, { '001 Das Erste HD': 5, '002 ZDF HD': 5, '3sat HD': 'ts-ch5' });
     assert.equal(lineup.length, 1);
-    assert.equal(lineup[0].guideName, 'Das Erste HD');
+    const first = lineup[0];
+    assert.ok(first);
+    assert.equal(first.guideName, 'Das Erste HD');
 });
 
 test('buildLineup skips unsafe stream URLs and prototype-like names', () => {
@@ -95,7 +97,10 @@ test('lineup.json points every channel at the redirect endpoint below /hdhr/stre
     const lineup = lineupPayload(buildLineup(channels, { '001 Das Erste HD': 1 }), 'http://h:9191');
     assert.deepEqual(lineup, [{ GuideNumber: '1', GuideName: 'Das Erste HD', URL: 'http://h:9191/hdhr/stream/1' }]);
     assert.deepEqual(lineupPayload([], 'http://h'), []);
-    assert.equal(lineupPayload([{ guideNumber: 'a b', guideName: 'x', url: 'http://u' }], 'http://h')[0].URL, 'http://h/hdhr/stream/a%20b');
+    const payload = lineupPayload([{ guideNumber: 'a b', guideName: 'x', url: 'http://u' }], 'http://h');
+    const payloadFirst = payload[0];
+    assert.ok(payloadFirst);
+    assert.equal(payloadFirst.URL, 'http://h/hdhr/stream/a%20b');
 });
 
 test('lineup_status.json reports an idle tuner that cannot be scanned in progress', () => {

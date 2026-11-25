@@ -22,7 +22,7 @@ const DISCOVERY_TARGETS = Object.freeze([
     { type: DiscoveryType.S_SERIES, parentObj: '3', path: '/ContentDirectory/Control' }
 ]);
 function escapeXml(str) {
-    return String(str).replace(/[<>&"']/g, (c) => ESCAPE_MAP[c]);
+    return String(str).replace(/[<>&"']/g, (c) => ESCAPE_MAP[c] ?? c);
 }
 function asNode(value) {
     return value && typeof value === 'object' ? value : undefined;
@@ -199,13 +199,12 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
     /** Reads channels from the receiver. Never mutates application state. */
     async function fetchChannels({ ip, port, selectedListName }) {
         const discovery = await discoverTvLists(ip, port);
-        let targetList = discovery.lists.find(list => list.title === selectedListName);
-        if (!targetList) {
-            targetList = discovery.lists[0];
-            logger.warn(`List "${selectedListName}" not found, falling back to "${targetList.title}".`);
-        }
+        let targetList = discovery.lists.find(list => list.title === selectedListName) ?? discovery.lists[0];
         if (!targetList)
             throw new Error('No TechniSat Live-TV containers found.');
+        if (targetList.title !== selectedListName) {
+            logger.warn(`List "${selectedListName}" not found, falling back to "${targetList.title}".`);
+        }
         const didl = await browseUpnp(ip, port, targetList.id, discovery.path);
         const channels = parseChannelItems(didl);
         if (channels.length === 0)

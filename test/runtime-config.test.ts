@@ -40,7 +40,7 @@ test('an invalid TRUST_PROXY is downgraded with a warning', () => {
     const warnings: string[] = [];
     assert.equal(parseTrustProxy('not-a-proxy', warnings), false);
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /TRUST_PROXY/);
+    assert.match(warnings[0] ?? '', /TRUST_PROXY/);
 });
 
 test('the shutdown budget is always larger than the maximum sync duration', () => {

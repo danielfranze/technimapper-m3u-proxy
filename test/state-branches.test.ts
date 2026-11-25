@@ -34,7 +34,11 @@ test('persistedSnapshot clones mapping and channels', () => {
     const state = createState({ config: { ip: '192.168.1.10', port: '9100', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste', mapping: { A: 1 }, channels: [{ name: 'A', url: 'http://x' }], lastSync: null, detectedModel: null } });
     const snapshot = persistedSnapshot(state) as { mapping: Record<string, string | number>; channels: Array<{ name: string; url: string }> };
     snapshot.mapping.A = 2;
-    snapshot.channels[0].name = 'B';
+    const snapshotChannel = snapshot.channels[0];
+    assert.ok(snapshotChannel);
+    snapshotChannel.name = 'B';
     assert.equal(state.config.mapping.A, 1);
-    assert.equal(state.config.channels[0].name, 'A');
+    const stateChannel = state.config.channels[0];
+    assert.ok(stateChannel);
+    assert.equal(stateChannel.name, 'A');
 });

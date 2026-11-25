@@ -84,7 +84,7 @@ test('Basic Auth protects non-public routes and accepts valid credentials', () =
     auth(fakeRequest(), missingRes, () => { missingNext = true; });
     assert.equal(missingNext, false);
     assert.equal(missingRes.statusCode, 401);
-    assert.match(missingRes.headers['WWW-Authenticate'], /Basic/);
+    assert.match(String(missingRes.headers['WWW-Authenticate']), /Basic/);
 
     const okRes = fakeResponse();
     let okNext = false;

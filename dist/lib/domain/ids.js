@@ -12,7 +12,7 @@ function isAllowedReceiverIp(ip, options = {}) {
     const { allowNonPrivateIp = false, allowLoopback = false } = options;
     if (typeof ip !== 'string' || !net.isIPv4(ip))
         return false;
-    const [a, b] = ip.split('.').map(Number);
+    const [a = -1, b = -1] = ip.split('.').map(Number);
     if (a === 0 || a >= 224)
         return false; // unspecified, multicast/reserved
     if (a === 169 && b === 254)

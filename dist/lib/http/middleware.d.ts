@@ -1,9 +1,9 @@
 /** Minimal request shape used by the middleware (structurally compatible with express.Request). */
 export interface RequestLike {
-    ip?: string;
+    ip?: string | undefined;
     socket?: {
-        remoteAddress?: string;
-    } | null;
+        remoteAddress?: string | undefined;
+    } | null | undefined;
     path: string;
     method: string;
     get(name: string): string | undefined;

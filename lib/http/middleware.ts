@@ -15,8 +15,8 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /** Minimal request shape used by the middleware (structurally compatible with express.Request). */
 export interface RequestLike {
-    ip?: string;
-    socket?: { remoteAddress?: string } | null;
+    ip?: string | undefined;
+    socket?: { remoteAddress?: string | undefined } | null | undefined;
     path: string;
     method: string;
     get(name: string): string | undefined;
@@ -156,9 +156,10 @@ export function createAuth({
     function readCredentials(req: RequestLike): AuthCredentials | null {
         const header = String(req.get('authorization') || '');
         const match = /^Basic\s+([A-Za-z0-9+/=]+)$/i.exec(header);
-        if (!match) return null;
+        const encoded = match?.[1];
+        if (!encoded) return null;
 
-        const decoded = Buffer.from(match[1], 'base64').toString('utf8');
+        const decoded = Buffer.from(encoded, 'base64').toString('utf8');
         const separator = decoded.indexOf(':');
         if (separator < 0) return null;
         return { user: decoded.slice(0, separator), password: decoded.slice(separator + 1) };

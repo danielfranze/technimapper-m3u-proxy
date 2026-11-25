@@ -14,7 +14,10 @@ function validateSettings(raw, { cronValidate, allowNonPrivateIp, allowLoopback 
     }
     const input = raw;
     const ip = String(input.ip ?? '').trim();
-    if (!isAllowedReceiverIp(ip, { allowNonPrivateIp, allowLoopback })) {
+    if (!isAllowedReceiverIp(ip, {
+        allowNonPrivateIp: allowNonPrivateIp === true,
+        allowLoopback: allowLoopback === true
+    })) {
         throw HttpError.badRequest('Invalid receiver IP. Use a private IPv4 address (10.x, 172.16-31.x, 192.168.x).');
     }
     const portStr = String(input.port ?? '').trim();

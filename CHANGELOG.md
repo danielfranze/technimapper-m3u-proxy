@@ -24,6 +24,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - `GET /metrics` is now documented as auth-protected when `ADMIN_USER`/`ADMIN_PASSWORD` are set.
 - README HTTP endpoints table expanded (health/live/liveness, metrics, openapi link).
 - Architecture: app composition split into `lib/app.ts` + `lib/app/types.ts` + `lib/routes/index.ts`.
+- TypeScript: enabled `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride` and `noFallthroughCasesInSwitch`; fixed the resulting issues in receiver fallback logging, XML escaping, mapping sorting, Basic-Auth decoding and the test suite.
+- Release workflow now runs `npm run check:tests`; `npm run test:all` no longer builds twice.
 - Refactoring rounds: rounds 5–8 (OOP, domain modules, middleware split, error helpers, MVP split, app/composition split).
 - Tests (`test/ui-*.ts`) adapted to the new frontend structure; consolidated duplicate syntax tests.
 - `npm run build && npm test && npm run test:e2e` – all green (166 + 23 E2E tests).

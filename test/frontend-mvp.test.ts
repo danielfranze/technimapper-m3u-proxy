@@ -243,7 +243,7 @@ test('presenter: updateId keeps leading zeros and numeric IDs as numbers', () =>
 
 test('presenter: fetchChannels uses api helpers', async () => {
     // Stub global fetch used by public/app/api.js
-    const fetchCalls: Array<{ url: string; method?: string }> = [];
+    const fetchCalls: Array<{ url: string; method?: string | undefined }> = [];
     Object.defineProperty(globalThis, 'fetch', {
         configurable: true,
         value: (url: string, init?: { method?: string }) => {

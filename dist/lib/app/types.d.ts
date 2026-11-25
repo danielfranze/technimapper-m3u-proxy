@@ -31,9 +31,9 @@ export interface AppDeps {
     validation: Validation;
     cron: CronScheduler;
     version: string;
-    hdhrConfig?: HdhrConfig;
-    publicDir?: string;
-    syncCoordinator?: SyncCoordinator;
+    hdhrConfig?: HdhrConfig | undefined;
+    publicDir?: string | undefined;
+    syncCoordinator?: SyncCoordinator | undefined;
 }
 /** Shared context passed to the route modules (`lib/routes/*.ts`). */
 export interface RouteContext {

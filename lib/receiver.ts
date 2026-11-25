@@ -66,7 +66,7 @@ const DISCOVERY_TARGETS = Object.freeze([
 ] as const);
 
 function escapeXml(str: string): string {
-    return String(str).replace(/[<>&"']/g, (c: string) => ESCAPE_MAP[c]);
+    return String(str).replace(/[<>&"']/g, (c: string) => ESCAPE_MAP[c] ?? c);
 }
 
 function asNode(value: unknown): XmlNode | undefined {
@@ -260,12 +260,11 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
     async function fetchChannels({ ip, port, selectedListName }: { ip: string; port: string | number; selectedListName: string }): Promise<FetchResult> {
         const discovery = await discoverTvLists(ip, port);
 
-        let targetList = discovery.lists.find(list => list.title === selectedListName);
-        if (!targetList) {
-            targetList = discovery.lists[0];
+        let targetList = discovery.lists.find(list => list.title === selectedListName) ?? discovery.lists[0];
+        if (!targetList) throw new Error('No TechniSat Live-TV containers found.');
+        if (targetList.title !== selectedListName) {
             logger.warn(`List "${selectedListName}" not found, falling back to "${targetList.title}".`);
         }
-        if (!targetList) throw new Error('No TechniSat Live-TV containers found.');
 
         const didl = await browseUpnp(ip, port, targetList.id, discovery.path);
         const channels = parseChannelItems(didl);

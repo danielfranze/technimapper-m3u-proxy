@@ -132,7 +132,7 @@ test('a single configured auth credential fails closed', async () => {
         assert.equal((await fetch(base + '/health')).status, 200);
         const res = await fetch(base + '/api/config');
         assert.equal(res.status, 503);
-        assert.match(((await res.json()) as Record<string, string>).error, /misconfigured/);
+        assert.match(String(((await res.json()) as Record<string, string>).error), /misconfigured/);
     });
 });
 
@@ -167,7 +167,9 @@ test('the receiver target is changed through settings, not through a sync', asyn
         const fetched = await postJson(base, '/api/fetch-channels', { ...BASE_CONFIG, ip: '192.168.1.99' });
         assert.equal(fetched.status, 200);
         assert.equal(harness.calls.length, 1);
-        assert.equal(harness.calls[0].ip, '192.168.1.99');
+        const firstCall = harness.calls[0];
+        assert.ok(firstCall);
+        assert.equal(firstCall.ip, '192.168.1.99');
     });
 });
 
@@ -207,7 +209,7 @@ test('invalid mapping IDs are rejected without changing state', async () => {
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-mapping', { mapping: { A: 'bad id' } });
         assert.equal(res.status, 400);
-        assert.match(((await res.json()) as Record<string, string>).error, /Invalid channel ID/);
+        assert.match(String(((await res.json()) as Record<string, string>).error), /Invalid channel ID/);
         assert.deepEqual(harness.state.get().config.mapping, { A: 1 });
         assert.equal(harness.writes.length, 0);
     });
@@ -250,7 +252,7 @@ test('a failed sync keeps the last known playlist and records the error', async 
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/fetch-channels', {});
         assert.equal(res.status, 502);
-        assert.match(((await res.json()) as Record<string, string>).error, /receiver unreachable/);
+        assert.match(String(((await res.json()) as Record<string, string>).error), /receiver unreachable/);
         assert.equal(harness.state.get().cachedM3u8, before, 'the last known playlist must survive a failed sync');
         assert.equal(harness.state.get().sync.consecutiveFailures, 1);
         assert.match(harness.state.get().sync.lastError!, /receiver unreachable/);
@@ -343,7 +345,7 @@ test('save-settings rejects non-object payloads', async () => {
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-settings', [1, 2]);
         assert.equal(res.status, 400);
-        assert.match(((await res.json()) as Record<string, string>).error, /Invalid settings payload/);
+        assert.match(String(((await res.json()) as Record<string, string>).error), /Invalid settings payload/);
     });
 });
 
@@ -373,7 +375,7 @@ test('a sync whose settings change mid-flight is discarded instead of overwritin
 
         const syncRes = await syncPromise;
         assert.equal(syncRes.status, 409);
-        assert.match(((await syncRes.json()) as Record<string, string>).error, /changed during sync/i);
+        assert.match(String(((await syncRes.json()) as Record<string, string>).error), /changed during sync/i);
 
         // The stale sync must not have overwritten the new target or the playlist.
         assert.equal(harness.state.get().config.ip, '192.168.1.99');

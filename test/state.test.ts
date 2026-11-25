@@ -38,9 +38,13 @@ test('persistedSnapshot contains only plain data and does not share mapping/chan
 
     const snapshot = persistedSnapshot(state) as { mapping: Record<string, number>; channels: Array<{ name: string }> };
     snapshot.mapping.A = 99;
-    snapshot.channels[0].name = 'changed';
+    const snapshotChannel = snapshot.channels[0];
+    assert.ok(snapshotChannel);
+    snapshotChannel.name = 'changed';
     assert.equal(state.config.mapping.A, 1);
-    assert.equal(state.config.channels[0].name, 'A');
+    const stateChannel = state.config.channels[0];
+    assert.ok(stateChannel);
+    assert.equal(stateChannel.name, 'A');
 });
 
 test('applyPersistedState sanitises values, sorts the mapping and repairs invalid settings', () => {

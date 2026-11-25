@@ -87,12 +87,16 @@ function sortMapping(mapping: Mapping, channelNames: string[]): Mapping {
     if (!channelNames || channelNames.length === 0) return { ...mapping };
     const sorted: Mapping = {};
     for (const name of channelNames) {
-        if (Object.hasOwn(mapping, name) && !Object.hasOwn(sorted, name)) sorted[name] = mapping[name];
+        const value = mapping[name];
+        if (value !== undefined && Object.hasOwn(mapping, name) && !Object.hasOwn(sorted, name)) sorted[name] = value;
     }
     const rest = Object.keys(mapping).filter(name => !Object.hasOwn(sorted, name));
     // Unknown/stale entries keep their current (insertion) order instead of being
     // re-sorted alphabetically, so the user's manual ordering is preserved.
-    for (const name of rest) sorted[name] = mapping[name];
+    for (const name of rest) {
+        const value = mapping[name];
+        if (value !== undefined) sorted[name] = value;
+    }
     return sorted;
 }
 

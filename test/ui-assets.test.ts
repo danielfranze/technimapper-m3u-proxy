@@ -36,7 +36,7 @@ test('index.html has no inline event handlers or style attributes', () => {
 });
 
 test('every font referenced in styles.css exists and is a WOFF2 file', () => {
-    const files = [...css.matchAll(/url\('(\.\.\/fonts\/[^']+)'\)/g)].map((m: RegExpMatchArray) => m[1].replace(/^\.\.\//, ''));
+    const files = [...css.matchAll(/url\('(\.\.\/fonts\/[^']+)'\)/g)].map((m: RegExpMatchArray) => m[1]!.replace(/^\.\.\//, ''));
     assert.ok(files.length >= 4, 'expected at least 4 @font-face sources');
     for (const file of files) {
         const full = path.join(publicDir, file);
