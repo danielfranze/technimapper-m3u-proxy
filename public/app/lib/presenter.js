@@ -7,11 +7,9 @@
  */
 
 import { BACKEND_URL } from './view.js';
-import {
-    model
-} from './model.js';
+import { model } from './model.js';
 const {
-    escapeHtml, mappingsEqual, isDirty, getActiveMapping, getOrphans, describeDuplicates
+    escapeHtml, isDirty, getActiveMapping, getOrphans, describeDuplicates
 } = model;
 import {
     copySelectedUrl, renderTable, renderCopyButton, showToast, updateModelBadge,
@@ -19,20 +17,33 @@ import {
     fitVersionBadge, setListOptions, setSelectedList, getSelectedList,
     closeCopyMenu, closeListMenu
 } from './view.js';
-import { getJson, postJson } from '../api.js';
+import {
+    getConfig, saveSettings, fetchChannelsRequest, saveMappingRequest, importConfig
+} from '../api.js';
+import { byId, dialogById, inputById, maybeInputById, queryAll } from './dom.js';
 
-/** Asks what to do with unsaved changes. Resolves to 'save', 'discard' or 'cancel'. */
+/** @typedef {import('./model.js').Filter} Filter */
+/** @typedef {import('./model.js').CopySource} CopySource */
+/** @typedef {import('../api.js').SettingsPayload} SettingsPayload */
+/** @typedef {'fetch' | 'import'} UnsavedMode */
+/** @typedef {'save' | 'discard' | 'cancel'} UnsavedChoice */
+
+/**
+ * Asks what to do with unsaved changes. Resolves to 'save', 'discard' or 'cancel'.
+ * @param {UnsavedMode} mode
+ * @returns {Promise<UnsavedChoice>}
+ */
 export function askUnsaved(mode) {
-    const dialog = document.getElementById('unsavedDialog');
+    const dialog = dialogById('unsavedDialog');
     const isImport = mode === 'import';
-    document.getElementById('unsavedText').textContent = isImport
+    byId('unsavedText').textContent = isImport
         ? 'Importing replaces the saved mapping. Your unsaved changes will be lost.'
         : 'Apply & Fetch reloads the mapping from the server. Save your changes first or they will be lost.';
-    document.getElementById('unsavedSave').hidden = isImport;
-    document.getElementById('unsavedDiscard').textContent = isImport ? 'Discard and import' : 'Discard changes';
+    byId('unsavedSave').hidden = isImport;
+    byId('unsavedDiscard').textContent = isImport ? 'Discard and import' : 'Discard changes';
     return new Promise(resolve => {
         dialog.returnValue = '';
-        dialog.addEventListener('close', () => resolve(dialog.returnValue || 'cancel'), { once: true });
+        dialog.addEventListener('close', () => resolve(/** @type {UnsavedChoice} */ (dialog.returnValue || 'cancel')), { once: true });
         dialog.showModal();
     });
 }
@@ -48,18 +59,25 @@ export async function removeStaleMappings() {
     await saveMapping(orphans);
 }
 
-/** Sets the active channel filter mode ('all', 'mapped', or 'unmapped') and updates chips. */
+/**
+ * Sets the active channel filter mode ('all', 'mapped', or 'unmapped') and updates chips.
+ * @param {Filter} filterType
+ * @param {HTMLElement} element
+ */
 export function setFilter(filterType, element) {
     model.currentFilter = filterType;
-    const chipTexts = element.textContent.trim().toLowerCase();
-    document.querySelectorAll('.filter-chip').forEach(el => {
-        if (el.textContent.trim().toLowerCase() === chipTexts) el.classList.add('active');
+    const chipTexts = (element.textContent ?? '').trim().toLowerCase();
+    queryAll('.filter-chip').forEach(el => {
+        if ((el.textContent ?? '').trim().toLowerCase() === chipTexts) el.classList.add('active');
         else el.classList.remove('active');
     });
     renderTable();
 }
 
-/** Synchronizes search inputs (desktop + mobile). */
+/**
+ * Synchronizes search inputs (desktop + mobile).
+ * @param {string} val
+ */
 export function syncSearchInputs(val) {
     handleSearchInput(val);
 }
@@ -67,8 +85,11 @@ export function syncSearchInputs(val) {
 /** Automatically extracts numeric channel IDs from matching channel string names. */
 export function autoFillFromName() {
     let count = 0;
+    /** @type {string[]} */
     const skipped = [];
+    /** @type {Set<string>} */
     const used = new Set();
+    /** @type {Set<string>} */
     const seenNames = new Set();
     let nextId = 1;
 
@@ -98,11 +119,12 @@ export function autoFillFromName() {
         }
         seenNames.add(name);
 
+        /** @type {number | string | null} */
         let id = null;
         if (allHaveNumbers) {
             const match = name.match(/^(\d+)/);
-            if (match) {
-                const raw = match[1];
+            const raw = match?.[1];
+            if (raw) {
                 const num = Number(raw);
                 id = (raw.length <= 15 && Number.isSafeInteger(num)) ? num : raw;
             }
@@ -134,7 +156,12 @@ export function autoFillFromName() {
     }
 }
 
-/** Updates the mapping state for a single specific channel name. */
+/**
+ * Updates the mapping state for a single specific channel name.
+ * @param {string} name
+ * @param {string | number} value
+ * @param {number} [index]
+ */
 export function updateId(name, value, index) {
     if (value === '') {
         delete model.currentMapping[name];
@@ -152,17 +179,23 @@ export function updateId(name, value, index) {
     renderTable();
 }
 
-/** Asynchronously persists the current channel ID mapping state to the backend storage. */
+/**
+ * Asynchronously persists the current channel ID mapping state to the backend storage.
+ * @param {string[]} [removedStale]
+ * @returns {Promise<boolean>}
+ */
 export async function saveMapping(removedStale = []) {
+    /** @param {string[]} list */
     const summarize = (list) => list.slice(0, 3).join(', ') + (list.length > 3 ? ', …' : '');
     try {
-        const { ok: isOk, data: result } = await postJson('/api/save-mapping', { mapping: model.currentMapping });
+        const { ok: isOk, data: result } = await saveMappingRequest(model.currentMapping);
         if (isOk) {
             const groups = result.duplicateGroups || model.getDuplicateGroups(getActiveMapping());
             const orphans = result.orphans || getOrphans();
             const head = removedStale.length > 0
                 ? `Removed ${removedStale.length} stale entries (${summarize(removedStale)}) and saved.`
                 : 'Saved.';
+            /** @type {string[]} */
             const parts = [];
             if (groups.length > 0) {
                 parts.push(`${groups.length} ID(s) are used by more than one channel: ${describeDuplicates(groups)}.`);
@@ -182,7 +215,8 @@ export async function saveMapping(removedStale = []) {
             throw new Error(result.error || 'Save failed');
         }
     } catch (err) {
-        showToast(err.message || 'Error saving data to backend.', 'error');
+        const message = err instanceof Error ? err.message : String(err);
+        showToast(message || 'Error saving data to backend.', 'error');
         renderTable();
         return false;
     }
@@ -197,8 +231,9 @@ export function exportConfig() {
 /** Asynchronously fetches initial server configuration parameters and populates input fields. */
 export async function loadInitialConfig() {
     try {
-        const { data: config } = await getJson('/api/config');
-        const setValue = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+        const { data: config } = await getConfig();
+        /** @param {string} id @param {string | undefined} v */
+        const setValue = (id, v) => { const el = maybeInputById(id); if (el && v) el.value = v; };
 
         const versionEl = document.getElementById('versionLabel');
         if (versionEl && config.version) {
@@ -224,7 +259,7 @@ export async function loadInitialConfig() {
 export async function updateSyncTime() {
     if (document.hidden) return;
     try {
-        const { data } = await getJson('/api/config');
+        const { data } = await getConfig();
         const el = document.getElementById('last-sync-time');
         const badge = document.getElementById('syncBadge');
         if (!el) return;
@@ -243,16 +278,20 @@ export async function updateSyncTime() {
     } catch (e) {}
 }
 
-/** Persists receiver settings before a sync. */
+/**
+ * Persists receiver settings before a sync.
+ * @param {SettingsPayload} settings
+ * @returns {Promise<import('../api.js').SaveSettingsResponse>}
+ */
 export async function saveReceiverSettings(settings) {
-    const { data } = await postJson('/api/save-settings', settings);
+    const { data } = await saveSettings(settings);
     if (data.error) throw new Error(data.error || 'Could not save settings');
     return data;
 }
 
 /** Communicates with the backend server to retrieve live TV channels and available lists from the TechniSat receiver. */
 export async function fetchChannels() {
-    const applyBtn = document.getElementById('applyBtn');
+    const applyBtn = /** @type {HTMLButtonElement} */ (byId('applyBtn'));
     if (applyBtn.disabled) return;
 
     if (isDirty()) {
@@ -264,11 +303,11 @@ export async function fetchChannels() {
         if (choice === 'save' && !(await saveMapping())) return;
     }
 
-    const statusMsg = document.getElementById('statusMsg');
-    const listCard = document.getElementById('listCard');
-    const ip = document.getElementById('receiverIp').value.trim();
-    const port = document.getElementById('receiverPort').value.trim();
-    const cronExpression = document.getElementById('cronExpression').value.trim();
+    const statusMsg = byId('statusMsg');
+    const listCard = byId('listCard');
+    const ip = inputById('receiverIp').value.trim();
+    const port = inputById('receiverPort').value.trim();
+    const cronExpression = inputById('cronExpression').value.trim();
     const selectedListName = getSelectedList();
 
     statusMsg.className = 'info';
@@ -277,7 +316,7 @@ export async function fetchChannels() {
     applyBtn.disabled = true;
     try {
         await saveReceiverSettings({ ip, port, cronExpression, selectedListName });
-        const { data } = await postJson('/api/fetch-channels', { ip, port, cronExpression, selectedListName });
+        const { data } = await fetchChannelsRequest({ ip, port, cronExpression, selectedListName });
 
         if (data.error) throw new Error(data.error);
 
@@ -290,6 +329,7 @@ export async function fetchChannels() {
         model.currentMapping = data.mapping || {};
         model.savedMapping = { ...model.currentMapping };
         // Default: the first occurrence of a (possibly duplicated) name holds the ID.
+        /** @type {Set<string>} */
         const seenNames = new Set();
         model.detectedChannels.forEach((name, idx) => {
             if (!seenNames.has(name)) {
@@ -308,19 +348,23 @@ export async function fetchChannels() {
         updateSyncTime();
         showToast(`${model.detectedChannels.length} channels loaded`);
     } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
         updateModelBadge('error');
         listCard.style.display = 'none';
 
         statusMsg.className = 'error';
-        statusMsg.innerHTML = `<span class="material-icons-outlined icon-14">error</span> ${escapeHtml(err.message)}`;
+        statusMsg.innerHTML = `<span class="material-icons-outlined icon-14">error</span> ${escapeHtml(message)}`;
 
-        showToast(err.message, 'error');
+        showToast(message, 'error');
     } finally {
         applyBtn.disabled = false;
     }
 }
 
-/** Choosing an entry makes it the default for the main button and copies it right away. */
+/**
+ * Choosing an entry makes it the default for the main button and copies it right away.
+ * @param {CopySource} source
+ */
 export function chooseCopySource(source) {
     if (!model.hdhrEnabled && source === 'hdhr') source = 'm3u8';
     model.copySource = source;
@@ -330,7 +374,10 @@ export function chooseCopySource(source) {
     copySelectedUrl(source);
 }
 
-/** Picking another list behaves like the former native "change": it starts "Apply & Fetch". */
+/**
+ * Picking another list behaves like the former native "change": it starts "Apply & Fetch".
+ * @param {string} name
+ */
 export function chooseList(name) {
     const changed = name !== getSelectedList();
     closeListMenu(true);
@@ -339,15 +386,20 @@ export function chooseList(name) {
     fetchChannels();
 }
 
-/** Handles the uploaded configuration file, reads its text content, and submits it to the backend. */
+/**
+ * Handles the uploaded configuration file, reads its text content, and submits it to the backend.
+ * @param {Event} event
+ */
 export async function handleImportFile(event) {
-    const file = event.target.files[0];
+    const input = /** @type {HTMLInputElement | null} */ (event.target);
+    if (!input) return;
+    const file = input.files?.[0];
     if (!file) return;
 
     if (model.isDirty()) {
         const choice = await askUnsaved('import');
         if (choice !== 'discard') {
-            event.target.value = '';
+            input.value = '';
             return;
         }
         model.currentMapping = { ...model.savedMapping };
@@ -355,10 +407,11 @@ export async function handleImportFile(event) {
     }
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = async () => {
         try {
-            const importedData = JSON.parse(e.target.result);
-            const { ok: isOk, data: result } = await postJson('/api/import-config', importedData);
+            const text = typeof reader.result === 'string' ? reader.result : '';
+            const importedData = JSON.parse(text);
+            const { ok: isOk, data: result } = await importConfig(importedData);
             if (isOk && result.success) {
                 showToast('Configuration imported successfully!');
                 await loadInitialConfig();
@@ -367,9 +420,10 @@ export async function handleImportFile(event) {
                 throw new Error(result.error || 'Import failed');
             }
         } catch (err) {
-            showToast('Import failed: ' + err.message, 'error');
+            const message = err instanceof Error ? err.message : String(err);
+            showToast('Import failed: ' + message, 'error');
         } finally {
-            event.target.value = '';
+            input.value = '';
         }
     };
     reader.readAsText(file);
@@ -378,8 +432,8 @@ export async function handleImportFile(event) {
 /** Returns the active search term from the desktop/mobile inputs. */
 function getSearchTerm() {
     try {
-        const searchInput = document.getElementById('searchInput');
-        const searchInputMobile = document.getElementById('searchInputMobile');
+        const searchInput = maybeInputById('searchInput');
+        const searchInputMobile = maybeInputById('searchInputMobile');
         return ((searchInput && searchInput.value) || (searchInputMobile && searchInputMobile.value) || '').toLowerCase();
     } catch (e) { return ''; }
 }

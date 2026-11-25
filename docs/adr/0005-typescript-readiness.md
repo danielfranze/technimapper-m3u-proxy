@@ -28,6 +28,11 @@ completed: `lib/types.ts` and `lib/ports.ts` were removed, `jsconfig.json` was
 removed, and the backend is now fully typed TypeScript (`nodenext`, `strict:
 true`) with tests typed selectively in `test/`.
 
+Update 2026-11-25: the frontend stays vanilla JavaScript without a build step,
+but is now statically checked too: `tsconfig.frontend.json` enables `checkJs`
+and `strict`, JSDoc typedefs describe state and API responses, and
+`npm run check:frontend` runs in CI and the release workflow.
+
 ## Consequences
 
 - IDEs and AI tools get useful type information without a build step.

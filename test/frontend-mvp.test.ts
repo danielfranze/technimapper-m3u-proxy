@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 'use strict';
 
 import test from 'node:test';
@@ -119,7 +120,7 @@ interface SetModelInput {
     currentMapping?: Record<string, string | number>;
     savedMapping?: Record<string, string | number>;
     detectedChannels?: string[];
-    currentFilter?: string;
+    currentFilter?: 'all' | 'mapped' | 'unmapped';
     hdhrEnabled?: boolean;
 }
 
@@ -268,9 +269,32 @@ test('presenter: fetchChannels uses api helpers', async () => {
     assert.equal(listCard.style.display, 'block');
 });
 
+test('dom: byId fails fast for a missing element and queryAll returns elements', async () => {
+    const { byId, queryAll } = await import('../public/app/lib/dom.js');
+    const originalGet = documentStub.getElementById;
+    const originalAll = documentStub.querySelectorAll;
+    try {
+        documentStub.getElementById = (() => null) as unknown as typeof documentStub.getElementById;
+        assert.throws(() => byId('missing'), /Missing element #missing/);
+    } finally {
+        documentStub.getElementById = originalGet;
+    }
+    try {
+        documentStub.querySelectorAll = (() => [getOrCreateElement('dom-test')]) as unknown as typeof documentStub.querySelectorAll;
+        const found = queryAll('.dom-test');
+        assert.equal(found.length, 1);
+        assert.equal(found[0]?.id, 'dom-test');
+    } finally {
+        documentStub.querySelectorAll = originalAll;
+    }
+});
+
 test('MVP frontend files are syntactically valid', () => {
     const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app');
-    for (const f of ['main.js', 'api.js', 'lib/model.js', 'lib/view.js', 'lib/presenter.js']) {
-        assert.ok(fs.existsSync(path.join(root, f)), `${f} missing`);
+    for (const f of ['main.js', 'api.js', 'lib/model.js', 'lib/view.js', 'lib/presenter.js', 'lib/dom.js']) {
+        const file = path.join(root, f);
+        assert.ok(fs.existsSync(file), `${f} missing`);
+        const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+        assert.equal(result.status, 0, `${f} has a syntax error:\n${result.stderr}`);
     }
 });

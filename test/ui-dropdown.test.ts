@@ -21,9 +21,9 @@ test('the channel list uses a custom dropdown that is a listbox, not a visible n
 
 test('the hidden select is only touched by the dropdown helpers', () => {
     const view = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'lib', 'view.js'), 'utf8');
-    const main = script;
-    const uses = (main + view).match(/getElementById\('selectedListName'\)/g) || [];
-    assert.ok(uses.length >= 1, 'only listSelect() in view.js may access the hidden select');
+    const main = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'main.js'), 'utf8');
+    const uses = (main + view).match(/(?:getElementById|byId)\('selectedListName'\)/g) || [];
+    assert.equal(uses.length, 1, 'only listSelect() in view.js may access the hidden select');
     assert.ok(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'lib', 'presenter.js'), 'utf8').includes('setListOptions(data.availableLists, data.selectedListName)'));
     assert.ok(main.includes('setSelectedList(model.activeListName)') || fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'lib', 'presenter.js'), 'utf8').includes('setSelectedList(model.activeListName)'));
 });

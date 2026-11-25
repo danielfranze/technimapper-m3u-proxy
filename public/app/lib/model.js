@@ -5,6 +5,37 @@
  * View helpers live in `view.js`, presenter logic in `presenter.js`.
  */
 
+/**
+ * @typedef {Record<string, string | number>} Mapping
+ * @typedef {{ name: string, url: string }} Channel
+ * @typedef {'all' | 'mapped' | 'unmapped'} Filter
+ * @typedef {'hdhr' | 'm3u8'} CopySource
+ * @typedef {{ id: string, channels: string[] }} DuplicateGroup
+ */
+
+/**
+ * @typedef {object} Model
+ * @property {Mapping} currentMapping
+ * @property {Mapping} savedMapping
+ * @property {string} activeListName
+ * @property {string | null | undefined} lastSyncSeen
+ * @property {string[]} detectedChannels
+ * @property {Filter} currentFilter
+ * @property {Record<string, number>} activeOccurrence
+ * @property {boolean} hdhrEnabled
+ * @property {CopySource} copySource
+ * @property {string} searchTerm
+ * @property {() => boolean} isDirty
+ * @property {() => Mapping} getActiveMapping
+ * @property {() => string[]} getOrphans
+ * @property {(mapping: Mapping) => DuplicateGroup[]} getDuplicateGroups
+ * @property {(value: unknown) => string} escapeHtml
+ * @property {(iso: string | null | undefined, locale?: string) => string} formatSync
+ * @property {(a: Mapping, b: Mapping) => boolean} mappingsEqual
+ * @property {(groups: DuplicateGroup[], limit?: number) => string} describeDuplicates
+ */
+
+/** @type {Model} */
 export const model = {
     currentMapping: {},
     savedMapping: {},
@@ -38,12 +69,13 @@ export const model = {
     },
 
     getDuplicateGroups(mapping) {
+        /** @type {Map<string, string[]>} */
         const byId = new Map();
         for (const [name, id] of Object.entries(mapping)) {
             if (id === '' || id === null || id === undefined) continue;
             const key = String(id);
             if (!byId.has(key)) byId.set(key, []);
-            byId.get(key).push(name);
+            byId.get(key)?.push(name);
         }
         return [...byId].filter(([, names]) => names.length > 1).map(([id, channels]) => ({ id, channels }));
     },
@@ -54,6 +86,7 @@ export const model = {
     describeDuplicates,
 };
 
+/** @returns {CopySource} */
 function loadCopySource() {
     try {
         // localStorage is only available in browsers (Node logs an experimental
@@ -68,28 +101,50 @@ function loadCopySource() {
     return 'hdhr';
 }
 
+/**
+ * @param {Mapping} a
+ * @param {Mapping} b
+ * @returns {boolean}
+ */
 function mappingsEqual(a, b) {
     const keysA = Object.keys(a);
     if (keysA.length !== Object.keys(b).length) return false;
     return keysA.every(key => Object.hasOwn(b, key) && String(a[key]) === String(b[key]));
 }
 
-/** Escapes text for safe use in HTML content and double-quoted attributes. */
+/** @type {Record<string, string>} */
+const ESCAPE_HTML = {
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+};
+
+/**
+ * Escapes text for safe use in HTML content and double-quoted attributes.
+ * @param {unknown} value
+ * @returns {string}
+ */
 function escapeHtml(value) {
-    return String(value).replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[c]));
+    return String(value).replace(/[&<>"']/g, c => ESCAPE_HTML[c] ?? c);
 }
 
-/** Formats an ISO timestamp for display; falls back to "Never". */
+/**
+ * Formats an ISO timestamp for display; falls back to "Never".
+ * @param {string | null | undefined} iso
+ * @param {string} [locale]
+ * @returns {string}
+ */
 function formatSync(iso, locale) {
     if (!iso) return 'Never';
     const d = new Date(iso);
-    if (isNaN(d)) return 'Never';
+    if (Number.isNaN(d.getTime())) return 'Never';
     return d.toLocaleString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-/** Short human-readable summary, e.g. "1 (Das Erste HD, Das Erste SD); 3 (3sat, Drei) ...". */
+/**
+ * Short human-readable summary, e.g. "1 (Das Erste HD, Das Erste SD); 3 (3sat, Drei) ...".
+ * @param {DuplicateGroup[]} groups
+ * @param {number} [limit]
+ * @returns {string}
+ */
 function describeDuplicates(groups, limit = 3) {
     const shown = groups.slice(0, limit).map(g =>
         `${g.id} (${g.channels.slice(0, 3).join(', ')}${g.channels.length > 3 ? ', …' : ''})`);

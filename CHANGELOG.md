@@ -6,8 +6,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 ## [2.0.0-rc.5]
 
 ### Added
-- Frontend MVP: `public/app/lib/` – `model.js` (state + pure logic), `view.js` (DOM rendering), `presenter.js` (business logic). `main.js` is now just wiring (~90 lines).
-- `public/app/lib/api.js` – central `getJson`/`postJson` helpers.
+- Frontend MVP: `public/app/lib/` – `model.js` (state + pure logic), `view.js` (DOM rendering), `presenter.js` (business logic); `main.js` only wires DOM events to the presenter.
+- `public/app/api.js` – typed endpoint wrappers around `getJson`/`postJson`.
+- `public/app/lib/dom.js` – typed DOM access helpers used by view, presenter and main.
+- `tsconfig.frontend.json` + `npm run check:frontend` – `checkJs`/JSDoc type checking for the vanilla frontend, without a build step; also runs in CI and the release workflow.
 - CSS variables for colors that used to be inline (`--accent-muted`, `--danger-muted`, …); `updateModelBadge` uses classes instead of inline styles.
 - Bugfix in the auto-fill logic: `/^\d+/` instead of `/^\\d+/` – IDs are now correctly extracted from names.
 - API documentation: `docs/openapi.yaml` (OpenAPI 3.0 spec with full schemas, statuses, examples).
@@ -15,7 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - `test/server-boot.test.ts` – integration test: server boots, serves health endpoints, graceful exit on SIGTERM.
 - `test/validation-property.test.ts` – property-based tests (fast-check) for `validateSettings`/`isAllowedReceiverIp`/`validateMapping`.
 - `test/openapi.test.ts` – validates `docs/openapi.yaml` + parity with routes in code.
-- `npm run check:tests` script (`tsc -p test && tsc -p test-helpers`) + CI job "Type checks (tests, helpers, e2e)".
+- `npm run check:tests` script (`npx tsc --noEmit -p test && npx tsc --noEmit -p test-helpers`) + CI job "Type checks (tests, helpers, e2e)".
 
 ### Changed
 - API: `GET /api/get-config` renamed to `GET /api/config` (frontend and tests updated).
@@ -26,9 +28,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Architecture: app composition split into `lib/app.ts` + `lib/app/types.ts` + `lib/routes/index.ts`.
 - TypeScript: enabled `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride` and `noFallthroughCasesInSwitch`; fixed the resulting issues in receiver fallback logging, XML escaping, mapping sorting, Basic-Auth decoding and the test suite.
 - Release workflow now runs `npm run check:tests`; `npm run test:all` no longer builds twice.
+- Frontend API responses (`config`, `save-settings`, `fetch-channels`, `save-mapping`, `import-config`) are documented with JSDoc typedefs and accessed through typed wrappers.
 - Refactoring rounds: rounds 5–8 (OOP, domain modules, middleware split, error helpers, MVP split, app/composition split).
 - Tests (`test/ui-*.ts`) adapted to the new frontend structure; consolidated duplicate syntax tests.
-- `npm run build && npm test && npm run test:e2e` – all green (166 + 23 E2E tests).
+- `npm run build && npm test && npm run test:e2e` – all green (167 unit/integration tests + 23 E2E tests).
+
+### Fixed
+- Copy-menu keyboard navigation called `.filter()` on a `NodeList`, which browsers do not provide; it now uses the typed DOM helper (`Array.from`). Found by the new frontend type check.
 
 ## [2.0.0-rc.4]
 

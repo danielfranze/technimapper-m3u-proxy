@@ -13,6 +13,7 @@
         "build": "tsc",
         "start": "node dist/server.js",
         "check": "tsc --noEmit",
+        "check:frontend": "tsc -p tsconfig.frontend.json",
         "check:tests": "npx tsc --noEmit -p test && npx tsc --noEmit -p test-helpers",
         "test": "npm run build && node --import tsx --test",
         "coverage": "npm run build && node --import tsx scripts/coverage.js",
