@@ -33,6 +33,10 @@ but is now statically checked too: `tsconfig.frontend.json` enables `checkJs`
 and `strict`, JSDoc typedefs describe state and API responses, and
 `npm run check:frontend` runs in CI and the release workflow.
 
+Update 2026-11-25 (later): the frontend was migrated to TypeScript with plain
+`tsc` (ADR-0007): sources in `frontend/`, emitted ESM in `public/app/js/`,
+`checkJs`/JSDoc removed.
+
 ## Consequences
 
 - IDEs and AI tools get useful type information without a build step.

@@ -1,6 +1,5 @@
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 'use strict';
 
 import test from 'node:test';
@@ -109,9 +108,9 @@ Object.defineProperty(globalThis, 'navigator', { value: { clipboard: undefined }
 Object.defineProperty(globalThis, 'localStorage', { value: { getItem: () => null, setItem: () => undefined }, configurable: true });
 
 // Imports after the browser stubs.
-const { model } = await import('../public/app/lib/model.js');
-const { renderTable, updateDirtyIndicator, showToast, handleSearchInput } = await import('../public/app/lib/view.js');
-const { autoFillFromName, updateId, fetchChannels } = await import('../public/app/lib/presenter.js');
+const { model } = await import('../frontend/lib/model.ts');
+const { renderTable, updateDirtyIndicator, showToast, handleSearchInput } = await import('../frontend/lib/view.ts');
+const { autoFillFromName, updateId, fetchChannels } = await import('../frontend/lib/presenter.ts');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -270,7 +269,7 @@ test('presenter: fetchChannels uses api helpers', async () => {
 });
 
 test('dom: byId fails fast for a missing element and queryAll returns elements', async () => {
-    const { byId, queryAll } = await import('../public/app/lib/dom.js');
+    const { byId, queryAll } = await import('../frontend/lib/dom.ts');
     const originalGet = documentStub.getElementById;
     const originalAll = documentStub.querySelectorAll;
     try {
@@ -289,12 +288,13 @@ test('dom: byId fails fast for a missing element and queryAll returns elements',
     }
 });
 
-test('MVP frontend files are syntactically valid', () => {
-    const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app');
-    for (const f of ['main.js', 'api.js', 'lib/model.js', 'lib/view.js', 'lib/presenter.js', 'lib/dom.js']) {
-        const file = path.join(root, f);
-        assert.ok(fs.existsSync(file), `${f} missing`);
-        const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
-        assert.equal(result.status, 0, `${f} has a syntax error:\n${result.stderr}`);
-    }
+test('the built frontend entry is ESM and wired into index.html', () => {
+    const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+    const entry = path.join(root, 'public', 'app', 'js', 'main.js');
+    assert.ok(fs.existsSync(entry), `${entry} missing - run npm run build:frontend`);
+    const code = fs.readFileSync(entry, 'utf8');
+    assert.match(code, /^import .* from '\.\/lib\/model\.js';/m);
+    assert.match(code, /from '\.\/lib\/presenter\.js';/);
+    const html = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+    assert.match(html, /src="app\/js\/main\.js"/);
 });

@@ -64,7 +64,7 @@ test('server boots, serves health endpoints and exits cleanly on SIGTERM', async
         assert.equal(health.status, 200);
         const healthBody = await health.json() as { status: string; version: string; configured: boolean; playlistAvailable: boolean };
         assert.equal(healthBody.status, 'ok', 'health payload contains status ok');
-        assert.equal(healthBody.version, '2.0.0-rc.5');
+        assert.equal(healthBody.version, '2.0.0-rc.6');
         assert.equal(healthBody.configured, false);
         assert.equal(healthBody.playlistAvailable, false);
 

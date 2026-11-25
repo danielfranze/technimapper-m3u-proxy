@@ -3,13 +3,26 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [2.0.0-rc.6]
+
+### Added
+- Frontend TypeScript migration: sources in `frontend/`, emitted ESM in `public/app/js/`, strict flags, no bundler (ADR 0007). `public/app/js/` is generated and gitignored.
+- `build:backend` / `build:frontend` scripts; `npm run build` now builds both halves.
+- E2E smoke test fails on `pageerror` to catch a broken frontend module graph.
+
+### Changed
+- `tsconfig.frontend.json` now compiles TypeScript (`frontend/` → `public/app/js/`); `allowJs`/`checkJs` removed.
+- Tests import the TypeScript sources directly (`tsx`); `test/tsconfig.json` gained the DOM libs.
+- `scripts/coverage.js` excludes `frontend/**`.
+- README documents `frontend/` as source and `public/app/js/` as generated output.
+
 ## [2.0.0-rc.5]
 
 ### Added
 - Frontend MVP: `public/app/lib/` – `model.js` (state + pure logic), `view.js` (DOM rendering), `presenter.js` (business logic); `main.js` only wires DOM events to the presenter.
 - `public/app/api.js` – typed endpoint wrappers around `getJson`/`postJson`.
 - `public/app/lib/dom.js` – typed DOM access helpers used by view, presenter and main.
-- `tsconfig.frontend.json` + `npm run check:frontend` – `checkJs`/JSDoc type checking for the vanilla frontend, without a build step; also runs in CI and the release workflow.
+- `tsconfig.frontend.json` + `npm run check:frontend` – TypeScript checking/building for the frontend (`frontend/` → `public/app/js/`); runs in CI and the release workflow.
 - CSS variables for colors that used to be inline (`--accent-muted`, `--danger-muted`, …); `updateModelBadge` uses classes instead of inline styles.
 - Bugfix in the auto-fill logic: `/^\d+/` instead of `/^\\d+/` – IDs are now correctly extracted from names.
 - API documentation: `docs/openapi.yaml` (OpenAPI 3.0 spec with full schemas, statuses, examples).

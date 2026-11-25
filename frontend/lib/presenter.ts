@@ -1,13 +1,12 @@
-'use strict';
-
 /**
- * Frontend MVP – Presenter: business logic on top of `model.js` (state) and
- * `view.js` (DOM). DOM rendering lives in view.js, so this file stays testable
+ * Frontend MVP – Presenter: business logic on top of `model.ts` (state) and
+ * `view.ts` (DOM). DOM rendering lives in view.ts, so this file stays testable
  * without a browser.
  */
 
 import { BACKEND_URL } from './view.js';
 import { model } from './model.js';
+import type { Filter, CopySource } from './model.js';
 const {
     escapeHtml, isDirty, getActiveMapping, getOrphans, describeDuplicates
 } = model;
@@ -20,20 +19,16 @@ import {
 import {
     getConfig, saveSettings, fetchChannelsRequest, saveMappingRequest, importConfig
 } from '../api.js';
-import { byId, dialogById, inputById, maybeInputById, queryAll } from './dom.js';
+import type { SettingsPayload, SaveSettingsResponse } from '../api.js';
+import { byId, buttonById, dialogById, inputById, maybeInputById, queryAll } from './dom.js';
 
-/** @typedef {import('./model.js').Filter} Filter */
-/** @typedef {import('./model.js').CopySource} CopySource */
-/** @typedef {import('../api.js').SettingsPayload} SettingsPayload */
-/** @typedef {'fetch' | 'import'} UnsavedMode */
-/** @typedef {'save' | 'discard' | 'cancel'} UnsavedChoice */
+type UnsavedMode = 'fetch' | 'import';
+type UnsavedChoice = 'save' | 'discard' | 'cancel';
 
 /**
  * Asks what to do with unsaved changes. Resolves to 'save', 'discard' or 'cancel'.
- * @param {UnsavedMode} mode
- * @returns {Promise<UnsavedChoice>}
  */
-export function askUnsaved(mode) {
+export function askUnsaved(mode: UnsavedMode): Promise<UnsavedChoice> {
     const dialog = dialogById('unsavedDialog');
     const isImport = mode === 'import';
     byId('unsavedText').textContent = isImport
@@ -43,13 +38,13 @@ export function askUnsaved(mode) {
     byId('unsavedDiscard').textContent = isImport ? 'Discard and import' : 'Discard changes';
     return new Promise(resolve => {
         dialog.returnValue = '';
-        dialog.addEventListener('close', () => resolve(/** @type {UnsavedChoice} */ (dialog.returnValue || 'cancel')), { once: true });
+        dialog.addEventListener('close', () => resolve((dialog.returnValue || 'cancel') as UnsavedChoice), { once: true });
         dialog.showModal();
     });
 }
 
 /** Removes IDs of channels that no longer exist and saves immediately. */
-export async function removeStaleMappings() {
+export async function removeStaleMappings(): Promise<void> {
     const orphans = getOrphans();
     if (orphans.length === 0) {
         showToast('No stale entries found');
@@ -61,10 +56,8 @@ export async function removeStaleMappings() {
 
 /**
  * Sets the active channel filter mode ('all', 'mapped', or 'unmapped') and updates chips.
- * @param {Filter} filterType
- * @param {HTMLElement} element
  */
-export function setFilter(filterType, element) {
+export function setFilter(filterType: Filter, element: HTMLElement): void {
     model.currentFilter = filterType;
     const chipTexts = (element.textContent ?? '').trim().toLowerCase();
     queryAll('.filter-chip').forEach(el => {
@@ -76,21 +69,17 @@ export function setFilter(filterType, element) {
 
 /**
  * Synchronizes search inputs (desktop + mobile).
- * @param {string} val
  */
-export function syncSearchInputs(val) {
+export function syncSearchInputs(val: string): void {
     handleSearchInput(val);
 }
 
 /** Automatically extracts numeric channel IDs from matching channel string names. */
-export function autoFillFromName() {
+export function autoFillFromName(): void {
     let count = 0;
-    /** @type {string[]} */
-    const skipped = [];
-    /** @type {Set<string>} */
-    const used = new Set();
-    /** @type {Set<string>} */
-    const seenNames = new Set();
+    const skipped: string[] = [];
+    const used = new Set<string>();
+    const seenNames = new Set<string>();
     let nextId = 1;
 
     // Only extract IDs from names when EVERY channel name yields a number.
@@ -119,8 +108,7 @@ export function autoFillFromName() {
         }
         seenNames.add(name);
 
-        /** @type {number | string | null} */
-        let id = null;
+        let id: number | string | null = null;
         if (allHaveNumbers) {
             const match = name.match(/^(\d+)/);
             const raw = match?.[1];
@@ -158,11 +146,8 @@ export function autoFillFromName() {
 
 /**
  * Updates the mapping state for a single specific channel name.
- * @param {string} name
- * @param {string | number} value
- * @param {number} [index]
  */
-export function updateId(name, value, index) {
+export function updateId(name: string, value: string | number, index?: number): void {
     if (value === '') {
         delete model.currentMapping[name];
         delete model.activeOccurrence[name];
@@ -173,7 +158,9 @@ export function updateId(name, value, index) {
         const isCanonicalNumber = /^(0|[1-9]\d*)$/.test(text) && text.length <= 15 && Number.isSafeInteger(Number(text));
         model.currentMapping[name] = isCanonicalNumber ? Number(text) : text;
         // The occurrence being edited becomes the one holding the ID.
-        model.activeOccurrence[name] = (typeof index === 'number') ? index : (model.activeOccurrence[name] ?? model.detectedChannels.indexOf(name));
+        model.activeOccurrence[name] = (typeof index === 'number')
+            ? index
+            : (model.activeOccurrence[name] ?? model.detectedChannels.indexOf(name));
     }
     updateDirtyIndicator();
     renderTable();
@@ -181,12 +168,9 @@ export function updateId(name, value, index) {
 
 /**
  * Asynchronously persists the current channel ID mapping state to the backend storage.
- * @param {string[]} [removedStale]
- * @returns {Promise<boolean>}
  */
-export async function saveMapping(removedStale = []) {
-    /** @param {string[]} list */
-    const summarize = (list) => list.slice(0, 3).join(', ') + (list.length > 3 ? ', …' : '');
+export async function saveMapping(removedStale: string[] = []): Promise<boolean> {
+    const summarize = (list: string[]) => list.slice(0, 3).join(', ') + (list.length > 3 ? ', …' : '');
     try {
         const { ok: isOk, data: result } = await saveMappingRequest(model.currentMapping);
         if (isOk) {
@@ -195,8 +179,7 @@ export async function saveMapping(removedStale = []) {
             const head = removedStale.length > 0
                 ? `Removed ${removedStale.length} stale entries (${summarize(removedStale)}) and saved.`
                 : 'Saved.';
-            /** @type {string[]} */
-            const parts = [];
+            const parts: string[] = [];
             if (groups.length > 0) {
                 parts.push(`${groups.length} ID(s) are used by more than one channel: ${describeDuplicates(groups)}.`);
             }
@@ -223,17 +206,19 @@ export async function saveMapping(removedStale = []) {
 }
 
 /** Triggers the server endpoint to export the current system configuration and mapping file as a JSON download. */
-export function exportConfig() {
+export function exportConfig(): void {
     window.location.href = BACKEND_URL + '/api/export-config';
     showToast('Exporting configuration...');
 }
 
 /** Asynchronously fetches initial server configuration parameters and populates input fields. */
-export async function loadInitialConfig() {
+export async function loadInitialConfig(): Promise<void> {
     try {
         const { data: config } = await getConfig();
-        /** @param {string} id @param {string | undefined} v */
-        const setValue = (id, v) => { const el = maybeInputById(id); if (el && v) el.value = v; };
+        const setValue = (id: string, v: string | undefined) => {
+            const el = maybeInputById(id);
+            if (el && v) el.value = v;
+        };
 
         const versionEl = document.getElementById('versionLabel');
         if (versionEl && config.version) {
@@ -256,7 +241,7 @@ export async function loadInitialConfig() {
 }
 
 /** Polls the backend for the latest playlist synchronization timestamp and updates the UI badge. */
-export async function updateSyncTime() {
+export async function updateSyncTime(): Promise<void> {
     if (document.hidden) return;
     try {
         const { data } = await getConfig();
@@ -275,23 +260,21 @@ export async function updateSyncTime() {
         }
         fitLayout();
         if (changed) triggerSyncPulse();
-    } catch (e) {}
+    } catch (e) { /* ignore */ }
 }
 
 /**
  * Persists receiver settings before a sync.
- * @param {SettingsPayload} settings
- * @returns {Promise<import('../api.js').SaveSettingsResponse>}
  */
-export async function saveReceiverSettings(settings) {
+export async function saveReceiverSettings(settings: SettingsPayload): Promise<SaveSettingsResponse> {
     const { data } = await saveSettings(settings);
     if (data.error) throw new Error(data.error || 'Could not save settings');
     return data;
 }
 
 /** Communicates with the backend server to retrieve live TV channels and available lists from the TechniSat receiver. */
-export async function fetchChannels() {
-    const applyBtn = /** @type {HTMLButtonElement} */ (byId('applyBtn'));
+export async function fetchChannels(): Promise<void> {
+    const applyBtn = buttonById('applyBtn');
     if (applyBtn.disabled) return;
 
     if (isDirty()) {
@@ -329,8 +312,7 @@ export async function fetchChannels() {
         model.currentMapping = data.mapping || {};
         model.savedMapping = { ...model.currentMapping };
         // Default: the first occurrence of a (possibly duplicated) name holds the ID.
-        /** @type {Set<string>} */
-        const seenNames = new Set();
+        const seenNames = new Set<string>();
         model.detectedChannels.forEach((name, idx) => {
             if (!seenNames.has(name)) {
                 seenNames.add(name);
@@ -363,9 +345,8 @@ export async function fetchChannels() {
 
 /**
  * Choosing an entry makes it the default for the main button and copies it right away.
- * @param {CopySource} source
  */
-export function chooseCopySource(source) {
+export function chooseCopySource(source: CopySource): void {
     if (!model.hdhrEnabled && source === 'hdhr') source = 'm3u8';
     model.copySource = source;
     try { localStorage.setItem('technimapper.copySource', source); } catch (e) { /* storage unavailable */ }
@@ -376,9 +357,8 @@ export function chooseCopySource(source) {
 
 /**
  * Picking another list behaves like the former native "change": it starts "Apply & Fetch".
- * @param {string} name
  */
-export function chooseList(name) {
+export function chooseList(name: string): void {
     const changed = name !== getSelectedList();
     closeListMenu(true);
     if (!changed) return;
@@ -388,10 +368,9 @@ export function chooseList(name) {
 
 /**
  * Handles the uploaded configuration file, reads its text content, and submits it to the backend.
- * @param {Event} event
  */
-export async function handleImportFile(event) {
-    const input = /** @type {HTMLInputElement | null} */ (event.target);
+export async function handleImportFile(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement | null;
     if (!input) return;
     const file = input.files?.[0];
     if (!file) return;
@@ -410,7 +389,7 @@ export async function handleImportFile(event) {
     reader.onload = async () => {
         try {
             const text = typeof reader.result === 'string' ? reader.result : '';
-            const importedData = JSON.parse(text);
+            const importedData: unknown = JSON.parse(text);
             const { ok: isOk, data: result } = await importConfig(importedData);
             if (isOk && result.success) {
                 showToast('Configuration imported successfully!');
@@ -430,7 +409,7 @@ export async function handleImportFile(event) {
 }
 
 /** Returns the active search term from the desktop/mobile inputs. */
-function getSearchTerm() {
+function getSearchTerm(): string {
     try {
         const searchInput = maybeInputById('searchInput');
         const searchInputMobile = maybeInputById('searchInputMobile');

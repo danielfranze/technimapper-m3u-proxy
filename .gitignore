@@ -39,3 +39,6 @@ blob-report/
 
 # Playwright runtime data
 .playwright-data/
+
+# Generated frontend build output
+public/app/js/

@@ -6,8 +6,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { model, loadCopySource } from '../public/app/lib/model.js';
-import { copyUrlFor, COPY_SOURCES } from '../public/app/lib/view.js';
+import { model, loadCopySource } from '../frontend/lib/model.ts';
+import { copyUrlFor, COPY_SOURCES } from '../frontend/lib/view.ts';
 
 const html: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
 
@@ -54,8 +54,8 @@ test('the header drops " URL", then the word "Copy" (never the source word), the
     assert.ok(css.includes('.header-meta.hide-url .copy-url'), 'hide-url rule');
     assert.ok(css.includes('.header-meta.hide-word .copy-word'), 'hide-word rule');
     assert.ok(css.includes('.header-meta.hide-label .sync-label'), 'hide-label rule');
-    const view = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'lib', 'view.js'), 'utf8');
-    const presenter = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'lib', 'presenter.js'), 'utf8');
+    const view = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'lib', 'view.ts'), 'utf8');
+    const presenter = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'lib', 'presenter.ts'), 'utf8');
     assert.ok(view.includes('function fitHeaderMeta()'), 'fitHeaderMeta defined in view.js');
     assert.ok(view.includes('fitHeaderMeta();'), 'fitHeaderMeta wired via fitLayout');
     assert.ok(presenter.includes('fitLayout'), 'presenter calls fitLayout');

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { model } from '../public/app/lib/model.js';
-import { autoFillFromName, updateId } from '../public/app/lib/presenter.js';
+import { model } from '../frontend/lib/model.ts';
+import { autoFillFromName, updateId } from '../frontend/lib/presenter.ts';
 
 // Test-local typed view of the MVP model (the frontend is JS; the tests are TS).
 type UiModel = {

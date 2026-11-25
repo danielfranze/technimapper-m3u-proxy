@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Frontend MVP – main.js: event wiring / bootstrap. Thin layer that connects
  * DOM events to `presenter.js` actions. Logic lives in model + presenter.
@@ -11,7 +9,8 @@ import { removeStaleMappings, setFilter, autoFillFromName, updateId,
     chooseCopySource, chooseList, syncSearchInputs, handleImportFile } from './lib/presenter.js';
 import { openCopyMenu, closeCopyMenu, toggleCopyMenu, openListMenu, closeListMenu,
     fitLayout, copySelectedUrl, listMenuItems } from './lib/view.js';
-import { byId, dialogById, eventTarget, queryAll } from './lib/dom.js';
+import { byId, dialogById, eventTarget, maybeInputById, queryAll } from './lib/dom.js';
+import type { CopySource } from './lib/model.js';
 
 // Unsaved-changes dialog choices
 queryAll('#unsavedDialog [data-choice]').forEach(btn => {
@@ -28,11 +27,11 @@ window.addEventListener('beforeunload', (event) => {
 // ---- Copy menu wiring ----
 byId('copyToggle').addEventListener('click', toggleCopyMenu);
 byId('copyMenu').addEventListener('click', (event) => {
-    const target = /** @type {HTMLElement | null} */ (eventTarget(event));
+    const target = eventTarget(event);
     const item = target?.closest('.dd-item');
     if (!item) return;
-    const source = /** @type {HTMLElement} */ (item).dataset.source;
-    if (source === 'hdhr' || source === 'm3u8') chooseCopySource(source);
+    const source = (item as HTMLElement).dataset.source;
+    if (source === 'hdhr' || source === 'm3u8') chooseCopySource(source as CopySource);
 });
 
 // ---- Channel list dropdown wiring ----
@@ -41,10 +40,10 @@ byId('listToggle').addEventListener('click', () => {
     else closeListMenu(true);
 });
 byId('listMenu').addEventListener('click', (event) => {
-    const target = /** @type {HTMLElement | null} */ (eventTarget(event));
+    const target = eventTarget(event);
     const item = target?.closest('.dd-item');
     if (!item) return;
-    const value = /** @type {HTMLElement} */ (item).dataset.value;
+    const value = (item as HTMLElement).dataset.value;
     if (value) chooseList(value);
 });
 
@@ -54,11 +53,10 @@ byId('listMenu').addEventListener('click', (event) => {
     if (!root) return;
     const menu = byId('listMenu');
     let typed = '';
-    /** @type {ReturnType<typeof setTimeout> | null} */
-    let typedTimer = null;
+    let typedTimer: ReturnType<typeof setTimeout> | null = null;
 
     root.addEventListener('keydown', (event) => {
-        const target = /** @type {HTMLElement | null} */ (eventTarget(event));
+        const target = eventTarget(event);
         if (event.key === 'Escape' && !menu.hidden) {
             event.preventDefault();
             closeListMenu(true);
@@ -67,14 +65,14 @@ byId('listMenu').addEventListener('click', (event) => {
             if (menu.hidden) openListMenu();
         } else if (!menu.hidden && target?.classList.contains('dd-item')) {
             const items = listMenuItems();
-            const i = items.indexOf(target);
-            const moves = {
+            const i = items.indexOf(target as HTMLElement);
+            const moves: Record<string, number> = {
                 ArrowDown: (i + 1) % items.length,
                 ArrowUp: (i - 1 + items.length) % items.length,
                 Home: 0,
                 End: items.length - 1
             };
-            const move = /** @type {Record<string, number>} */ (moves)[event.key];
+            const move = moves[event.key];
             if (move !== undefined) {
                 event.preventDefault();
                 items[move]?.focus();
@@ -104,7 +102,7 @@ byId('listMenu').addEventListener('click', (event) => {
     if (!root) return;
     const menu = byId('copyMenu');
     root.addEventListener('keydown', (event) => {
-        const target = /** @type {HTMLElement | null} */ (eventTarget(event));
+        const target = eventTarget(event);
         if (event.key === 'Escape' && !menu.hidden) {
             event.preventDefault();
             closeCopyMenu(true);
@@ -113,14 +111,14 @@ byId('listMenu').addEventListener('click', (event) => {
             if (menu.hidden) openCopyMenu();
         } else if (!menu.hidden && target?.classList.contains('dd-item')) {
             const items = queryAll('#copyMenu .dd-item').filter(item => !item.hidden);
-            const i = items.indexOf(target);
-            const moves = {
+            const i = items.indexOf(target as HTMLElement);
+            const moves: Record<string, number> = {
                 ArrowDown: (i + 1) % items.length,
                 ArrowUp: (i - 1 + items.length) % items.length,
                 Home: 0,
                 End: items.length - 1
             };
-            const move = /** @type {Record<string, number>} */ (moves)[event.key];
+            const move = moves[event.key];
             if (move !== undefined) {
                 event.preventDefault();
                 items[move]?.focus();
@@ -158,31 +156,31 @@ queryAll('[data-action]').forEach(el => {
 });
 queryAll('[data-action="search"]').forEach(el => {
     el.addEventListener('input', (event) => {
-        const target = /** @type {HTMLInputElement | null} */ (event.target);
+        const target = eventTarget(event) as HTMLInputElement | null;
         if (target) syncSearchInputs(target.value);
     });
 });
 
-const importFileInput = /** @type {HTMLInputElement | null} */ (document.getElementById('importFileInput'));
+const importFileInput = maybeInputById('importFileInput');
 if (importFileInput) importFileInput.addEventListener('change', (event) => handleImportFile(event));
 
 const channelTableBody = document.getElementById('channelTableBody');
 if (channelTableBody) {
     channelTableBody.addEventListener('focusin', (event) => {
-        const target = /** @type {HTMLElement | null} */ (eventTarget(event));
+        const target = eventTarget(event);
         const input = target?.closest('.id-input');
         const row = input?.closest('tr');
         if (row) row.classList.add('focused-row');
     });
     channelTableBody.addEventListener('focusout', (event) => {
-        const target = /** @type {HTMLElement | null} */ (eventTarget(event));
+        const target = eventTarget(event);
         const input = target?.closest('.id-input');
         const row = input?.closest('tr');
         if (row) row.classList.remove('focused-row');
     });
     channelTableBody.addEventListener('change', (event) => {
-        const target = /** @type {HTMLElement | null} */ (eventTarget(event));
-        const input = /** @type {HTMLInputElement | null} */ (target?.closest('.id-input'));
+        const target = eventTarget(event);
+        const input = target?.closest('.id-input') as HTMLInputElement | null;
         if (input && input.dataset.name !== undefined) {
             updateId(input.dataset.name, input.value, Number(input.dataset.index));
         }
@@ -190,7 +188,7 @@ if (channelTableBody) {
 }
 
 // ---- Init ----
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
     loadInitialConfig();
     updateSyncTime();
     setInterval(updateSyncTime, 30000);

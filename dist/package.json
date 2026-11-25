@@ -1,6 +1,6 @@
 {
     "name": "technisat-mapper",
-    "version": "2.0.0-rc.5",
+    "version": "2.0.0-rc.6",
     "description": "TechniSat IPTV Proxy",
     "type": "module",
     "main": "dist/server.js",
@@ -10,10 +10,12 @@
         "node": ">=26"
     },
     "scripts": {
-        "build": "tsc",
+        "build": "npm run build:backend && npm run build:frontend",
+        "build:backend": "tsc -p tsconfig.json",
+        "build:frontend": "tsc -p tsconfig.frontend.json",
         "start": "node dist/server.js",
-        "check": "tsc --noEmit",
-        "check:frontend": "tsc -p tsconfig.frontend.json",
+        "check": "tsc --noEmit -p tsconfig.json",
+        "check:frontend": "tsc --noEmit -p tsconfig.frontend.json",
         "check:tests": "npx tsc --noEmit -p test && npx tsc --noEmit -p test-helpers",
         "test": "npm run build && node --import tsx --test",
         "coverage": "npm run build && node --import tsx scripts/coverage.js",

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { model } from '../public/app/lib/model.js';
+import { model } from '../frontend/lib/model.ts';
 
 type UiModel = {
     currentMapping: Record<string, string | number>;

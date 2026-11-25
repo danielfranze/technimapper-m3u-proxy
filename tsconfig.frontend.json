@@ -1,11 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
-    "moduleResolution": "bundler",
-    "allowJs": true,
-    "checkJs": true,
-    "noEmit": true,
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "rootDir": "frontend",
+    "outDir": "public/app/js",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -13,9 +12,13 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "types": []
+    "types": [],
+    "sourceMap": true,
+    "noEmitOnError": true
   },
-  "include": ["public/app/**/*.js"]
+  "include": ["frontend/**/*.ts"]
 }

@@ -8,7 +8,7 @@ import fs from 'node:fs';
 
 const html: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
 const css: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'styles.css'), 'utf8');
-import { model } from '../public/app/lib/model.js';
+import { model } from '../frontend/lib/model.ts';
 const formatSync: (value: unknown, locale?: string) => string = (model as { formatSync: typeof formatSync }).formatSync;
 void formatSync;
 const formatSyncFn: (value: unknown, locale?: string) => string = (model.formatSync as unknown) as (value: unknown, locale?: string) => string;
@@ -31,8 +31,8 @@ test('formatSync returns "Never" for missing or invalid values', () => {
 test('the old green flash is gone and replaced by the calm sync pulse', () => {
     assert.ok(!html.includes('success-flash'));
     assert.ok((html + css).includes('sync-pulse') && (html + css).includes('prefers-reduced-motion'));
-    const view = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'lib', 'view.js'), 'utf8');
-    const presenter = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'app', 'lib', 'presenter.js'), 'utf8');
+    const view = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'lib', 'view.ts'), 'utf8');
+    const presenter = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'frontend', 'lib', 'presenter.ts'), 'utf8');
     assert.ok(view.includes('triggerSyncPulse()'), 'one definition in view.js');
     assert.ok(presenter.includes('triggerSyncPulse()'), 'one call in presenter.js');
 });

@@ -13,7 +13,8 @@ const result = spawnSync(process.execPath, [
     '--test-coverage-exclude=test-helpers/**',
     '--test-coverage-exclude=scripts/**',
     '--test-coverage-exclude=e2e/**',
-    '--test-coverage-exclude=public/**'
+    '--test-coverage-exclude=public/**',
+    '--test-coverage-exclude=frontend/**'
 ], {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',

@@ -1,30 +1,32 @@
-'use strict';
-
 /**
  * Frontend MVP – View: DOM rendering and visual feedback (no business logic).
  */
 
 import { model } from './model.js';
-import { byId, maybeInputById, query, queryAll } from './dom.js';
+import type { CopySource } from './model.js';
+import { byId, maybeInputById, query, queryAll, selectById } from './dom.js';
 
-/** @typedef {'success' | 'error' | 'warning'} ToastType */
-/** @typedef {{ name: string, index: number, isActive: boolean, assignedId: string | number, isMapped: boolean }} FilteredRow */
-/** @typedef {import('./model.js').CopySource} CopySource */
-/** @typedef {{ label: string, path: string, done: string, tip: string }} CopySourceInfo */
+type ToastType = 'success' | 'error' | 'warning';
+interface FilteredRow {
+    name: string;
+    index: number;
+    isActive: boolean;
+    assignedId: string | number;
+    isMapped: boolean;
+}
+interface CopySourceInfo {
+    label: string;
+    path: string;
+    done: string;
+    tip: string;
+}
 
-/**
- * @param {string} message
- * @param {ToastType} [type]
- * @param {number} [duration]
- */
-export function showToast(message, type = 'success', duration = 3000) {
+export function showToast(message: string, type: ToastType = 'success', duration = 3000): void {
     const container = byId('toast-container');
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
-    /** @type {Record<ToastType, string>} */
-    const colors = { success: 'var(--success)', error: 'var(--danger)', warning: 'var(--warning)' };
-    /** @type {Record<ToastType, string>} */
-    const icons = { success: 'check_circle', error: 'error', warning: 'warning' };
+    const colors: Record<ToastType, string> = { success: 'var(--success)', error: 'var(--danger)', warning: 'var(--warning)' };
+    const icons: Record<ToastType, string> = { success: 'check_circle', error: 'error', warning: 'warning' };
     const icon = document.createElement('span');
     icon.className = 'material-icons-outlined';
     icon.style.color = colors[type] || colors.error;
@@ -39,7 +41,7 @@ export function showToast(message, type = 'success', duration = 3000) {
     }, duration);
 }
 
-export function updateDirtyIndicator() {
+export function updateDirtyIndicator(): void {
     const dirty = model.isDirty();
     queryAll('.save-dirty').forEach(el => { el.hidden = !dirty; });
     queryAll('.save-btn').forEach(btn => {
@@ -49,7 +51,7 @@ export function updateDirtyIndicator() {
 }
 
 /** Renders the channel ID mapping table rows based on filters and search queries. */
-export function renderTable() {
+export function renderTable(): void {
     const tbody = byId('channelTableBody');
     let searchTerm = '';
     try {
@@ -57,15 +59,15 @@ export function renderTable() {
         const searchInputMobile = maybeInputById('searchInputMobile');
         searchTerm = ((searchInput && searchInput.value) || (searchInputMobile && searchInputMobile.value) || '').toLowerCase();
     } catch (e) { /* no document (e.g. unit tests) */ }
-    /** @type {string[]} */
-    const rows = [];
+    const rows: string[] = [];
     const dupIds = new Set(model.getDuplicateGroups(model.getActiveMapping()).map(g => g.id));
 
-    /** @type {FilteredRow[]} */
-    const filtered = [];
+    const filtered: FilteredRow[] = [];
     model.detectedChannels.forEach((name, index) => {
         const isActive = model.activeOccurrence[name] === index;
-        const assignedId = (isActive && model.currentMapping[name] !== undefined) ? model.currentMapping[name] : '';
+        const assignedId: string | number = (isActive && model.currentMapping[name] !== undefined)
+            ? model.currentMapping[name] as string | number
+            : '';
         const isMapped = assignedId !== '';
         if (model.currentFilter === 'mapped' && !isMapped) return;
         if (model.currentFilter === 'unmapped' && isMapped) return;
@@ -117,7 +119,7 @@ export function renderTable() {
     queryAll('.clean-count').forEach(el => {
         el.textContent = staleCount > 99 ? '99+' : String(staleCount);
         el.hidden = staleCount === 0;
-        const btn = /** @type {HTMLElement | null} */ (el.closest('button'));
+        const btn = el.closest<HTMLElement>('button');
         if (!btn) return;
         btn.title = staleCount > 0
             ? `Remove ${staleCount} stale ${staleCount === 1 ? 'entry' : 'entries'}`
@@ -127,11 +129,7 @@ export function renderTable() {
     updateDirtyIndicator();
 }
 
-/**
- * @param {'pending' | 'success' | 'error'} status
- * @param {string} [text]
- */
-export function updateModelBadge(status, text) {
+export function updateModelBadge(status: 'pending' | 'success' | 'error', text?: string): void {
     const badges = [document.getElementById('modelInfoDesktop'), document.getElementById('modelInfoMobile')];
 
     badges.forEach(badge => {
@@ -143,18 +141,18 @@ export function updateModelBadge(status, text) {
             badge.innerText = text ?? '';
         } else if (status === 'success') {
             badge.classList.add('model-badge-ok');
-            badge.innerText = "Detected: " + (text ?? '');
+            badge.innerText = 'Detected: ' + (text ?? '');
             if (badge.id === 'modelInfoMobile') badge.dataset.model = text ?? '';
         } else if (status === 'error') {
             badge.classList.add('model-badge-error');
-            badge.innerText = "Not detected";
+            badge.innerText = 'Not detected';
         }
     });
     fitModelBadge();
 }
 
 /** Mobile badge: show "Detected: <model>" only if it leaves enough room before the Export button. */
-function fitModelBadge() {
+function fitModelBadge(): void {
     const badge = document.getElementById('modelInfoMobile');
     const exportBtn = query('.mobile-row-2 button[aria-label^="Export"]');
     const importBtn = query('.mobile-row-2 button[aria-label^="Import"]');
@@ -172,10 +170,10 @@ function fitModelBadge() {
 }
 
 /** Header: keep "Last sync" and "Copy M3U8 URL" on one line by dropping pieces as needed. */
-function fitHeaderMeta() {
+function fitHeaderMeta(): void {
     const meta = query('.header-meta');
     const sync = document.getElementById('syncBadge');
-    const copy = meta ? /** @type {HTMLElement | null} */ (meta.querySelector('.split-btn')) : null;
+    const copy = meta ? meta.querySelector<HTMLElement>('.split-btn') : null;
     if (!meta || !sync || !copy) return;
 
     const minGap = parseFloat(getComputedStyle(meta).columnGap) || 0;
@@ -192,10 +190,10 @@ function fitHeaderMeta() {
 }
 
 /** Version badge: wrap into the top-right corner of the title when it would otherwise wrap. */
-function fitVersionBadge() {
+function fitVersionBadge(): void {
     const h1 = query('header h1');
     const badge = document.getElementById('versionLabel');
-    const title = h1 ? /** @type {HTMLElement | null} */ (h1.querySelector('.brand-text')) : null;
+    const title = h1 ? h1.querySelector<HTMLElement>('.brand-text') : null;
     if (!h1 || !badge || !title) return;
 
     if (badge.parentElement !== h1) title.after(badge);
@@ -205,15 +203,14 @@ function fitVersionBadge() {
 }
 
 /** Sync badge pulse on new sync (calm animation). */
-export function triggerSyncPulse() {
+export function triggerSyncPulse(): void {
     const badge = document.getElementById('syncBadge');
     if (!badge || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     badge.classList.remove('sync-pulse');
     void badge.offsetWidth;
     badge.classList.add('sync-pulse');
-    /** @param {AnimationEvent} [event] */
-    const done = (event) => {
+    const done = (event?: AnimationEvent) => {
         if (event && event.target !== badge) return;
         badge.classList.remove('sync-pulse');
         badge.removeEventListener('animationend', done);
@@ -223,10 +220,8 @@ export function triggerSyncPulse() {
 }
 
 /** Synchronizes search inputs between desktop and mobile views and applies a debounced render. */
-/** @type {ReturnType<typeof setTimeout> | null} */
-let searchTimeout = null;
-/** @param {string} val */
-export function handleSearchInput(val) {
+let searchTimeout: ReturnType<typeof setTimeout> | null = null;
+export function handleSearchInput(val: string): void {
     const searchInput = maybeInputById('searchInput');
     if (searchInput) searchInput.value = val;
     const searchInputMobile = maybeInputById('searchInputMobile');
@@ -237,10 +232,10 @@ export function handleSearchInput(val) {
 
 /**
  * Copies text; falls back to a hidden textarea on plain-HTTP origins.
- * @param {string} text
- * @param {string} doneMessage
+ * @param text
+ * @param doneMessage
  */
-function copyText(text, doneMessage) {
+function copyText(text: string, doneMessage: string): void {
     const fallback = () => {
         const ta = document.createElement('textarea');
         ta.value = text;
@@ -249,7 +244,7 @@ function copyText(text, doneMessage) {
         document.body.appendChild(ta);
         ta.select();
         let ok = false;
-        try { ok = document.execCommand('copy'); } catch (e) {}
+        try { ok = document.execCommand('copy'); } catch (e) { /* ignore */ }
         ta.remove();
         showToast(ok ? doneMessage : 'Failed to copy URL', ok ? 'success' : 'error');
     };
@@ -262,41 +257,34 @@ function copyText(text, doneMessage) {
 
 export { copyText, fitHeaderMeta, fitVersionBadge, fitModelBadge };
 
-export function fitLayout() {
+export function fitLayout(): void {
     fitVersionBadge();
     fitHeaderMeta();
     fitModelBadge();
 }
 
 // ---- Copy button with a source menu (HDHomeRun tuner address or M3U8 playlist URL) ----
-/** @type {Record<CopySource, CopySourceInfo>} */
-export const COPY_SOURCES = {
+export const COPY_SOURCES: Record<CopySource, CopySourceInfo> = {
     hdhr: { label: 'HDHR', path: '/hdhr', done: 'HDHomeRun address copied to clipboard!', tip: 'Copy the HDHomeRun tuner address (Plex / Jellyfin)' },
     m3u8: { label: 'M3U8', path: '/playlist.m3u8', done: 'M3U8 URL copied to clipboard!', tip: 'Copy the M3U8 playlist URL' }
 };
 
-export const BACKEND_URL = (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
+export const BACKEND_URL: string = (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
 
-/**
- * @param {CopySource} source
- * @returns {string}
- */
-function copyUrlFor(source) {
+function copyUrlFor(source: CopySource): string {
     return BACKEND_URL + COPY_SOURCES[source].path;
 }
 
 export { copyUrlFor };
-/** @param {CopySource} source */
-export function copySelectedUrl(source) {
+export function copySelectedUrl(source: CopySource): void {
     copyText(copyUrlFor(source), COPY_SOURCES[source].done);
 }
 
-/** @returns {HTMLElement[]} */
-export function copyMenuItems() {
+export function copyMenuItems(): HTMLElement[] {
     return queryAll('#copyMenu .dd-item').filter(item => !item.hidden);
 }
 
-export function renderCopyButton() {
+export function renderCopyButton(): void {
     const main = document.getElementById('copyMain');
     if (!main) return;
     if (!model.hdhrEnabled && model.copySource === 'hdhr') model.copySource = 'm3u8';
@@ -311,11 +299,11 @@ export function renderCopyButton() {
         item.hidden = key === 'hdhr' && !model.hdhrEnabled;
         item.setAttribute('aria-checked', key === model.copySource ? 'true' : 'false');
         const url = item.querySelector('.dd-item-url');
-        if (url) url.textContent = copyUrlFor(key);
+        if (url) url.textContent = copyUrlFor(key as CopySource);
     });
 }
 
-export function openCopyMenu() {
+export function openCopyMenu(): void {
     const menu = byId('copyMenu');
     menu.hidden = false;
     byId('copyToggle').setAttribute('aria-expanded', 'true');
@@ -327,8 +315,7 @@ export function openCopyMenu() {
     if (current) current.focus();
 }
 
-/** @param {boolean} [returnFocus] */
-export function closeCopyMenu(returnFocus) {
+export function closeCopyMenu(returnFocus?: boolean): void {
     const menu = document.getElementById('copyMenu');
     if (!menu || menu.hidden) return;
     menu.hidden = true;
@@ -337,25 +324,27 @@ export function closeCopyMenu(returnFocus) {
     if (returnFocus) toggle.focus();
 }
 
-export function toggleCopyMenu() {
+export function toggleCopyMenu(): void {
     if (byId('copyMenu').hidden) openCopyMenu();
     else closeCopyMenu(true);
 }
 
-/** @returns {HTMLElement[]} */
-export function copyMenuItemsVisible() {
+export function copyMenuItemsVisible(): HTMLElement[] {
     return copyMenuItems();
 }
 
 // ---- Target channel list dropdown ----
-/** @returns {HTMLSelectElement} */
-function listSelect() { return /** @type {HTMLSelectElement} */ (byId('selectedListName')); }
-/** @returns {string} */
-export function getSelectedList() { return listSelect().value; }
-/** @returns {HTMLElement[]} */
-export function listMenuItems() { return queryAll('#listMenu .dd-item'); }
+function listSelect(): HTMLSelectElement {
+    return selectById('selectedListName');
+}
+export function getSelectedList(): string {
+    return listSelect().value;
+}
+export function listMenuItems(): HTMLElement[] {
+    return queryAll('#listMenu .dd-item');
+}
 
-export function renderListDropdown() {
+export function renderListDropdown(): void {
     const select = listSelect();
     const menu = byId('listMenu');
     byId('listCurrent').textContent = select.value;
@@ -379,11 +368,7 @@ export function renderListDropdown() {
     });
 }
 
-/**
- * @param {string[]} names
- * @param {string} selected
- */
-export function setListOptions(names, selected) {
+export function setListOptions(names: string[], selected: string): void {
     const select = listSelect();
     const list = names && names.length > 0 ? names : [selected];
     select.replaceChildren(...list.map(name => {
@@ -396,14 +381,13 @@ export function setListOptions(names, selected) {
     renderListDropdown();
 }
 
-/** @param {string} name */
-export function setSelectedList(name) {
+export function setSelectedList(name: string): void {
     const select = listSelect();
     if ([...select.options].some(option => option.value === name)) select.value = name;
     renderListDropdown();
 }
 
-export function openListMenu() {
+export function openListMenu(): void {
     byId('listMenu').hidden = false;
     byId('listToggle').setAttribute('aria-expanded', 'true');
     const items = listMenuItems();
@@ -411,8 +395,7 @@ export function openListMenu() {
     if (current) current.focus();
 }
 
-/** @param {boolean} [returnFocus] */
-export function closeListMenu(returnFocus) {
+export function closeListMenu(returnFocus?: boolean): void {
     const menu = document.getElementById('listMenu');
     if (!menu || menu.hidden) return;
     menu.hidden = true;

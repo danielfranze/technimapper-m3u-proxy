@@ -231,8 +231,9 @@ npm ci
 npm test               # unit + integration tests (Node's built-in test runner)
 npm run coverage       # tests with the built-in coverage report
 npm run test:e2e       # end-to-end smoke tests with Playwright
-npm run check          # type check with tsc --noEmit
-npm run check:frontend # frontend JSDoc type check (no build step)
+npm run check          # backend type check with tsc --noEmit
+npm run check:frontend # frontend TypeScript check / build (tsc)
+npm run build:frontend # emit frontend ESM to public/app/js/
 npm start              # http://localhost:9191
 ```
 
@@ -258,8 +259,9 @@ npm start              # http://localhost:9191
 * `lib/routes/*.ts` – Express route modules (config, mapping, playlist, health, metrics, hdhr)
 * `test/` – unit and HTTP integration tests
 * `test-helpers/` – shared test harnesses and dependency builders
+* `frontend/` – TypeScript frontend source (`main.ts`, `api.ts`, `lib/{dom,model,view,presenter}.ts`); compiled to `public/app/js/`
 * `public/index.html` – Web UI
-* `public/app/` – MVP frontend (`model`, `view`, `presenter`, `dom`, `api`), checked via JSDoc/`checkJs`
+* `public/app/` – styles plus generated JavaScript under `app/js/` (do not edit by hand)
 * `public/fonts/` – bundled fonts (Inter, Material Icons Outlined), see `NOTICE.md`
 * `scripts/` – development tools (see below)
 

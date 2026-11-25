@@ -1,42 +1,42 @@
-'use strict';
-
 /**
  * Frontend MVP – Model: shared state + pure logic without DOM access.
- * View helpers live in `view.js`, presenter logic in `presenter.js`.
+ * View helpers live in `view.ts`, presenter logic in `presenter.ts`.
  */
 
-/**
- * @typedef {Record<string, string | number>} Mapping
- * @typedef {{ name: string, url: string }} Channel
- * @typedef {'all' | 'mapped' | 'unmapped'} Filter
- * @typedef {'hdhr' | 'm3u8'} CopySource
- * @typedef {{ id: string, channels: string[] }} DuplicateGroup
- */
+export type Mapping = Record<string, string | number>;
+export interface Channel {
+    name: string;
+    url: string;
+}
+export type Filter = 'all' | 'mapped' | 'unmapped';
+export type CopySource = 'hdhr' | 'm3u8';
+export interface DuplicateGroup {
+    id: string;
+    channels: string[];
+}
 
-/**
- * @typedef {object} Model
- * @property {Mapping} currentMapping
- * @property {Mapping} savedMapping
- * @property {string} activeListName
- * @property {string | null | undefined} lastSyncSeen
- * @property {string[]} detectedChannels
- * @property {Filter} currentFilter
- * @property {Record<string, number>} activeOccurrence
- * @property {boolean} hdhrEnabled
- * @property {CopySource} copySource
- * @property {string} searchTerm
- * @property {() => boolean} isDirty
- * @property {() => Mapping} getActiveMapping
- * @property {() => string[]} getOrphans
- * @property {(mapping: Mapping) => DuplicateGroup[]} getDuplicateGroups
- * @property {(value: unknown) => string} escapeHtml
- * @property {(iso: string | null | undefined, locale?: string) => string} formatSync
- * @property {(a: Mapping, b: Mapping) => boolean} mappingsEqual
- * @property {(groups: DuplicateGroup[], limit?: number) => string} describeDuplicates
- */
+export interface Model {
+    currentMapping: Mapping;
+    savedMapping: Mapping;
+    activeListName: string;
+    lastSyncSeen: string | null | undefined;
+    detectedChannels: string[];
+    currentFilter: Filter;
+    activeOccurrence: Record<string, number>;
+    hdhrEnabled: boolean;
+    copySource: CopySource;
+    searchTerm: string;
+    isDirty: () => boolean;
+    getActiveMapping: () => Mapping;
+    getOrphans: () => string[];
+    getDuplicateGroups: (mapping: Mapping) => DuplicateGroup[];
+    escapeHtml: (value: unknown) => string;
+    formatSync: (iso: string | null | undefined, locale?: string) => string;
+    mappingsEqual: (a: Mapping, b: Mapping) => boolean;
+    describeDuplicates: (groups: DuplicateGroup[], limit?: number) => string;
+}
 
-/** @type {Model} */
-export const model = {
+export const model: Model = {
     currentMapping: {},
     savedMapping: {},
     activeListName: '',
@@ -58,7 +58,9 @@ export const model = {
     getActiveMapping() {
         if (model.detectedChannels.length === 0) return model.currentMapping;
         const known = new Set(model.detectedChannels);
-        return Object.fromEntries(Object.entries(model.currentMapping).filter(([name]) => known.has(name)));
+        return Object.fromEntries(
+            Object.entries(model.currentMapping).filter(([name]) => known.has(name))
+        ) as Mapping;
     },
 
     /** Names that have an ID but are no longer part of the channel list on the receiver. */
@@ -68,16 +70,17 @@ export const model = {
         return Object.keys(model.currentMapping).filter(name => !known.has(name));
     },
 
-    getDuplicateGroups(mapping) {
-        /** @type {Map<string, string[]>} */
-        const byId = new Map();
+    getDuplicateGroups(mapping: Mapping): DuplicateGroup[] {
+        const byId = new Map<string, string[]>();
         for (const [name, id] of Object.entries(mapping)) {
             if (id === '' || id === null || id === undefined) continue;
             const key = String(id);
             if (!byId.has(key)) byId.set(key, []);
             byId.get(key)?.push(name);
         }
-        return [...byId].filter(([, names]) => names.length > 1).map(([id, channels]) => ({ id, channels }));
+        return [...byId]
+            .filter(([, names]) => names.length > 1)
+            .map(([id, channels]) => ({ id, channels }));
     },
 
     escapeHtml,
@@ -86,8 +89,7 @@ export const model = {
     describeDuplicates,
 };
 
-/** @returns {CopySource} */
-function loadCopySource() {
+export function loadCopySource(): CopySource {
     try {
         // localStorage is only available in browsers (Node logs an experimental
         // warning when the global is referenced there; it stays undefined).
@@ -101,54 +103,31 @@ function loadCopySource() {
     return 'hdhr';
 }
 
-/**
- * @param {Mapping} a
- * @param {Mapping} b
- * @returns {boolean}
- */
-function mappingsEqual(a, b) {
+function mappingsEqual(a: Mapping, b: Mapping): boolean {
     const keysA = Object.keys(a);
     if (keysA.length !== Object.keys(b).length) return false;
     return keysA.every(key => Object.hasOwn(b, key) && String(a[key]) === String(b[key]));
 }
 
-/** @type {Record<string, string>} */
-const ESCAPE_HTML = {
+const ESCAPE_HTML: Record<string, string> = {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 };
 
-/**
- * Escapes text for safe use in HTML content and double-quoted attributes.
- * @param {unknown} value
- * @returns {string}
- */
-function escapeHtml(value) {
+function escapeHtml(value: unknown): string {
     return String(value).replace(/[&<>"']/g, c => ESCAPE_HTML[c] ?? c);
 }
 
-/**
- * Formats an ISO timestamp for display; falls back to "Never".
- * @param {string | null | undefined} iso
- * @param {string} [locale]
- * @returns {string}
- */
-function formatSync(iso, locale) {
+function formatSync(iso: string | null | undefined, locale?: string): string {
     if (!iso) return 'Never';
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return 'Never';
     return d.toLocaleString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-/**
- * Short human-readable summary, e.g. "1 (Das Erste HD, Das Erste SD); 3 (3sat, Drei) ...".
- * @param {DuplicateGroup[]} groups
- * @param {number} [limit]
- * @returns {string}
- */
-function describeDuplicates(groups, limit = 3) {
+function describeDuplicates(groups: DuplicateGroup[], limit = 3): string {
     const shown = groups.slice(0, limit).map(g =>
         `${g.id} (${g.channels.slice(0, 3).join(', ')}${g.channels.length > 3 ? ', …' : ''})`);
     return shown.join('; ') + (groups.length > limit ? ` … +${groups.length - limit} more` : '');
 }
 
-export { escapeHtml, formatSync, mappingsEqual, describeDuplicates, loadCopySource };
+export { escapeHtml, formatSync, mappingsEqual, describeDuplicates };
