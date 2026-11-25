@@ -6,28 +6,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 ## [2.0.0-rc.5]
 
 ### Added
-- Frontend MVP: `public/app/lib/` – `model.js` (State + reine Logik), `view.js` (DOM-Rendering), `presenter.js` (Business-Logic). `main.js` ist jetzt nur noch Wiring (~90 Zeilen).
-- `public/app/lib/api.js` – zentrale `getJson`/`postJson`-Wrapper (übernimmt `postJson` aus `main.js`).
-- CSS-Variablen für Farben, die vorher inline warben (`--accent-muted`, `--danger-muted`, …); `updateModelBadge` nutzt Klassen statt Inline-Styles.
-- Bugfix in der Auto-Fill-Logik: `/^\d+/` statt `/^\\d+/` – IDs werden jetzt echter aus Namen extrahiert.
+- Frontend MVP: `public/app/lib/` – `model.js` (state + pure logic), `view.js` (DOM rendering), `presenter.js` (business logic). `main.js` is now just wiring (~90 lines).
+- `public/app/lib/api.js` – central `getJson`/`postJson` helpers.
+- CSS variables for colors that used to be inline (`--accent-muted`, `--danger-muted`, …); `updateModelBadge` uses classes instead of inline styles.
+- Bugfix in the auto-fill logic: `/^\d+/` instead of `/^\\d+/` – IDs are now correctly extracted from names.
 
 ### Changed
-- Refactoring-Rounds: Runden 5–8 (OOP, Domain-Module, Middleware-Split, Fehler-Helper, MVP-Aufteilung).
-- Tests (`test/ui-*.ts`) auf die neue Frontend-Struktur angepasst.
-- `npm run build && npm test && npm run test:e2e` – alle grün (149 + 23 E2E Tests).
+- Refactoring rounds: rounds 5–8 (OOP, domain modules, middleware split, error helpers, MVP split).
+- Tests (`test/ui-*.ts`) adapted to the new frontend structure.
+- `npm run build && npm test && npm run test:e2e` – all green (149 + 23 E2E tests).
 
 ## [2.0.0-rc.4]
 
 ### Changed
-- OOP-Anpassungen: `HttpError` mit Factory-Methoden (`badRequest`, `notFound`, …), `StateStore` als Klasse.
-- Architektur: Middleware in `lib/http/middleware.ts`, Domain-Module in `lib/domain/{ids,settings,mapping}.ts`; `lib/validation.ts` und `lib/http-security.ts` als Facades.
-- `noImplicitAny` aus `tsconfig.json` entfernt (vollständiges `strict`).
-- E2E-Tests und global setup/teardown nach TypeScript (`.ts`).
-- README aktualisiert (neue Modul-Übersicht).
+- OOP adjustments: `HttpError` with factory methods (`badRequest`, `notFound`, …), `StateStore` as class.
+- Architecture: middleware in `lib/http/middleware.ts`, domain modules in `lib/domain/{ids,settings,mapping}.ts`; `lib/validation.ts` and `lib/http-security.ts` as facades.
+- `noImplicitAny` removed from `tsconfig.json` (full `strict` mode).
+- E2E tests and global setup/teardown converted to TypeScript (`.ts`).
+- README updated (new module overview).
 
 ### Added
 - `lib/error-message.ts` (shared error-to-string helper).
-- `lib/http-error.ts` (`HttpError` mit Status-Factories).
+- `lib/http-error.ts` (`HttpError` with status factories).
 
 ## [2.0.0-rc.3]
 

@@ -260,7 +260,7 @@ npm start         # http://localhost:9191
 
 | Script | Purpose |
 |---|---|
-| `npm run coverage` | Backend mit V8-Coverage, Schwellenwerte: lines ≥90 %, branches ≥80 %, functions ≥85 % (`public/` wird ausgeschlossen – Frontend ist dort ohne Backend-Build erreichbar) |
+| `npm run coverage` | Backend with V8 coverage, thresholds: lines ≥90 %, branches ≥80 %, functions ≥85 % (`public/` excluded – frontend is reachable without backend build) |
 | `scripts/probe-receiver.js <ip> [port]` | Inspects a receiver's UPnP/ContentDirectory structure and prints the detected model |
 | `scripts/mock-receiver.js` | Minimal SOAP mock for manual testing (set `MOCK_RECEIVER_PORT`) |
 
