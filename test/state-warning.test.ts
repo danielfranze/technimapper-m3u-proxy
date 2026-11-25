@@ -2,8 +2,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {  createState, applyPersistedState  } from '../dist/lib/state.js';
-import {  createDeps  } from '../test-helpers/state-deps.ts';
+import { createState, applyPersistedState } from '../dist/lib/state.js';
+import { createDeps } from '../test-helpers/state-deps.ts';
 
 test('repairPersistedSettings warns about a disallowed receiver IP', () => {
     const warnings: string[] = [];

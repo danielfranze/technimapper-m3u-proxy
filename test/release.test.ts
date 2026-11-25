@@ -4,7 +4,7 @@ import path from 'node:path';
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {  execFileSync, spawnSync  } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import pkg from '../package.json' with { type: 'json' };
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');

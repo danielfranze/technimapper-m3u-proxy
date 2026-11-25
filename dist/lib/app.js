@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import * as hdhrModule from './hdhr.js';
+import { errorMessage } from './error-message.js';
 import { createSyncCoordinator } from './sync-coordinator.js';
 import { securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler } from './http-security.js';
 import { registerHealthRoutes } from './routes/health.js';
@@ -15,16 +16,6 @@ import { registerPlaylistRoutes } from './routes/playlist.js';
 import { registerHdhrRoutes } from './routes/hdhr.js';
 import { registerMetricsRoutes } from './routes/metrics.js';
 import { createSyncService } from './sync-service.js';
-/**
- * HTTP application factory.
- *
- * `createApp()` wires the HTTP boundary around an application state store.
- * It never starts a listener, which is what makes integration tests possible:
- * tests can call it with fake receiver, persistence and cron implementations.
- */
-function errorMessage(err) {
-    return err instanceof Error ? err.message : String(err);
-}
 function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] }, publicDir = path.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep }) {
     const state = stateDep;
     const { validateSettings, validateMapping } = validation;

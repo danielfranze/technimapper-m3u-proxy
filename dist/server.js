@@ -44,9 +44,7 @@ import { createValidation, sortMapping } from './lib/validation.js';
 import * as hdhr from './lib/hdhr.js';
 import { createApp } from './lib/app.js';
 const APP_VERSION = packageJson.version;
-function errorMessage(err) {
-    return err instanceof Error ? err.message : String(err);
-}
+import { errorMessage } from './lib/error-message.js';
 async function main() {
     const runtime = loadRuntimeConfig(process.env);
     const logger = createLogger({ level: runtime.logLevel, format: runtime.logFormat });

@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [2.0.0-rc.4]
+
+### Changed
+- OOP-Anpassungen: `HttpError` mit Factory-Methoden (`badRequest`, `notFound`, …), `StateStore` als Klasse.
+- Architektur: Middleware in `lib/http/middleware.ts`, Domain-Module in `lib/domain/{ids,settings,mapping}.ts`; `lib/validation.ts` und `lib/http-security.ts` als Facades.
+- `noImplicitAny` aus `tsconfig.json` entfernt (vollständiges `strict`).
+- E2E-Tests und global setup/teardown nach TypeScript (`.ts`).
+- README aktualisiert (neue Modul-Übersicht).
+
+### Added
+- `lib/error-message.ts` (shared error-to-string helper).
+- `lib/http-error.ts` (`HttpError` mit Status-Factories).
+
 ## [2.0.0-rc.3]
 
 ### Added

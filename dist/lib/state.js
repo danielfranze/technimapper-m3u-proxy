@@ -5,11 +5,12 @@
  * not change while the server becomes testable. Release 2 replaces the mutation
  * points with an immutable snapshot store (see the architecture roadmap).
  */
+const DEFAULT_LIST_NAME = 'TV-Liste';
 const DEFAULT_CONFIG = Object.freeze({
     ip: '192.168.178.28',
     port: '9100',
     cronExpression: '*/5 * * * *',
-    selectedListName: 'TV-Liste',
+    selectedListName: DEFAULT_LIST_NAME,
     mapping: Object.freeze({}),
     channels: Object.freeze([]),
     lastSync: null,
@@ -74,7 +75,7 @@ function repairPersistedSettings(state, deps) {
         fix('cronExpression', defaultCron, 'not a cron expression');
     const listName = String(config.selectedListName).trim();
     if (!listName || listName.length > 200)
-        fix('selectedListName', 'TV-Liste', 'empty or too long');
+        fix('selectedListName', DEFAULT_LIST_NAME, 'empty or too long');
     if (!isAllowedReceiverIp(config.ip)) {
         logger.warn(`Persisted receiver IP "${config.ip}" is not allowed - please correct it in the UI.`);
     }

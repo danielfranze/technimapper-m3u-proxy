@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import {  createJsonConfigStore, type FsLike  } from '../dist/lib/config-store.js';
+import { createJsonConfigStore, type FsLike } from '../dist/lib/config-store.js';
 
 const logger = { warn() {}, error() {} };
 

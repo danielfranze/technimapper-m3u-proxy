@@ -1,6 +1,6 @@
 'use strict';
 
-import {  createValidation, sortMapping  } from '../dist/lib/validation.js';
+import { createValidation, sortMapping } from '../dist/lib/validation.js';
 import * as hdhr from '../dist/lib/hdhr.js';
 
 const fakeCron = (value: string): boolean => typeof value === 'string' && value.trim().split(/\s+/).length === 5;

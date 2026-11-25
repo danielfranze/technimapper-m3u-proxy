@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'http';
-import {  createSoapReceiver, escapeXml  } from '../dist/lib/receiver.js';
+import { createSoapReceiver, escapeXml } from '../dist/lib/receiver.js';
 
 const quietLogger = { info() {}, warn() {}, error() {} };
 

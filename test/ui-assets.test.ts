@@ -10,7 +10,8 @@ const publicDir: string = path.join(path.dirname(fileURLToPath(import.meta.url))
 const html: string = fs.readFileSync(path.join(publicDir, 'index.html'), 'utf8');
 const css: string = fs.readFileSync(path.join(publicDir, 'app', 'styles.css'), 'utf8');
 const server: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'server.ts'), 'utf8');
-const security: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http-security.ts'), 'utf8');
+const security: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http-security.ts'), 'utf8')
+    + fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http', 'middleware.ts'), 'utf8');
 
 test('index.html does not reference external hosts', () => {
     const urls = [...html.matchAll(/(?:href|src)\s*=\s*"(https?:\/\/[^"]+)"|url\(\s*['"]?(https?:\/\/[^)'"]+)/g)]

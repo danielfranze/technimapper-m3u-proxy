@@ -8,10 +8,12 @@
 import type { AppState } from './state.js';
 declare function deepFreeze<T>(value: T, seen?: WeakSet<object>): T;
 export type { AppState } from './state.js';
-export type StateStore<T = AppState> = {
+export declare class StateStore<T = AppState> {
+    private state;
+    constructor(initial: T);
     get(): T;
     commit(next: T): void;
     update(mutator: (state: T) => void): T;
-};
+}
 declare function createStateStore<T = AppState>(initial: T): StateStore<T>;
 export { deepFreeze, createStateStore };

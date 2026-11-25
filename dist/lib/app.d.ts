@@ -11,6 +11,13 @@ import type { StateStore } from './state-store.js';
 import { createSyncCoordinator } from './sync-coordinator.js';
 import type { ConfigStore } from './config-store.js';
 import type { HdhrConfig } from './hdhr.js';
+/**
+ * HTTP application factory.
+ *
+ * `createApp()` wires the HTTP boundary around an application state store.
+ * It never starts a listener, which is what makes integration tests possible:
+ * tests can call it with fake receiver, persistence and cron implementations.
+ */
 type Logger = ReturnType<typeof createLogger>;
 type SyncCoordinator = ReturnType<typeof createSyncCoordinator>;
 type AppRuntime = ReturnType<typeof loadRuntimeConfig>;
@@ -39,7 +46,7 @@ interface AppDeps {
 }
 declare function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig, publicDir, syncCoordinator: syncCoordinatorDep }: AppDeps): {
     app: import("express-serve-static-core").Express;
-    state: StateStore;
+    state: StateStore<import("./state.js").AppState>;
     services: {
         performSync: (candidate: import("./validation.js").ValidatedSettings) => Promise<Awaited<ReturnType<(settings: {
             ip: string;

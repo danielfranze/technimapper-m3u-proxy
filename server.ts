@@ -36,21 +36,19 @@
 import cron from 'node-cron';
 import path from 'node:path';
 import packageJson from './package.json' with { type: 'json' };
-import {  createLogger  } from './lib/logger.js';
-import {  loadRuntimeConfig  } from './lib/runtime-config.js';
-import {  createJsonConfigStore, type ConfigStore  } from './lib/config-store.js';
-import {  createSoapReceiver  } from './lib/receiver.js';
-import {  createState, applyPersistedState, persistedSnapshot  } from './lib/state.js';
-import {  createStateStore  } from './lib/state-store.js';
-import {  createValidation, sortMapping  } from './lib/validation.js';
+import { createLogger } from './lib/logger.js';
+import { loadRuntimeConfig } from './lib/runtime-config.js';
+import { createJsonConfigStore, type ConfigStore } from './lib/config-store.js';
+import { createSoapReceiver } from './lib/receiver.js';
+import { createState, applyPersistedState, persistedSnapshot } from './lib/state.js';
+import { createStateStore } from './lib/state-store.js';
+import { createValidation, sortMapping } from './lib/validation.js';
 import * as hdhr from './lib/hdhr.js';
-import {  createApp  } from './lib/app.js';
+import { createApp } from './lib/app.js';
 
 const APP_VERSION = packageJson.version;
 
-function errorMessage(err: unknown): string {
-    return err instanceof Error ? err.message : String(err);
-}
+import { errorMessage } from './lib/error-message.js';
 
 async function main() {
     const runtime = loadRuntimeConfig(process.env);

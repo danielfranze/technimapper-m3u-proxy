@@ -2,7 +2,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {  parseContainerList, parseChannelItems, escapeXml, xmlText  } from '../dist/lib/receiver.js';
+import { parseContainerList, parseChannelItems, escapeXml, xmlText } from '../dist/lib/receiver.js';
 
 test('xmlText handles strings, arrays and xml2js text objects', () => {
     assert.equal(xmlText('hello'), 'hello');

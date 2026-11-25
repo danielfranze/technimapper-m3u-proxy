@@ -24,7 +24,7 @@ function registerMappingRoutes(app: Express, ctx: MappingCtx): void {
     app.post('/api/save-mapping', async (req: Request, res: Response) => {
         const { mapping, invalid } = validateMapping((req.body as { mapping?: unknown })?.mapping);
         if (invalid.length) {
-            throw new HttpError(400, `Invalid channel ID for: ${invalid.slice(0, 5).join(', ')}${invalid.length > 5 ? ', ...' : ''}. Allowed: letters, digits, "_", "-", "." (max. 32 chars, not "." or "..").`);
+            throw HttpError.badRequest(`Invalid channel ID for: ${invalid.slice(0, 5).join(', ')}${invalid.length > 5 ? ', ...' : ''}. Allowed: letters, digits, "_", "-", "." (max. 32 chars, not "." or "..").`);
         }
 
         const before = getState();

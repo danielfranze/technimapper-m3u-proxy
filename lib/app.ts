@@ -18,19 +18,19 @@ import { createLogger } from './logger.js';
 import { loadRuntimeConfig } from './runtime-config.js';
 import { createValidation } from './validation.js';
 import { createSoapReceiver } from './receiver.js';
+import { errorMessage } from './error-message.js';
 import type { StateStore } from './state-store.js';
-import {  createSyncCoordinator  } from './sync-coordinator.js';
-import {  securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler  } from './http-security.js';
-import {  registerHealthRoutes  } from './routes/health.js';
-import {  registerConfigRoutes  } from './routes/config.js';
-import {  registerMappingRoutes  } from './routes/mapping.js';
-import {  registerPlaylistRoutes  } from './routes/playlist.js';
-import {  registerHdhrRoutes  } from './routes/hdhr.js';
+import { createSyncCoordinator } from './sync-coordinator.js';
+import { securityHeaders, createAuth, createRateLimiter, createOriginGuard, createErrorHandler } from './http-security.js';
+import { registerHealthRoutes } from './routes/health.js';
+import { registerConfigRoutes } from './routes/config.js';
+import { registerMappingRoutes } from './routes/mapping.js';
+import { registerPlaylistRoutes } from './routes/playlist.js';
+import { registerHdhrRoutes } from './routes/hdhr.js';
 import { registerMetricsRoutes } from './routes/metrics.js';
 import { createSyncService } from './sync-service.js';
 import type { ConfigStore } from './config-store.js';
 import type { HdhrConfig } from './hdhr.js';
-
 /**
  * HTTP application factory.
  *
@@ -38,10 +38,6 @@ import type { HdhrConfig } from './hdhr.js';
  * It never starts a listener, which is what makes integration tests possible:
  * tests can call it with fake receiver, persistence and cron implementations.
  */
-
-function errorMessage(err: unknown): string {
-    return err instanceof Error ? err.message : String(err);
-}
 
 type Logger = ReturnType<typeof createLogger>;
 type SyncCoordinator = ReturnType<typeof createSyncCoordinator>;

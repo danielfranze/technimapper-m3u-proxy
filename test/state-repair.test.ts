@@ -2,8 +2,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {  createState, applyPersistedState  } from '../dist/lib/state.js';
-import {  createDeps, type Deps  } from '../test-helpers/state-deps.ts';
+import { createState, applyPersistedState } from '../dist/lib/state.js';
+import { createDeps, type Deps } from '../test-helpers/state-deps.ts';
 
 function deps(logger: Deps['logger']): Deps {
     return createDeps(logger);

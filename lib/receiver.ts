@@ -10,7 +10,7 @@
 
 import http from 'http';
 import xml2js from 'xml2js';
-import {  STREAM_URL_REGEX  } from './m3u8.js';
+import { STREAM_URL_REGEX } from './m3u8.js';
 
 /** xml2js-Ergebnisse: Entweder ein String, ein Objekt ({ ... }) oder ein Array davon. */
 type XmlValue = XmlNode | XmlNode[] | string | undefined;
@@ -30,7 +30,7 @@ interface Channel {
 }
 
 interface DiscoveryResult {
-    deviceType: 'STC' | 'S1' | 'S2' | 'S_SERIES';
+    deviceType: DiscoveryType;
     path: string;
     lists: ChannelList[];
 }
@@ -39,7 +39,7 @@ interface FetchResult {
     channels: Channel[];
     selectedListName: string;
     availableLists: string[];
-    detectedModel: 'STC' | 'S1' | 'S2' | 'S_SERIES';
+    detectedModel: DiscoveryType;
 }
 
 interface SoapReceiverLogger {
@@ -48,13 +48,21 @@ interface SoapReceiverLogger {
     error(...args: unknown[]): void;
 }
 
+const DiscoveryType = {
+    STC: 'STC',
+    S1: 'S1',
+    S2: 'S2',
+    S_SERIES: 'S_SERIES'
+} as const;
+type DiscoveryType = (typeof DiscoveryType)[keyof typeof DiscoveryType];
+
 const SOAP_ACTION = '"urn:schemas-upnp-org:service:ContentDirectory:1#Browse"';
 
 const ESCAPE_MAP: Record<string, string> = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' };
 
 const DISCOVERY_TARGETS = Object.freeze([
-    { type: 'STC', parentObj: '0$3$41', path: '/dev0/srv1/control' },
-    { type: 'S_SERIES', parentObj: '3', path: '/ContentDirectory/Control' }
+    { type: DiscoveryType.STC, parentObj: '0$3$41', path: '/dev0/srv1/control' },
+    { type: DiscoveryType.S_SERIES, parentObj: '3', path: '/ContentDirectory/Control' }
 ] as const);
 
 function escapeXml(str: string): string {
@@ -216,13 +224,13 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
     /**
      * Best-effort generation detection for S-series receivers.
      */
-    function detectSSeriesGeneration(lists: ChannelList[]): 'S1' | 'S2' | 'S_SERIES' {
+    function detectSSeriesGeneration(lists: ChannelList[]): DiscoveryType {
         const titles = new Set(lists.map(list => list.title));
-        if (titles.has('Astra-TV-Liste')) return 'S1';
+        if (titles.has('Astra-TV-Liste')) return DiscoveryType.S1;
         if (titles.has('TV-Liste') && lists.length === 5
             && titles.has('Alle Videos') && titles.has('Datum')
-            && titles.has('Eigene TV-Aufnahmen') && titles.has('Verzeichnis')) return 'S2';
-        return 'S_SERIES';
+            && titles.has('Eigene TV-Aufnahmen') && titles.has('Verzeichnis')) return DiscoveryType.S2;
+        return DiscoveryType.S_SERIES;
     }
 
     /** Discovers available Live-TV channel lists across the known device series. */
@@ -293,6 +301,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
 
 export {
     DISCOVERY_TARGETS,
+    DiscoveryType,
     escapeXml,
     xmlText,
     asArray,

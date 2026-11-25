@@ -9,11 +9,17 @@
 import http from 'http';
 import xml2js from 'xml2js';
 import { STREAM_URL_REGEX } from './m3u8.js';
+const DiscoveryType = {
+    STC: 'STC',
+    S1: 'S1',
+    S2: 'S2',
+    S_SERIES: 'S_SERIES'
+};
 const SOAP_ACTION = '"urn:schemas-upnp-org:service:ContentDirectory:1#Browse"';
 const ESCAPE_MAP = { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' };
 const DISCOVERY_TARGETS = Object.freeze([
-    { type: 'STC', parentObj: '0$3$41', path: '/dev0/srv1/control' },
-    { type: 'S_SERIES', parentObj: '3', path: '/ContentDirectory/Control' }
+    { type: DiscoveryType.STC, parentObj: '0$3$41', path: '/dev0/srv1/control' },
+    { type: DiscoveryType.S_SERIES, parentObj: '3', path: '/ContentDirectory/Control' }
 ]);
 function escapeXml(str) {
     return String(str).replace(/[<>&"']/g, (c) => ESCAPE_MAP[c]);
@@ -162,12 +168,12 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
     function detectSSeriesGeneration(lists) {
         const titles = new Set(lists.map(list => list.title));
         if (titles.has('Astra-TV-Liste'))
-            return 'S1';
+            return DiscoveryType.S1;
         if (titles.has('TV-Liste') && lists.length === 5
             && titles.has('Alle Videos') && titles.has('Datum')
             && titles.has('Eigene TV-Aufnahmen') && titles.has('Verzeichnis'))
-            return 'S2';
-        return 'S_SERIES';
+            return DiscoveryType.S2;
+        return DiscoveryType.S_SERIES;
     }
     /** Discovers available Live-TV channel lists across the known device series. */
     async function discoverTvLists(ip, port) {
@@ -228,5 +234,5 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
         close: () => upnpAgent.destroy()
     };
 }
-export { DISCOVERY_TARGETS, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
+export { DISCOVERY_TARGETS, DiscoveryType, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
 //# sourceMappingURL=receiver.js.map

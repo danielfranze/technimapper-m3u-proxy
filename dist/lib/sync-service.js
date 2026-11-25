@@ -16,7 +16,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
     }
     function mergeSettings(overrides = {}) {
         if (overrides === null || typeof overrides !== 'object' || Array.isArray(overrides)) {
-            throw new HttpError(400, 'Invalid settings payload');
+            throw HttpError.badRequest('Invalid settings payload');
         }
         const merged = { ...currentSettings() };
         // A key that is explicitly present overrides the stored value, even when

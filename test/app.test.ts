@@ -2,7 +2,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {  createHarness  } from '../test-helpers/harness.ts';
+import { createHarness } from '../test-helpers/harness.ts';
 import type { Server } from 'node:http';
 
 type Harness = ReturnType<typeof createHarness>;

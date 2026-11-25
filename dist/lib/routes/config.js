@@ -1,9 +1,7 @@
 'use strict';
 import { HttpError } from '../validation.js';
+import { errorMessage } from '../error-message.js';
 import * as hdhrModule from '../hdhr.js';
-function errorMessage(err) {
-    return err instanceof Error ? err.message : String(err);
-}
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
@@ -52,12 +50,12 @@ function registerConfigRoutes(app, ctx) {
             if (getState().configured && (body.ip !== undefined || body.port !== undefined)) {
                 const snapshot = getState();
                 if (candidate.ip !== snapshot.config.ip || candidate.port !== snapshot.config.port) {
-                    throw new HttpError(409, 'Receiver address changed. Save the settings first, then fetch channels.');
+                    throw HttpError.conflict('Receiver address changed. Save the settings first, then fetch channels.');
                 }
             }
             const result = await syncCoordinator.request(() => performSync(candidate));
             if (result?.stale) {
-                throw new HttpError(409, 'Receiver settings changed during sync. Please retry.');
+                throw HttpError.conflict('Receiver settings changed during sync. Please retry.');
             }
             startBackgroundCron();
             const snapshot = getState();
@@ -73,7 +71,7 @@ function registerConfigRoutes(app, ctx) {
             if (err instanceof HttpError)
                 return next(err);
             logger.error('[fetch-channels]', errorMessage(err));
-            return next(new HttpError(502, errorMessage(err) || 'Receiver request failed'));
+            return next(HttpError.badGateway(errorMessage(err) || 'Receiver request failed'));
         }
     });
     app.get('/api/export-config', (_req, res) => {
@@ -89,13 +87,13 @@ function registerConfigRoutes(app, ctx) {
     app.post('/api/import-config', async (req, res) => {
         const data = req.body;
         if (!data || typeof data !== 'object' || Array.isArray(data))
-            throw new HttpError(400, 'Invalid JSON payload');
+            throw HttpError.badRequest('Invalid JSON payload');
         const settings = data.config ? mergeSettings(data.config) : null;
         let mapping = null;
         if (data.mapping !== undefined) {
             const checked = validateMapping(data.mapping);
             if (checked.invalid.length)
-                throw new HttpError(400, `Invalid channel ID in import for: ${checked.invalid.slice(0, 5).join(', ')}`);
+                throw HttpError.badRequest(`Invalid channel ID in import for: ${checked.invalid.slice(0, 5).join(', ')}`);
             mapping = checked.mapping;
         }
         const beforeImport = getState();

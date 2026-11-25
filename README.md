@@ -235,14 +235,21 @@ npm start         # http://localhost:9191
 * `server.ts` – composition root: environment, adapters, startup and graceful shutdown
 * `lib/app.ts` – Express app factory (`createApp`, routes, sync orchestration)
 * `lib/state.ts` – application state, persisted snapshot and repair logic
+* `lib/state-store.ts` – immutable `StateStore` class (`get`/`commit`/`update`)
 * `lib/config-store.ts` – atomic `mapping.json` persistence
 * `lib/receiver.ts` – UPnP/SOAP receiver adapter
-* `lib/http-security.ts` – auth, CSRF/origin guard, rate limiting, security headers
+* `lib/http/middleware.ts` – auth, CSRF/origin guard, rate limiting, security headers (`lib/http-security.ts` re-exports it)
 * `lib/runtime-config.ts` – environment validation
 * `lib/logger.ts` – text/JSON logger
-* `lib/validation.ts` – input validation (settings, mapping)
+* `lib/validation.ts` – facade for input validation (re-exports `lib/domain/*`)
+* `lib/domain/ids.ts` – mapping ID rules
+* `lib/domain/settings.ts` – settings validation (receiver IP, port, cron, list name)
+* `lib/domain/mapping.ts` – mapping utilities (duplicates, partition, sort)
+* `lib/error-message.ts` – shared error-to-string helper
+* `lib/http-error.ts` – `HttpError` with status factories (`badRequest`, `notFound`, …)
 * `lib/m3u8.ts` – playlist generation and sanitizing
 * `lib/hdhr.ts` – HDHomeRun emulation (lineup, tuner name, host handling)
+* `lib/routes/*.ts` – Express route modules (config, mapping, playlist, health, metrics, hdhr)
 * `test/` – unit and HTTP integration tests
 * `test-helpers/` – shared test harnesses and dependency builders
 * `public/index.html` – Web UI

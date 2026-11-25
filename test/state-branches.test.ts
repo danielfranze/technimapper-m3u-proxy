@@ -2,8 +2,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {  createState, applyPersistedState, persistedSnapshot, type AppState  } from '../dist/lib/state.js';
-import {  createDeps  } from '../test-helpers/state-deps.ts';
+import { createState, applyPersistedState, persistedSnapshot, type AppState } from '../dist/lib/state.js';
+import { createDeps } from '../test-helpers/state-deps.ts';
 
 test('applyPersistedState handles missing and invalid persisted fields', () => {
     const warnings: string[] = [];

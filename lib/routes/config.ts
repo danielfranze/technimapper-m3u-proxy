@@ -2,6 +2,7 @@
 
 import type { Express, NextFunction, Request, Response } from 'express';
 import { HttpError } from '../validation.js';
+import { errorMessage } from '../error-message.js';
 import type { ValidatedSettings } from '../validation.js';
 import type { StateStore, AppState } from '../state-store.js';
 import * as hdhrModule from '../hdhr.js';
@@ -31,10 +32,6 @@ interface ConfigCtx {
     logger: { error(...args: unknown[]): void };
     performSync(candidate: { ip: string; port: string | number; selectedListName: string; cronExpression: string }): Promise<PerformSyncResult>;
     rebuildViews(): void;
-}
-
-function errorMessage(err: unknown): string {
-    return err instanceof Error ? err.message : String(err);
 }
 
 /**
@@ -101,13 +98,13 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
             if (getState().configured && (body.ip !== undefined || body.port !== undefined)) {
                 const snapshot = getState();
                 if (candidate.ip !== snapshot.config.ip || candidate.port !== snapshot.config.port) {
-                    throw new HttpError(409, 'Receiver address changed. Save the settings first, then fetch channels.');
+                    throw HttpError.conflict('Receiver address changed. Save the settings first, then fetch channels.');
                 }
             }
 
             const result = await syncCoordinator.request(() => performSync(candidate)) as PerformSyncResult;
             if (result?.stale) {
-                throw new HttpError(409, 'Receiver settings changed during sync. Please retry.');
+                throw HttpError.conflict('Receiver settings changed during sync. Please retry.');
             }
             startBackgroundCron();
 
@@ -122,7 +119,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
         } catch (err) {
             if (err instanceof HttpError) return next(err);
             logger.error('[fetch-channels]', errorMessage(err));
-            return next(new HttpError(502, errorMessage(err) || 'Receiver request failed'));
+            return next(HttpError.badGateway(errorMessage(err) || 'Receiver request failed'));
         }
     });
 
@@ -139,13 +136,13 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
 
     app.post('/api/import-config', async (req: Request, res: Response) => {
         const data = req.body as { config?: unknown; mapping?: unknown } | null | undefined;
-        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new HttpError(400, 'Invalid JSON payload');
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw HttpError.badRequest('Invalid JSON payload');
 
         const settings = data.config ? mergeSettings(data.config as Record<string, unknown>) : null;
         let mapping: Record<string, string | number> | null = null;
         if (data.mapping !== undefined) {
             const checked = validateMapping(data.mapping);
-            if (checked.invalid.length) throw new HttpError(400, `Invalid channel ID in import for: ${checked.invalid.slice(0, 5).join(', ')}`);
+            if (checked.invalid.length) throw HttpError.badRequest(`Invalid channel ID in import for: ${checked.invalid.slice(0, 5).join(', ')}`);
             mapping = checked.mapping;
         }
 

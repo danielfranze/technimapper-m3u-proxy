@@ -23,28 +23,32 @@ function deepFreeze<T>(value: T, seen: WeakSet<object> = new WeakSet()): T {
 
 export type { AppState } from './state.js';
 
-export type StateStore<T = AppState> = {
-    get(): T;
-    commit(next: T): void;
-    update(mutator: (state: T) => void): T;
-};
+export class StateStore<T = AppState> {
+    private state: T;
+
+    constructor(initial: T) {
+        this.state = deepFreeze(initial);
+    }
+
+    get(): T {
+        return this.state;
+    }
+
+    commit(next: T): void {
+        this.state = deepFreeze(next);
+    }
+
+    // Convenience for the few places that still mutate a draft in place.
+    update(mutator: (state: T) => void): T {
+        const next = structuredClone(this.state);
+        mutator(next);
+        this.state = deepFreeze(next);
+        return this.state;
+    }
+}
 
 function createStateStore<T = AppState>(initial: T): StateStore<T> {
-    let state = deepFreeze(initial);
-
-    return {
-        get: () => state,
-        commit(next: T) {
-            state = deepFreeze(next);
-        },
-        // Convenience for the few places that still mutate a draft in place.
-        update(mutator: (state: T) => void): T {
-            const next = structuredClone(state);
-            mutator(next);
-            state = deepFreeze(next);
-            return state;
-        }
-    };
+    return new StateStore<T>(initial);
 }
 
 export { deepFreeze, createStateStore };

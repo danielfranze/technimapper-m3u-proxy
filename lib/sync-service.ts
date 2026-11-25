@@ -1,9 +1,9 @@
 'use strict';
 
 import type { AppState, StateStore } from './state-store.js';
-import {  persistedSnapshot  } from './state.js';
-import {  buildM3u8  } from './m3u8.js';
-import {  HttpError, type ValidatedSettings  } from './validation.js';
+import { persistedSnapshot } from './state.js';
+import { buildM3u8 } from './m3u8.js';
+import { HttpError, type ValidatedSettings } from './validation.js';
 import type { LineupEntry } from './hdhr.js';
 
 /**
@@ -60,7 +60,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
 
     function mergeSettings(overrides: Record<string, unknown> | null = {}): ValidatedSettings {
         if (overrides === null || typeof overrides !== 'object' || Array.isArray(overrides)) {
-            throw new HttpError(400, 'Invalid settings payload');
+            throw HttpError.badRequest('Invalid settings payload');
         }
         const merged: Record<string, unknown> = { ...currentSettings() };
         // A key that is explicitly present overrides the stored value, even when

@@ -21,7 +21,7 @@ interface Channel {
     url: string;
 }
 interface DiscoveryResult {
-    deviceType: 'STC' | 'S1' | 'S2' | 'S_SERIES';
+    deviceType: DiscoveryType;
     path: string;
     lists: ChannelList[];
 }
@@ -29,13 +29,20 @@ interface FetchResult {
     channels: Channel[];
     selectedListName: string;
     availableLists: string[];
-    detectedModel: 'STC' | 'S1' | 'S2' | 'S_SERIES';
+    detectedModel: DiscoveryType;
 }
 interface SoapReceiverLogger {
     info(...args: unknown[]): void;
     warn(...args: unknown[]): void;
     error(...args: unknown[]): void;
 }
+declare const DiscoveryType: {
+    readonly STC: "STC";
+    readonly S1: "S1";
+    readonly S2: "S2";
+    readonly S_SERIES: "S_SERIES";
+};
+type DiscoveryType = (typeof DiscoveryType)[keyof typeof DiscoveryType];
 declare const DISCOVERY_TARGETS: readonly [{
     readonly type: "STC";
     readonly parentObj: "0$3$41";
@@ -68,5 +75,5 @@ declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger
     discoverTvLists: (ip: string, port: string | number) => Promise<DiscoveryResult>;
     close: () => void;
 };
-export { DISCOVERY_TARGETS, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
+export { DISCOVERY_TARGETS, DiscoveryType, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
 export type Receiver = ReturnType<typeof createSoapReceiver>;
