@@ -73,11 +73,17 @@
         --text-dim: #94a3b8;
         --accent: #3b82f6;
         --accent-hover: #2563eb;
+        --accent-muted: rgba(59, 130, 246, 0.1);
+        --accent-border: rgba(59, 130, 246, 0.3);
         --success: #10b981;
         --success-hover: #059669;
         --border: #2e3642;
         --danger: #ef4444;
+        --danger-muted: rgba(239, 68, 68, 0.1);
+        --danger-border: rgba(239, 68, 68, 0.3);
         --warning: #f59e0b;
+        --warning-muted: rgba(251, 191, 36, 0.1);
+        --warning-border: rgba(251, 191, 36, 0.3);
     }
 
     /* ==========================================
@@ -599,26 +605,37 @@
         box-sizing: border-box;
     }
     .status-mapped { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
-    .status-unmapped { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
+    .status-unmapped { background: var(--danger-muted); border: 1px solid var(--danger-border); color: #f87171; }
 
     .model-badge {
-        font-size: 0.72rem; 
-        color: var(--accent); 
-        background: rgba(59, 130, 246, 0.1);
+        font-size: 0.72rem;
+        color: var(--accent);
+        background: var(--accent-muted);
         height: 24px;
-        padding: 0 10px; 
-        border-radius: 12px; 
-        font-weight: 500; 
+        padding: 0 10px;
+        border-radius: 12px;
+        font-weight: 500;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
-        border: 1px solid rgba(59, 130, 246, 0.3);
+        border: 1px solid var(--accent-border);
         white-space: nowrap;
     }
     .model-badge-pending {
-        color: #fbbf24; background: rgba(251, 191, 36, 0.1);
-        border: 1px solid rgba(251, 191, 36, 0.3);
+        color: var(--warning);
+        background: var(--warning-muted);
+        border: 1px solid var(--warning-border);
+    }
+    .model-badge-ok {
+        background: var(--accent-muted);
+        color: var(--accent);
+        border-color: var(--accent-border);
+    }
+    .model-badge-error {
+        color: #f87171;
+        background: var(--danger-muted);
+        border: 1px solid var(--danger-border);
     }
 
     #toast-container {

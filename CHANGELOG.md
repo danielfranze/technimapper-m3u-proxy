@@ -3,6 +3,19 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [2.0.0-rc.5]
+
+### Added
+- Frontend MVP: `public/app/lib/` – `model.js` (State + reine Logik), `view.js` (DOM-Rendering), `presenter.js` (Business-Logic). `main.js` ist jetzt nur noch Wiring (~90 Zeilen).
+- `public/app/lib/api.js` – zentrale `getJson`/`postJson`-Wrapper (übernimmt `postJson` aus `main.js`).
+- CSS-Variablen für Farben, die vorher inline warben (`--accent-muted`, `--danger-muted`, …); `updateModelBadge` nutzt Klassen statt Inline-Styles.
+- Bugfix in der Auto-Fill-Logik: `/^\d+/` statt `/^\\d+/` – IDs werden jetzt echter aus Namen extrahiert.
+
+### Changed
+- Refactoring-Rounds: Runden 5–8 (OOP, Domain-Module, Middleware-Split, Fehler-Helper, MVP-Aufteilung).
+- Tests (`test/ui-*.ts`) auf die neue Frontend-Struktur angepasst.
+- `npm run build && npm test && npm run test:e2e` – alle grün (149 + 23 E2E Tests).
+
 ## [2.0.0-rc.4]
 
 ### Changed
