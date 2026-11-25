@@ -12,11 +12,17 @@ import { copyUrlFor, COPY_SOURCES } from '../public/app/lib/view.js';
 const html: string = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public', 'index.html'), 'utf8');
 
 // Stub localStorage before importing modules (model.js reads it at load time).
-(globalThis as any).localStorage = {
+interface TestLocalStorage {
+    _v: Map<string, string>;
+    getItem(key: string): string | null;
+    setItem(key: string, value: string): void;
+}
+const testStorage: TestLocalStorage = {
     _v: new Map<string, string>(),
-    getItem(key: string) { return (this as any)._v.get(key) ?? null; },
-    setItem(key: string, v: string) { (this as any)._v.set(key, v); }
+    getItem(key: string) { return this._v.get(key) ?? null; },
+    setItem(key: string, value: string) { this._v.set(key, value); }
 };
+Object.defineProperty(globalThis, 'localStorage', { value: testStorage, configurable: true });
 
 test('the copy button offers the HDHomeRun tuner address and the M3U8 playlist URL of the current origin', () => {
     const hdhr = copyUrlFor('hdhr');
@@ -29,12 +35,9 @@ test('the copy button offers the HDHomeRun tuner address and the M3U8 playlist U
 test('the remembered source defaults to the tuner address and ignores invalid or unavailable storage', () => {
     assert.equal(model.copySource, 'hdhr', 'default: hdhr');
     assert.equal(loadCopySource(), 'hdhr');
-    (globalThis as any).localStorage = {
-        getItem() { return 'nonsense'; },
-        setItem() {}
-    };
+    Object.defineProperty(globalThis, 'localStorage', { value: { getItem: () => 'nonsense', setItem() {} }, configurable: true });
     assert.equal(loadCopySource(), 'hdhr');
-    assert.equal((globalThis as any).localStorage.getItem(), 'nonsense'); // storage untouched
+    assert.equal((globalThis.localStorage as unknown as { getItem(): string | null }).getItem(), 'nonsense'); // storage untouched
 });
 
 test('the split button is an accessible menu button and replaces the old M3U-only button', () => {

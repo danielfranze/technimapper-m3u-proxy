@@ -4,9 +4,9 @@
         "strict": true,
         "noImplicitAny": true,
         "noEmit": true,
-        "rootDir": ".",
         "types": ["node"],
-        "allowImportingTsExtensions": true
+        "allowImportingTsExtensions": true,
+        "allowJs": true
     },
     "include": ["*.test.ts"],
     "exclude": []

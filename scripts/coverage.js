@@ -12,7 +12,8 @@ const result = spawnSync(process.execPath, [
     '--test-coverage-exclude=test/**',
     '--test-coverage-exclude=test-helpers/**',
     '--test-coverage-exclude=scripts/**',
-    '--test-coverage-exclude=e2e/**'
+    '--test-coverage-exclude=e2e/**',
+    '--test-coverage-exclude=public/**'
 ], {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf8',
