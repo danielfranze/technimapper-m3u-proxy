@@ -81,8 +81,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           sbom: true
           provenance: mode=max
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
       - uses: sigstore/cosign-installer@v4.1.3
 

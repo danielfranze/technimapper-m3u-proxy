@@ -15,6 +15,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Tests import the TypeScript sources directly (`tsx`); `test/tsconfig.json` gained the DOM libs.
 - `scripts/coverage.js` excludes `frontend/**`.
 - README documents `frontend/` as source and `public/app/js/` as generated output.
+- Dockerfile verifies the frontend build output (`test -f public/app/js/main.js`); release builds run with `no-cache` to prevent stale layers.
 
 ## [2.0.0-rc.5]
 
