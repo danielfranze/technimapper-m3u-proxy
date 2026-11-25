@@ -30,7 +30,8 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack 
 
 # Copy compiled output and static assets
 COPY --from=builder /app/dist ./dist
-COPY --chown=node:node public ./public
+COPY --from=builder /app/public ./public
+RUN chown -R node:node /app/public /app/dist
 
 # Persistent data directory owned by the unprivileged user
 RUN mkdir -p /app/data && chown -R node:node /app/data
