@@ -25,3 +25,8 @@ test('Dockerfile runs as the unprivileged user and starts node directly', () => 
     assert.match(dockerfile, /CMD \["node", "dist\/server\.js"\]/);
     assert.ok(!/CMD \[?"?npm/.test(dockerfile), 'the container must not start through npm');
 });
+
+test('Dockerfile builds the frontend and copies the generated public assets from the builder stage', () => {
+    assert.match(dockerfile, /RUN npm run build && test -f public\/app\/js\/main\.js/);
+    assert.match(dockerfile, /COPY --from=builder \/app\/public \.\/public/);
+});

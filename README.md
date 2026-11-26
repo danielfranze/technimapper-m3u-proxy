@@ -132,7 +132,7 @@ Read the [CHANGELOG](CHANGELOG.md) for all breaking changes.
 
 ## Configuration
 
-Everything related to the receiver (IP, port, cron schedule, channel list, mapping) is configured in the Web UI at `http://<YOUR-SERVER-IP>:9191`. A sync interval of `*/5 * * * *` (the default) keeps the stream URLs fresh without stressing the receiver. Runtime behavior is controlled via environment variables:
+Everything related to the receiver (IP, port, cron schedule, channel list, mapping) is configured in the Web UI at `http://<YOUR-SERVER-IP>:9191`. A sync interval of `*/5 * * * *` (the default) keeps the stream URLs fresh without stressing the receiver. Runtime behavior is controlled via environment variables; `.env.example` lists every supported variable with its default.
 
 | Variable                        | Default     | Description                                                                                                                                                                                                      |
 | ------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -142,6 +142,7 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 | `MAX_RESPONSE_BYTES`            | `2097152`   | Maximum accepted UPnP response size (2 MiB).                                                                                                                                                                     |
 | `SHUTDOWN_TIMEOUT_MS`           | `30000`     | Hard deadline for graceful shutdown; always at least 3× `REQUEST_TIMEOUT_MS` + 5 s.                                                                                                                              |
 | `ALLOW_NON_PRIVATE_IP`          | `false`     | Allow receiver IPs outside RFC1918 (VPN/CGNAT). Loopback and link-local stay blocked.                                                                                                                            |
+| `ALLOW_LOOPBACK_RECEIVER`       | `false`     | Allow a receiver on `127.0.0.1` for local mock testing. Keep disabled in production.                                                                                                                             |
 | `ADMIN_USER` / `ADMIN_PASSWORD` | –           | Enables HTTP Basic Auth for the UI and `/api/*`. Set both; if only one is set, protected routes fail closed with `503`.                                                                                          |
 | `TRUST_PROXY`                   | –           | Number of reverse-proxy hops (or `true`) so rate limiting sees real client IPs.                                                                                                                                  |
 | `HSTS`                          | `false`     | Set to `true` behind a TLS-terminating proxy to add `Strict-Transport-Security`.                                                                                                                                 |
@@ -232,22 +233,26 @@ cosign verify ghcr.io/danielfranze/technimapper-m3u-proxy:latest \
 | The tuner name does not change                                                                                          | The name is `TechniSat <detected model>` until you set `HDHR_FRIENDLY_NAME`. The model is detected on the first successful sync; the client may cache the old name, so remove and re-add the tuner.                                   |
 | `/playlist.m3u8` returns `503`                                                                                          | No sync yet, or no channel has an ID. Click **Apply & Fetch**, then map channels and **Save**.                                                                                                                                        |
 | _No TechniSat Live-TV containers found_                                                                                 | Wrong IP/port, receiver in standby/off, unsupported model, or no channel list configured on the receiver.                                                                                                                             |
-| _Invalid receiver IP_                                                                                                   | Only private IPv4 addresses are allowed. Use `ALLOW_NON_PRIVATE_IP=true` for VPN/CGNAT.                                                                                                                                               |
+| _Invalid receiver IP_                                                                                                   | Only private IPv4 addresses are allowed. Use `ALLOW_NON_PRIVATE_IP=true` for VPN/CGNAT; loopback additionally needs `ALLOW_LOOPBACK_RECEIVER=true` (local testing only).                                                              |
 | _Invalid channel ID for ..._                                                                                            | IDs may only contain letters, digits, `_`, `-`, `.` (max. 32 characters; `.` and `..` are reserved).                                                                                                                                  |
 | Status `degraded` in `/health`                                                                                          | Three or more consecutive failed syncs, or no playlist available. See `lastError` in `/health` or the UI tooltip on the sync badge.                                                                                                   |
 
 ## Development
 
+Node.js 26 is required (the same version used by CI and the Docker image).
+
 ```bash
 npm ci
+npm run build          # backend -> dist/, frontend -> public/app/js/
 npm test               # unit + integration tests (Node's built-in test runner)
 npm run coverage       # tests with the built-in coverage report
 npm run test:e2e       # end-to-end smoke tests with Playwright
 npm run check          # backend type check with tsc --noEmit
-npm run check:frontend # frontend TypeScript check / build (tsc)
-npm run build:frontend # emit frontend ESM to public/app/js/
+npm run check:frontend # frontend TypeScript check
 npm start              # http://localhost:9191
 ```
+
+`npm run build` cleans `dist/` and `public/app/js/` first, so stale output cannot leak into a release.
 
 - `server.ts` – composition root: environment, adapters, startup and graceful shutdown
 - `lib/app.ts` – Express app factory (`createApp`, sync orchestration)
@@ -285,7 +290,7 @@ npm start              # http://localhost:9191
 | `scripts/probe-receiver.js <ip> [port]` | Inspects a receiver's UPnP/ContentDirectory structure and prints the detected model                                                                   |
 | `scripts/mock-receiver.js`              | Minimal SOAP mock for manual testing (set `MOCK_RECEIVER_PORT`)                                                                                       |
 
-CI (GitHub Actions) runs syntax checks, unit/integration tests, coverage, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
+CI (GitHub Actions) runs type checks, Biome, knip, OpenAPI freshness, unit/integration tests, coverage, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
 
 ## Third-party fonts
 

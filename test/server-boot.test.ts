@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import pkg from '../package.json' with { type: 'json' };
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const serverJs = path.join(root, 'dist', 'server.js');
@@ -69,7 +70,7 @@ test('server boots, serves health endpoints and exits cleanly on SIGTERM', async
             playlistAvailable: boolean;
         };
         assert.equal(healthBody.status, 'ok', 'health payload contains status ok');
-        assert.equal(healthBody.version, '2.0.0-rc.6');
+        assert.equal(healthBody.version, pkg.version);
         assert.equal(healthBody.configured, false);
         assert.equal(healthBody.playlistAvailable, false);
 

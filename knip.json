@@ -1,14 +1,6 @@
 {
     "$schema": "node_modules/knip/schema.json",
-    "entry": [
-        "public/app/js/main.js",
-        "frontend/main.ts",
-        "scripts/*.js",
-        "test/*.test.ts",
-        "test-helpers/*.ts",
-        "e2e/*.spec.ts",
-        "e2e/*.ts"
-    ],
+    "entry": ["frontend/main.ts", "scripts/*.js", "test/*.test.ts", "test-helpers/*.ts", "e2e/*.spec.ts", "e2e/*.ts"],
     "project": ["**/*.{ts,js}", "!dist/**", "!public/app/js/**", "!node_modules/**"],
     "ignore": ["**/*.d.ts", "frontend/api.generated.d.ts"],
     "ignoreExportsUsedInFile": true,

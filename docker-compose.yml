@@ -1,7 +1,7 @@
 services:
     technimapper-m3u-proxy:
         build: .
-        # Or use the published, signed image (newest stable release; use a version tag like :1.5.0 to pin):
+        # Or use the published, signed image (newest stable release; pin a version tag such as :2.0.0):
         # image: ghcr.io/danielfranze/technimapper-m3u-proxy:latest
         container_name: technimapper-m3u-proxy
         ports:
@@ -21,6 +21,8 @@ services:
             # - ADMIN_PASSWORD=change-me
             # Optional: allow receiver IPs outside RFC1918 (VPN/CGNAT)
             # - ALLOW_NON_PRIVATE_IP=true
+            # Optional: allow a receiver on 127.0.0.1 (local mock testing only)
+            # - ALLOW_LOOPBACK_RECEIVER=true
             # Optional: behind a reverse proxy (number of proxy hops)
             # - TRUST_PROXY=1
             # Optional logging (LOG_LEVEL: error|warn|info, LOG_FORMAT: text|json)

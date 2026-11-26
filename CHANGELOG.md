@@ -3,12 +3,47 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
+## [2.0.0] - 2026-11-26
+
+TechniMapper 2.0 is a modernization release. The feature set is unchanged; the backend and frontend are now TypeScript end-to-end, and the build, test and release pipeline is stricter.
+
+### Added
+
+- OpenAPI 3 documentation (`docs/openapi.yaml`) with generated frontend types (`frontend/api.generated.d.ts`); CI verifies that the generated types are up to date.
+- Biome for linting/formatting and knip for unused files/exports, both enforced in CI.
+- Property-based tests for input validation, an OpenAPI/route parity test, and a server boot/shutdown integration test.
+- E2E smoke test that fails on browser `pageerror`s, catching a broken frontend module graph.
+- Graceful shutdown, structured text/JSON logging, health/readiness endpoints and Prometheus metrics.
+
+### Changed
+
+- Backend fully migrated to TypeScript (`strict`, NodeNext ESM, `dist/` build output); Node.js 26 is required.
+- Frontend migrated to TypeScript (`frontend/`) and compiled with plain `tsc` to static ESM in `public/app/js/`; no bundler or framework.
+- Docker image builds the frontend in the builder stage and copies the generated assets into the runtime image; release builds bypass the layer cache.
+- CI and release workflows run type checks, Biome, knip, OpenAPI freshness, tests, coverage, E2E, dependency audit and a container smoke test/Trivy scan.
+- Build output (`dist/`, `public/app/js/`) is generated and no longer tracked; `npm run build` starts from a clean state.
+- `LOG_FORMAT` defaults to `text` (as documented); set `LOG_FORMAT=json` for structured logs.
+- `GET /api/get-config` was renamed to `GET /api/config` (UI and tests updated).
+
+### Fixed
+
+- Docker runtime image was missing `public/app/js/` after the frontend TypeScript migration.
+- Frontend race conditions: config and sync state are awaited, sync requests are single-flight, and file import errors are surfaced.
+- UI XSS and M3U injection hardening; SSRF protection for receiver targets.
+- Copy-menu keyboard navigation no longer calls `.filter()` on a `NodeList`.
+
+### Upgrade notes
+
+- Node.js 26 or newer is required (the Docker image includes it).
+- The default port is `9191` (previously `3000` in 1.x). Update port mappings and media-center addresses.
+- Use `GET /api/config` instead of `GET /api/get-config`.
+- `dist/` and `public/app/js/` are build artifacts; run `npm ci && npm run build` before `npm start` when running from source.
+
 ## [2.0.0-rc.6]
 
 ### Added
 
 - **knip `warn`→`error`**; `ignoreExportsUsedInFile`; clean unused re-exports (`AppRuntime`, `CronHandle`, `CronScheduler`, `Logger`, `Receiver`, `Express`, `Server`, …). CI `npm run knip`.
-
 - Frontend TypeScript migration: sources in `frontend/`, emitted ESM in `public/app/js/`, strict flags, no bundler (ADR 0007). `public/app/js/` is generated and gitignored.
 - `build:backend` / `build:frontend` scripts; `npm run build` now builds both halves.
 - E2E smoke test fails on `pageerror` to catch a broken frontend module graph.
@@ -22,11 +57,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Dockerfile verifies the frontend build output (`test -f public/app/js/main.js`); release builds run with `no-cache` to prevent stale layers.
 - Dockerfile now copies `public/` from the builder stage (not the build context), so generated `app/js/` is included in the runtime image.
 - `noPropertyAccessFromIndexSignature`; `dataset['…']`; `@ts-expect-error`, not `@ts-ignore`. No `@ts-ignore`/`@ts-expect-error` needed.
-- **OpenAPI-Typen:** `openapi-typescript@7` + `npm run types:openapi` → `frontend/api.generated.d.ts`. `ConfigResponse` = generated `GetConfig`; `FetchChannelsResponse` = generated `FetchChannelsResult`. `docs/openapi.yaml` `FetchChannelsResult` corrected (`channels: string[]`, `mapping`). `SaveSettingsResponse` gegen `/api/save-settings` verifiziert.
-- **P3 Qualität:** **Biome** (`@biomejs/biome`) `npm run lint` / `lint:fix` / `format` / `format:check`; `biome.json`. **`knip`** `npm run knip`. `biome check` + `format` in CI.
-- **Konkurrenz/Frontend-Robustheit:** `await updateSyncTime()`; `loadInitialConfig` + `updateSyncTime` `await`; `setInterval`; **`syncInflight`**; `reader.onerror`; **`ApiError`** + `JsonResult.error`.
-
-### Changed
+- **OpenAPI types:** `openapi-typescript@7` + `npm run types:openapi` → `frontend/api.generated.d.ts`. `ConfigResponse` = generated `GetConfig`; `FetchChannelsResponse` = generated `FetchChannelsResult`. `docs/openapi.yaml` `FetchChannelsResult` corrected (`channels: string[]`, `mapping`). `SaveSettingsResponse` verified against `/api/save-settings`.
+- **P3 quality:** **Biome** (`@biomejs/biome`) `npm run lint` / `lint:fix` / `format` / `format:check`; `biome.json`. **`knip`** `npm run knip`. `biome check` + `format` in CI.
+- **Concurrency/frontend robustness:** `await updateSyncTime()`; `loadInitialConfig` + `updateSyncTime` `await`; `setInterval`; **`syncInflight`**; `reader.onerror`; **`ApiError`** + `JsonResult.error`.
 - Build/CI hardening: `clean`; `types:openapi` in `build:frontend`; `test:e2e` builds; `.tsc-out`/`.tsbuildinfo`; `.env.example`.
 
 ## [2.0.0-rc.5]

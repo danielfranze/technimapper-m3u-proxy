@@ -36,10 +36,10 @@ jobs:
               run: npm run knip
             - name: OpenAPI type freshness
               run: npm run types:openapi && git diff --exit-code frontend/api.generated.d.ts
+            - name: Build, unit & integration tests
+              run: npm test
             - name: Type checks (tests, helpers, e2e)
               run: npm run check:tests && npx tsc --noEmit -p e2e
-            - name: Unit & integration tests
-              run: npm test
             - name: Coverage report
               run: npm run coverage
             - name: Install Playwright browsers

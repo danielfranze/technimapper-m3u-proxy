@@ -4,6 +4,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { parse as parseYaml } from 'yaml';
+import pkg from '../package.json' with { type: 'json' };
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const openapiPath = path.join(root, 'docs', 'openapi.yaml');
@@ -16,6 +17,7 @@ const openapi = parseYaml(fs.readFileSync(openapiPath, 'utf8')) as {
 test('docs/openapi.yaml is valid OpenAPI 3 YAML', () => {
     assert.ok(openapi.openapi?.startsWith('3.'), 'openapi version 3.x');
     assert.ok(openapi.info?.version, 'info.version present');
+    assert.equal(openapi.info.version, pkg.version, 'OpenAPI info.version must match package.json');
     assert.ok(openapi.paths && typeof openapi.paths === 'object', 'paths present');
 });
 

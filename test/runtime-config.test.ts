@@ -12,6 +12,8 @@ test('runtime config uses safe defaults and warns about missing authentication',
     assert.equal(config.adminUser, '');
     assert.equal(config.adminPassword, '');
     assert.equal(config.hsts, false);
+    assert.equal(config.logLevel, 'info');
+    assert.equal(config.logFormat, 'text');
     assert.ok(config.warnings.some((w) => /unauthenticated/.test(w)));
     assert.equal(config.configFile, path.join(config.dataDir, 'mapping.json'));
 });

@@ -139,7 +139,7 @@ export function loadRuntimeConfig(env: Record<string, string | undefined> = proc
         adminPassword,
         trustProxy,
         logLevel: env.LOG_LEVEL || 'info',
-        logFormat: env.LOG_FORMAT || 'json',
+        logFormat: env.LOG_FORMAT || 'text',
         hsts,
         defaultCron: DEFAULT_CRON,
         playlistPaths,

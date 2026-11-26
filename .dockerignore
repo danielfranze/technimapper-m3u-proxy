@@ -1,5 +1,12 @@
 node_modules
 npm-debug.log
+dist
+coverage
+test-results
+playwright-report
+blob-report
+.playwright-data
+.tsc-out
 data
 mapping.json
 .git
@@ -16,5 +23,6 @@ docker-compose.yml
 assets
 test
 test-helpers
+e2e
 scripts
 public/app/js

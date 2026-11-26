@@ -11,7 +11,7 @@ Use GitHub's private reporting instead: **Security → Report a vulnerability** 
 
 Please include:
 
-- affected version (`/api/get-config` shows it, or the badge in the UI),
+- affected version (`/health` shows it, or the badge in the UI),
 - steps to reproduce,
 - the impact you expect.
 
@@ -27,8 +27,9 @@ You will get an initial response as soon as possible. Fixes are published as a n
 - `/playlist.m3u8`, `/hdhr/*`, `/health` and `/health/live` are intentionally public (media centers such as Plex and Jellyfin, M3U8 clients and container health checks).
   The playlist contains the stream URLs of your receiver.
 - Receiver IPs are restricted to private IPv4 ranges (SSRF protection); loopback and link-local
-  addresses are always rejected. The receiver target is changed through a separate, validated
-  endpoint, so a sync cannot be used as a general-purpose LAN port scanner.
+  addresses are rejected by default (loopback can be enabled explicitly for local mock testing).
+  The receiver target is changed through a separate, validated endpoint, so a sync cannot be used
+  as a general-purpose LAN port scanner.
 - State-changing `/api/*` requests require JSON and a same-origin `Origin`/`Referer`; API requests
   and failed authentication attempts are rate-limited.
 - Verify image signatures before deploying (see the README, section _Supply chain_).

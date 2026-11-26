@@ -1,4 +1,4 @@
-# Threat model (release 1.8.0)
+# Threat model (release 2.0.0)
 
 ## Scope
 
@@ -16,7 +16,7 @@ receiver, serves a playlist and an HDHomeRun emulator to local clients.
 
 ## Identified threats and mitigations
 
-| Threat                                       | Mitigation in 1.8.0                                                                                                                   |
+| Threat                                       | Mitigation in 2.0.0                                                                                                                   |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | LAN SSRF/port scan via `/api/fetch-channels` | Receiver target changes go through authenticated `POST /api/save-settings`; sync uses stored settings. Private-IP validation remains. |
 | CSRF on state-changing `/api/*`              | JSON content-type required; same-origin `Origin`/`Referer` guard.                                                                     |
