@@ -20,7 +20,7 @@ interface ConfigCtx {
     mergeSettings(overrides: Record<string, unknown> | null): ValidatedSettings;
     persistState(): Promise<void>;
     startBackgroundCron(): unknown;
-    syncCoordinator: {
+    syncQueue: {
         clearBackoff(): void;
         request(fn: () => Promise<unknown>): Promise<unknown>;
     };
@@ -50,7 +50,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
         mergeSettings,
         persistState,
         startBackgroundCron,
-        syncCoordinator,
+        syncQueue,
         validation,
         version,
         hdhrConfig,
@@ -88,7 +88,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
             if (stateStore && typeof stateStore.commit === 'function') stateStore.commit(before);
             throw err;
         }
-        syncCoordinator.clearBackoff();
+        syncQueue.clearBackoff();
         startBackgroundCron();
         res.json({ success: true, ...currentSettings() });
     });
@@ -108,7 +108,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
                 }
             }
 
-            const result = (await syncCoordinator.request(() => performSync(candidate))) as PerformSyncResult;
+            const result = (await syncQueue.request(() => performSync(candidate))) as PerformSyncResult;
             if (result?.stale) {
                 throw HttpError.conflict('Receiver settings changed during sync. Please retry.');
             }
@@ -170,7 +170,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
             if (stateStore && typeof stateStore.commit === 'function') stateStore.commit(beforeImport);
             throw err;
         }
-        if (typeof syncCoordinator.clearBackoff === 'function') syncCoordinator.clearBackoff();
+        if (typeof syncQueue.clearBackoff === 'function') syncQueue.clearBackoff();
         startBackgroundCron();
         res.json({ success: true, message: 'Configuration imported successfully' });
     });

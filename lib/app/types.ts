@@ -8,7 +8,7 @@ import type { createLogger } from '../logger.js';
 import type { Receiver } from '../receiver.js';
 import type { RuntimeConfig } from '../runtime-config.js';
 import type { StateStore } from '../state-store.js';
-import type { SyncCoordinator } from '../sync-coordinator.js';
+import type { SyncQueue } from '../sync-queue.js';
 import type { createValidation, ValidatedSettings } from '../validation.js';
 
 type Logger = ReturnType<typeof createLogger>;
@@ -30,7 +30,7 @@ export interface AppDeps {
     version: string;
     hdhrConfig?: HdhrConfig | undefined;
     publicDir?: string | undefined;
-    syncCoordinator?: SyncCoordinator | undefined;
+    syncQueue?: SyncQueue | undefined;
 }
 
 /** Shared context passed to the route modules (`lib/routes/*.ts`). */
@@ -57,7 +57,7 @@ export interface RouteContext {
         syncFailures: number;
         syncDurationMs: number;
     };
-    syncCoordinator: SyncCoordinator;
+    syncQueue: SyncQueue;
     currentSettings: () => ValidatedSettings;
     mergeSettings: (overrides: Record<string, unknown> | null) => ValidatedSettings;
     persistState: () => Promise<void>;
@@ -75,4 +75,4 @@ export interface RouteContext {
 }
 
 /** Express server handle (used by lib/shutdown). */
-export type { CronHandle, HdhrConfig, SyncCoordinator };
+export type { CronHandle, HdhrConfig, SyncQueue };

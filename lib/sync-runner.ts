@@ -6,19 +6,19 @@ import type { AppState, StateStore } from './state-store.js';
 import type { ValidatedSettings } from './validation.js';
 
 /**
- * Application service for receiver sync and playlist state.
+ * Application use case for receiver sync and playlist state.
  *
  * Extracting this from the HTTP layer keeps route handlers thin and makes the
  * sync flow reusable and testable without Express.
  */
 
-interface SyncServiceMetrics {
+interface SyncRunnerMetrics {
     syncRuns: number;
     syncFailures: number;
     syncDurationMs: number;
 }
 
-interface SyncServiceDeps {
+interface SyncRunnerDeps {
     state: StateStore;
     configStore: { write(data: unknown): Promise<void> };
     receiver: {
@@ -38,10 +38,10 @@ interface SyncServiceDeps {
         modelLabel(deviceType: string | null): string;
     };
     logger: { warn(...args: unknown[]): void };
-    metrics?: SyncServiceMetrics;
+    metrics?: SyncRunnerMetrics;
 }
 
-function createSyncService({ state, configStore, receiver, validation, hdhrModule, logger, metrics }: SyncServiceDeps) {
+function createSyncRunner({ state, configStore, receiver, validation, hdhrModule, logger, metrics }: SyncRunnerDeps) {
     const { validateSettings } = validation;
 
     function getState(): AppState {
@@ -178,4 +178,4 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
     };
 }
 
-export { createSyncService, type SyncServiceMetrics };
+export { createSyncRunner, type SyncRunnerMetrics };

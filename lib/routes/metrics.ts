@@ -10,7 +10,7 @@ interface MetricsCtx {
         syncFailures: number;
         syncDurationMs: number;
     };
-    syncCoordinator: { queueLength: number };
+    syncQueue: { queueLength: number };
 }
 
 /**
@@ -18,7 +18,7 @@ interface MetricsCtx {
  * @param {any} ctx
  */
 function registerMetricsRoutes(app: Express, ctx: MetricsCtx): void {
-    const { getState, metrics, syncCoordinator } = ctx;
+    const { getState, metrics, syncQueue } = ctx;
 
     app.get('/metrics', (_req: Request, res: Response) => {
         const snapshot = getState();
@@ -47,7 +47,7 @@ function registerMetricsRoutes(app: Express, ctx: MetricsCtx): void {
                 `technimapper_channels_total ${snapshot.config.channels.length}\n` +
                 `# HELP technimapper_sync_queue_length Pending sync requests\n` +
                 `# TYPE technimapper_sync_queue_length gauge\n` +
-                `technimapper_sync_queue_length ${syncCoordinator.queueLength}\n`,
+                `technimapper_sync_queue_length ${syncQueue.queueLength}\n`,
         );
     });
 }

@@ -5,7 +5,7 @@ import type { Receiver } from '../lib/receiver.js';
 import { createState } from '../lib/state.js';
 import type { StateStore } from '../lib/state-store.js';
 import { createStateStore } from '../lib/state-store.js';
-import type { SyncCoordinator } from '../lib/sync-coordinator.js';
+import type { SyncQueue } from '../lib/sync-queue.js';
 import { createValidation } from '../lib/validation.js';
 
 const fakeCron = (value: string): boolean => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
@@ -37,7 +37,7 @@ interface HarnessOptions {
     runtime?: Record<string, unknown>;
     fetchChannels?: (settings: Record<string, unknown>) => Promise<Record<string, unknown>>;
     channels?: { name: string; url: string }[];
-    syncCoordinator?: SyncCoordinator;
+    syncQueue?: SyncQueue;
     hdhrEnabled?: boolean;
     version?: string;
 }
@@ -57,7 +57,7 @@ function createHarness(options: HarnessOptions = {}): {
         runtime: runtimeOverrides,
         fetchChannels,
         channels,
-        syncCoordinator,
+        syncQueue,
         hdhrEnabled,
         version,
     } = options;
@@ -122,7 +122,7 @@ function createHarness(options: HarnessOptions = {}): {
             tunerCount: 2,
             warnings: [],
         },
-        syncCoordinator,
+        syncQueue,
     });
 
     return { app, services, state, writes, calls, configStore, scheduled: () => scheduled, CHANNELS };

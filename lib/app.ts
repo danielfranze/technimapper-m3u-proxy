@@ -19,8 +19,8 @@ import * as hdhrModule from './hdhr.js';
 import { createAuth, createOriginGuard, createRateLimiter, securityHeaders } from './http/middleware.js';
 import { registerAllRoutes } from './routes/index.js';
 import type { StateStore } from './state-store.js';
-import { createSyncCoordinator } from './sync-coordinator.js';
-import { createSyncService } from './sync-service.js';
+import { createSyncQueue } from './sync-queue.js';
+import { createSyncRunner } from './sync-runner.js';
 
 /**
  * HTTP application factory.
@@ -41,7 +41,7 @@ function createApp({
     version,
     hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] },
     publicDir = path.join(__dirname, '..', 'public'),
-    syncCoordinator: syncCoordinatorDep,
+    syncQueue: syncQueueDep,
 }: AppDeps) {
     const state: StateStore = stateDep;
 
@@ -56,9 +56,9 @@ function createApp({
     let cronTask: CronHandle = null;
     let shuttingDown = false;
 
-    const syncCoordinator =
-        syncCoordinatorDep ||
-        createSyncCoordinator({
+    const syncQueue =
+        syncQueueDep ||
+        createSyncQueue({
             maxQueue: 4,
             backoffBaseMs: 5000,
             backoffMaxMs: 300000,
@@ -127,7 +127,7 @@ function createApp({
     // -----------------------------------------------------------------------
     // Application service (state, sync, persistence)
     // -----------------------------------------------------------------------
-    const syncService = createSyncService({
+    const syncRunner = createSyncRunner({
         state,
         configStore,
         receiver,
@@ -137,16 +137,16 @@ function createApp({
         metrics,
     });
     const { getState, updateState, currentSettings, mergeSettings, persistState, rebuildViews, performSync } =
-        syncService;
+        syncRunner;
 
     async function runScheduledSync() {
         if (shuttingDown) return;
-        if (syncCoordinator.active) {
+        if (syncQueue.active) {
             logger.warn('Previous sync still running - skipping this run.');
             return;
         }
-        if (syncCoordinator.backoffRemainingMs() > 0) {
-            logger.warn(`Sync is in backoff for ${syncCoordinator.backoffRemainingMs()} ms - skipping this run.`);
+        if (syncQueue.backoffRemainingMs() > 0) {
+            logger.warn(`Sync is in backoff for ${syncQueue.backoffRemainingMs()} ms - skipping this run.`);
             return;
         }
 
@@ -167,10 +167,10 @@ function createApp({
         }
 
         try {
-            await syncCoordinator.request(() => performSync(candidate));
+            await syncQueue.request(() => performSync(candidate));
         } catch (err) {
             logger.error(
-                `[Sync] ${errorMessage(err)} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`,
+                `[Sync] ${errorMessage(err)} (consecutive failures: ${syncQueue.consecutiveFailures}) - serving last known playlist.`,
             );
         }
     }
@@ -216,7 +216,7 @@ function createApp({
         hdhrConfig,
         hdhrModule,
         metrics,
-        syncCoordinator,
+        syncQueue,
         currentSettings,
         mergeSettings,
         persistState,
@@ -239,7 +239,7 @@ function createApp({
             startBackgroundCron,
             stopBackgroundCron,
             rebuildViews,
-            waitForSync: () => syncCoordinator.waitForIdle(),
+            waitForSync: () => syncQueue.waitForIdle(),
             beginShutdown() {
                 shuttingDown = true;
                 stopBackgroundCron();

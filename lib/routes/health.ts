@@ -4,7 +4,7 @@ import type { AppState } from '../state-store.js';
 interface HealthCtx {
     getState(): AppState;
     version: string;
-    syncCoordinator: { queueLength: number; backoffRemainingMs(): number };
+    syncQueue: { queueLength: number; backoffRemainingMs(): number };
 }
 
 /**
@@ -34,8 +34,8 @@ function registerHealthRoutes(app: Express, ctx: HealthCtx): void {
             channels: snapshot.config.channels.length,
             mappedChannels: Object.keys(snapshot.config.mapping).length,
             uptimeSeconds: Math.round(process.uptime()),
-            syncQueueLength: ctx.syncCoordinator.queueLength,
-            syncBackoffMs: ctx.syncCoordinator.backoffRemainingMs(),
+            syncQueueLength: ctx.syncQueue.queueLength,
+            syncBackoffMs: ctx.syncQueue.backoffRemainingMs(),
         };
     }
 

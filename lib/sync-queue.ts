@@ -1,5 +1,5 @@
 /**
- * Serialises sync work and applies backoff after failures.
+ * Single-flight queue with bounded backoff for sync work.
  *
  * Only one sync runs at a time. Additional requests are queued up to `maxQueue`;
  * when the queue is full the caller receives a "Sync queue is full" error.
@@ -11,7 +11,7 @@ interface SyncQueueItem {
     reject: (err: unknown) => void;
 }
 
-export interface SyncCoordinator {
+export interface SyncQueue {
     request(run: () => Promise<unknown>): Promise<unknown>;
     backoffRemainingMs(): number;
     clearBackoff(): void;
@@ -22,7 +22,7 @@ export interface SyncCoordinator {
     readonly consecutiveFailures: number;
 }
 
-function createSyncCoordinator({
+function createSyncQueue({
     maxQueue = 4,
     backoffBaseMs = 5000,
     backoffMaxMs = 300000,
@@ -32,7 +32,7 @@ function createSyncCoordinator({
     backoffBaseMs?: number;
     backoffMaxMs?: number;
     now?: () => number;
-} = {}): SyncCoordinator {
+} = {}): SyncQueue {
     let active = false;
     let queue: SyncQueueItem[] = [];
     let consecutiveFailures = 0;
@@ -139,4 +139,4 @@ function createSyncCoordinator({
     };
 }
 
-export { createSyncCoordinator };
+export { createSyncQueue };
