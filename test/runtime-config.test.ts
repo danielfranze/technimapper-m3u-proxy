@@ -14,8 +14,18 @@ test('runtime config uses safe defaults and warns about missing authentication',
     assert.equal(config.hsts, false);
     assert.equal(config.logLevel, 'info');
     assert.equal(config.logFormat, 'text');
+    assert.equal(config.apiRateMax, 60);
     assert.ok(config.warnings.some((w) => /unauthenticated/.test(w)));
     assert.equal(config.configFile, path.join(config.dataDir, 'mapping.json'));
+});
+
+test('API_RATE_MAX overrides the API request budget with a safe fallback', () => {
+    assert.equal(loadRuntimeConfig({ API_RATE_MAX: '5' }).apiRateMax, 5);
+    assert.equal(loadRuntimeConfig({ API_RATE_MAX: 'nope' }).apiRateMax, 60);
+    assert.ok(
+        loadRuntimeConfig({ API_RATE_MAX: 'nope' }).warnings.some((w) => /API_RATE_MAX/.test(w)),
+        'invalid value is reported as a warning',
+    );
 });
 
 test('invalid numeric environment values fall back instead of crashing', () => {

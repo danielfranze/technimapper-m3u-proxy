@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Renamed `sync-coordinator` to `sync-queue` and `sync-service` to `sync-runner`, including the exported types/factories and the `AppDeps` field (`syncQueue`).
 - Moved `lib/app/types.ts` to `lib/app-types.ts` and generated frontend types to `frontend/generated/api.generated.d.ts`; E2E spec filenames are now purely descriptive (no numeric prefixes).
 - Added an ADR index and translated the ADR 0006 title to English.
+- `API_RATE_MAX` makes the API request budget configurable (default 60/min); the E2E web server uses 1000 so the suite no longer hits `429 Too many requests`.
 
 ## [2.0.0] - 2026-11-26
 

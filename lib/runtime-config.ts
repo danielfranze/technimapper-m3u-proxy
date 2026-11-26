@@ -123,6 +123,13 @@ export function loadRuntimeConfig(env: Record<string, string | undefined> = proc
 
     const hsts = booleanFromEnv(env.HSTS);
 
+    const apiRateMax = intFromEnv(env.API_RATE_MAX, 60, {
+        min: 1,
+        max: 100000,
+        name: 'API_RATE_MAX',
+        warnings,
+    });
+
     const publicPaths = Object.freeze([...DEFAULT_PLAYLIST_PATHS, '/health', '/health/live', '/health/ready']);
     const playlistPaths = Object.freeze([...DEFAULT_PLAYLIST_PATHS]);
 
@@ -147,7 +154,7 @@ export function loadRuntimeConfig(env: Record<string, string | undefined> = proc
         authFailureWindowMs: 15 * 60 * 1000,
         authFailureMax: 20,
         apiRateWindowMs: 60 * 1000,
-        apiRateMax: 60,
+        apiRateMax,
         maxRateEntries: 5000,
         warnings,
     };

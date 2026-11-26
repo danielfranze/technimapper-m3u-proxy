@@ -36,6 +36,8 @@ export default defineConfig({
             DATA_DIR: E2E_DATA_DIR,
             ALLOW_NON_PRIVATE_IP: 'true',
             ALLOW_LOOPBACK_RECEIVER: 'true',
+            // The suite issues far more than 60 API calls per minute; production keeps the default.
+            API_RATE_MAX: '1000',
         },
     },
 });

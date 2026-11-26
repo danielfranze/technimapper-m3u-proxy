@@ -15,6 +15,7 @@
  *   REQUEST_TIMEOUT_MS    Idle timeout per SOAP request (default 5000)
  *   MAX_RESPONSE_BYTES    Maximum UPnP response size (default 2 MiB)
  *   SHUTDOWN_TIMEOUT_MS   Hard shutdown deadline (default 30000)
+ *   API_RATE_MAX          API requests per IP per minute (default 60)
  *   LOG_LEVEL             error | warn | info (default info)
  *   LOG_FORMAT            text | json (default text)
  *   TRUST_PROXY           Reverse-proxy hops (number) or "true"; needed for correct client IPs
@@ -25,6 +26,8 @@
  *   HDHR_TUNER_COUNT      Number of tuners reported to the client, 1-16 (default 2)
  *   ALLOW_NON_PRIVATE_IP  "true" to allow receiver IPs outside RFC1918 ranges
  *                         (e.g. VPN/CGNAT such as 100.64.0.0/10)
+ *   ALLOW_LOOPBACK_RECEIVER
+ *                         "true" to allow 127.0.0.1 as a receiver (local mock testing only)
  *   ADMIN_USER / ADMIN_PASSWORD
  *                         Enables HTTP Basic Auth for the UI and /api/*.
  *                         /playlist.m3u8, /health and /hdhr/* stay public.
