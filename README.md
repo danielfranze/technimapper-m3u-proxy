@@ -282,6 +282,7 @@ npm start              # http://localhost:9191
 - `public/app/` – styles plus generated JavaScript under `app/js/` (do not edit by hand)
 - `public/fonts/` – bundled fonts (Inter, Material Icons Outlined), see `NOTICE.md`
 - `scripts/` – development tools (see below)
+- `docs/adr/` – architecture decision records, see the [ADR index](docs/adr/README.md)
 
 ### Development Tools (`scripts/`)
 

@@ -1,4 +1,4 @@
-# ADR 0006 – Stilbepflanzung des REST-API
+# ADR 0006 – REST API style
 
 - Status: Accepted
 - Date: 2026-11-25
