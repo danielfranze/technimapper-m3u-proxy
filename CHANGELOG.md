@@ -9,7 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 
 - Removed the `lib/http-security.ts` compatibility barrel; HTTP middleware now has one canonical import path. `HttpError` is imported directly from `lib/http-error.ts` instead of being re-exported by `lib/validation.ts`.
 - Renamed `sync-coordinator` to `sync-queue` and `sync-service` to `sync-runner`, including the exported types/factories and the `AppDeps` field (`syncQueue`).
-- Moved `lib/app/types.ts` to `lib/app-types.ts`, generated frontend types to `frontend/generated/api.generated.d.ts`, and renamed `e2e/ui-behavior.spec.ts` to `e2e/30-ui-behavior.spec.ts`.
+- Moved `lib/app/types.ts` to `lib/app-types.ts` and generated frontend types to `frontend/generated/api.generated.d.ts`; E2E spec filenames are now purely descriptive (no numeric prefixes).
 - Added an ADR index and translated the ADR 0006 title to English.
 
 ## [2.0.0] - 2026-11-26
