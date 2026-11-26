@@ -3,7 +3,9 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [2.0.1] - 2026-11-26
+
+Patch release for the build/CI and E2E cleanups after 2.0.0. No runtime behavior changed.
 
 ### Changed
 

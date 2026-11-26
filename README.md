@@ -82,7 +82,7 @@ volumes:
     technimapper-data:
 ```
 
-`latest` always points to the newest stable release (pre-releases such as `2.0.0-rc.6` never move `latest`, `2` or `2.0`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:2.0.0`.
+`latest` always points to the newest stable release (pre-releases such as `2.0.0-rc.6` never move `latest`, `2` or `2.0`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:2.0.1`.
 
 The repository also ships a ready-to-use `docker-compose.yml` (builds locally with `build: .`).
 

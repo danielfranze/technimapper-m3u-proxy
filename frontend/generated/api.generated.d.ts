@@ -33,7 +33,7 @@ export interface paths {
                              * @enum {string}
                              */
                             status: "ok" | "degraded";
-                            /** @example 2.0.0 */
+                            /** @example 2.0.1 */
                             version: string;
                             configured: boolean;
                             playlistAvailable: boolean;
