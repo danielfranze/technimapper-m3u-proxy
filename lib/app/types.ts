@@ -2,8 +2,6 @@
  * Shared AppDeps interface for `createApp` + `lib/app/wiring.ts`.
  */
 
-import type { Express } from 'express';
-import type { Server } from 'http';
 import type { ConfigStore } from '../config-store.js';
 import type { HdhrConfig } from '../hdhr.js';
 import type { createLogger } from '../logger.js';
@@ -77,4 +75,4 @@ export interface RouteContext {
 }
 
 /** Express server handle (used by lib/shutdown). */
-export type { AppRuntime, CronHandle, CronScheduler, Express, HdhrConfig, Logger, Receiver, Server, SyncCoordinator };
+export type { CronHandle, HdhrConfig, SyncCoordinator };

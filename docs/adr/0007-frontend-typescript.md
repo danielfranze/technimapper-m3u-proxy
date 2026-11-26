@@ -194,8 +194,9 @@ manual/E2E smoke test for `view`/`presenter`/`main`.
 
 ## Acceptance criteria
 
-- `npm run check`, `npm run check:frontend`, `npm run check:tests` and
-  `npx tsc --noEmit -p e2e` are green.
+- `npm run check`, `npm run check:frontend`, `npm run check:tests`, `npx tsc --noEmit -p e2e`.
+- `npm run lint`, `npm run format:check`, `npm run knip` (CI `error`; `knip` `ignoreExportsUsedInFile`). `npm run types:openapi` + `git diff --exit-code frontend/api.generated.d.ts`.
+- `@ts-ignore`/`@ts-expect-error` (no `@ts-ignore`; `@ts-expect-error` only when needed).
 - `npm test` passes with the same test count as before; no test is deleted
   except the now-redundant syntax check, which is replaced by an artifact
   test.

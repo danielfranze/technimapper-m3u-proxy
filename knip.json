@@ -1,10 +1,8 @@
 {
-    "$schema": "https://unpkg.com/knip@latest/schema.json",
+    "$schema": "node_modules/knip/schema.json",
     "entry": [
-        "server.ts",
         "public/app/js/main.js",
         "frontend/main.ts",
-        "scripts/*.ts",
         "scripts/*.js",
         "test/*.test.ts",
         "test-helpers/*.ts",
@@ -12,12 +10,12 @@
         "e2e/*.ts"
     ],
     "project": ["**/*.{ts,js}", "!dist/**", "!public/app/js/**", "!node_modules/**"],
-    "ignore": ["**/*.d.ts", "frontend/api.generated.d.ts", "dist/**", "public/app/js/**", "**/__fixtures__/**"],
-    "ignoreExportsUsedInFile": false,
+    "ignore": ["**/*.d.ts", "frontend/api.generated.d.ts"],
+    "ignoreExportsUsedInFile": true,
     "ignoreDependencies": [],
     "rules": {
-        "exports": "warn",
-        "types": "warn",
-        "duplicates": "warn"
+        "exports": "error",
+        "types": "error",
+        "duplicates": "error"
     }
 }

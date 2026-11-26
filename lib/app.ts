@@ -12,7 +12,7 @@ declare module 'express-serve-static-core' {
     }
 }
 
-import type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver, RouteContext } from './app/types.js';
+import type { AppDeps, CronHandle, RouteContext } from './app/types.js';
 import type { ValidatedSettings } from './domain/settings.js';
 import { errorMessage } from './error-message.js';
 import * as hdhrModule from './hdhr.js';
@@ -251,5 +251,5 @@ function createApp({
     };
 }
 
-export type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver };
+export type { AppDeps };
 export { createApp };

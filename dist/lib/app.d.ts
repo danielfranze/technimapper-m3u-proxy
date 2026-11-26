@@ -3,7 +3,7 @@ declare module 'express-serve-static-core' {
         requestId?: string;
     }
 }
-import type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver } from './app/types.js';
+import type { AppDeps, CronHandle } from './app/types.js';
 import type { ValidatedSettings } from './domain/settings.js';
 import type { StateStore } from './state-store.js';
 /**
@@ -41,5 +41,5 @@ declare function createApp({ runtime, logger, state: stateDep, configStore, rece
         dispose(): void;
     };
 };
-export type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver };
+export type { AppDeps };
 export { createApp };

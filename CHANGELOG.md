@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 
 ### Added
 
+- **knip `warn`→`error`**; `ignoreExportsUsedInFile`; clean unused re-exports (`AppRuntime`, `CronHandle`, `CronScheduler`, `Logger`, `Receiver`, `Express`, `Server`, …). CI `npm run knip`.
+
 - Frontend TypeScript migration: sources in `frontend/`, emitted ESM in `public/app/js/`, strict flags, no bundler (ADR 0007). `public/app/js/` is generated and gitignored.
 - `build:backend` / `build:frontend` scripts; `npm run build` now builds both halves.
 - E2E smoke test fails on `pageerror` to catch a broken frontend module graph.

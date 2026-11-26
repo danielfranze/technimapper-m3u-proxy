@@ -32,6 +32,10 @@ jobs:
               run: npm run check:frontend
             - name: Lint & format (Biome)
               run: npm run lint && npm run format:check
+            - name: Knip (unused code / exports)
+              run: npm run knip
+            - name: OpenAPI type freshness
+              run: npm run types:openapi && git diff --exit-code frontend/api.generated.d.ts
             - name: Type checks (tests, helpers, e2e)
               run: npm run check:tests && npx tsc --noEmit -p e2e
             - name: Unit & integration tests
