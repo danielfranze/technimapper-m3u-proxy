@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyPersistedState, createState } from '../dist/lib/state.js';
+import { applyPersistedState, createState } from '../lib/state.js';
 import { createDeps } from '../test-helpers/state-deps.ts';
 
 test('repairPersistedSettings warns about a disallowed receiver IP', () => {

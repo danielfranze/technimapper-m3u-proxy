@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { type AppState, applyPersistedState, createState, persistedSnapshot } from '../dist/lib/state.js';
+import { type AppState, applyPersistedState, createState, persistedSnapshot } from '../lib/state.js';
 import { createDeps } from '../test-helpers/state-deps.ts';
 
 test('applyPersistedState handles missing and invalid persisted fields', () => {

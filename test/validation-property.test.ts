@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import * as fc from 'fast-check';
-import { ID_REGEX, isAllowedReceiverIp, validateMapping, validateSettings } from '../dist/lib/validation.js';
+import { ID_REGEX, isAllowedReceiverIp, validateMapping, validateSettings } from '../lib/validation.js';
 
 const fakeCron = (expr: string): boolean => typeof expr === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(expr.trim());
 const settingsDeps = { cronValidate: fakeCron };

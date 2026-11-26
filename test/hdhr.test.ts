@@ -12,7 +12,7 @@ import {
     modelLabel,
     resolveConfig,
     sanitizeModel,
-} from '../dist/lib/hdhr.js';
+} from '../lib/hdhr.js';
 
 const channels: { name: string; url: string }[] = [
     { name: '001 Das Erste HD', url: 'http://192.168.178.230:9100/disk/a.ts' },

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyPersistedState, createState } from '../dist/lib/state.js';
+import { applyPersistedState, createState } from '../lib/state.js';
 import { createDeps, type Deps } from '../test-helpers/state-deps.ts';
 
 function deps(logger: Deps['logger']): Deps {

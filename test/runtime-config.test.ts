@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
-import { intFromEnv, loadRuntimeConfig, parseTrustProxy } from '../dist/lib/runtime-config.js';
+import { intFromEnv, loadRuntimeConfig, parseTrustProxy } from '../lib/runtime-config.js';
 
 test('runtime config uses safe defaults and warns about missing authentication', () => {
     const config = loadRuntimeConfig({});

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import test from 'node:test';
-import { createSoapReceiver, escapeXml } from '../dist/lib/receiver.js';
+import { createSoapReceiver, escapeXml } from '../lib/receiver.js';
 
 const quietLogger = { info() {}, warn() {}, error() {} };
 

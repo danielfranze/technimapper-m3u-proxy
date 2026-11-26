@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createStateStore } from '../dist/lib/state-store.js';
+import { createStateStore } from '../lib/state-store.js';
 
 test('state store commits immutable snapshots', () => {
     const store = createStateStore({ count: 1, nested: { value: 2 } });

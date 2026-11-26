@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { createJsonConfigStore } from '../dist/lib/config-store.js';
+import { createJsonConfigStore } from '../lib/config-store.js';
 
 const logger = { warn() {}, error() {} };
 

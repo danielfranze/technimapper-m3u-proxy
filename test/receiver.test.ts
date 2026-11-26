@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { escapeXml, parseChannelItems, parseContainerList, xmlText } from '../dist/lib/receiver.js';
+import { escapeXml, parseChannelItems, parseContainerList, xmlText } from '../lib/receiver.js';
 
 test('xmlText handles strings, arrays and xml2js text objects', () => {
     assert.equal(xmlText('hello'), 'hello');

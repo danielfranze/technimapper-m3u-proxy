@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createSyncCoordinator } from '../dist/lib/sync-coordinator.js';
+import { createSyncCoordinator } from '../lib/sync-coordinator.js';
 
 test('sync coordinator serializes work and clears backoff after a later success', async () => {
     let active = 0;

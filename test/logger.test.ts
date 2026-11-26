@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createLogger, defaultSink, safeStringify } from '../dist/lib/logger.js';
+import { createLogger, defaultSink, safeStringify } from '../lib/logger.js';
 
 function recordingLogger(
     level: string = 'info',

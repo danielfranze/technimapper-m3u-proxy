@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildM3u8, STREAM_URL_REGEX, sanitizeM3u8Text } from '../dist/lib/m3u8.js';
+import { buildM3u8, STREAM_URL_REGEX, sanitizeM3u8Text } from '../lib/m3u8.js';
 
 const channels: { name: string; url: string }[] = [
     { name: 'Das Erste HD', url: 'http://192.168.1.10:8080/stream/1' },

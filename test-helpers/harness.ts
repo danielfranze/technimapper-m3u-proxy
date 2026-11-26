@@ -1,12 +1,12 @@
-import { type AppDeps, createApp } from '../dist/lib/app.js';
-import type { ConfigStore } from '../dist/lib/config-store.js';
-import { createLogger } from '../dist/lib/logger.js';
-import type { Receiver } from '../dist/lib/receiver.js';
-import { createState } from '../dist/lib/state.js';
-import type { StateStore } from '../dist/lib/state-store.js';
-import { createStateStore } from '../dist/lib/state-store.js';
-import type { SyncCoordinator } from '../dist/lib/sync-coordinator.js';
-import { createValidation } from '../dist/lib/validation.js';
+import { type AppDeps, createApp } from '../lib/app.js';
+import type { ConfigStore } from '../lib/config-store.js';
+import { createLogger } from '../lib/logger.js';
+import type { Receiver } from '../lib/receiver.js';
+import { createState } from '../lib/state.js';
+import type { StateStore } from '../lib/state-store.js';
+import { createStateStore } from '../lib/state-store.js';
+import type { SyncCoordinator } from '../lib/sync-coordinator.js';
+import { createValidation } from '../lib/validation.js';
 
 const fakeCron = (value: string): boolean => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
 

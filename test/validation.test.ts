@@ -7,7 +7,7 @@ import {
     HttpError,
     partitionMapping,
     sortMapping,
-} from '../dist/lib/validation.js';
+} from '../lib/validation.js';
 
 // Simple stand-in for node-cron's validate(): five whitespace-separated fields.
 const fakeCron = (s: unknown): boolean => typeof s === 'string' && s.trim().split(/\s+/).length === 5;
