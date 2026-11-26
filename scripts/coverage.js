@@ -17,6 +17,10 @@ const result = spawnSync(
         '--test-coverage-exclude=e2e/**',
         '--test-coverage-exclude=public/**',
         '--test-coverage-exclude=frontend/**',
+        // Generated build output. Tests import lib/*.ts directly, so dist/** would
+        // double-count the same code. server.ts is the composition root: it is
+        // exercised as a real process by test/server-boot.test.ts, not imported
+        // into the test process, so it is intentionally absent from this report.
         '--test-coverage-exclude=dist/**',
     ],
     {
