@@ -6,7 +6,7 @@
  */
 
 import type { Express, Request, Response } from 'express';
-import type { RouteContext } from '../app/types.js';
+import type { RouteContext } from '../app-types.js';
 import { registerConfigRoutes } from './config.js';
 import { registerHdhrRoutes } from './hdhr.js';
 import { registerHealthRoutes } from './health.js';

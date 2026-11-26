@@ -5,4 +5,4 @@ test-results/
 playwright-report/
 coverage/
 *.map
-frontend/api.generated.d.ts
+frontend/generated/api.generated.d.ts

@@ -5,7 +5,7 @@
  * checked field access.
  */
 
-import type { components } from './api.generated.js';
+import type { components } from './generated/api.generated.js';
 import type { DuplicateGroup, Mapping } from './lib/model.js';
 
 /** Schemas generated from `docs/openapi.yaml` by `npm run types:openapi`. */

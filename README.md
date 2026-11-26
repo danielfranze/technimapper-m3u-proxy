@@ -257,7 +257,7 @@ npm start              # http://localhost:9191
 
 - `server.ts` – composition root: environment, adapters, startup and graceful shutdown
 - `lib/app.ts` – Express app factory (`createApp`, sync orchestration)
-- `lib/app/types.ts` – shared `AppDeps`/`RouteContext` types for the app
+- `lib/app-types.ts` – shared `AppDeps`/`RouteContext` types for the app
 - `lib/shutdown.ts` – graceful-shutdown orchestration (server, sync, cron)
 - `lib/state.ts` – application state, persisted snapshot and repair logic
 - `lib/state-store.ts` – immutable `StateStore` class (`get`/`commit`/`update`)

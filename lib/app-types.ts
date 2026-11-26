@@ -1,15 +1,15 @@
 /**
- * Shared AppDeps interface for `createApp` + `lib/app/wiring.ts`.
+ * Shared AppDeps / RouteContext types for `createApp` and the route modules.
  */
 
-import type { ConfigStore } from '../config-store.js';
-import type { HdhrConfig } from '../hdhr.js';
-import type { createLogger } from '../logger.js';
-import type { Receiver } from '../receiver.js';
-import type { RuntimeConfig } from '../runtime-config.js';
-import type { StateStore } from '../state-store.js';
-import type { SyncQueue } from '../sync-queue.js';
-import type { createValidation, ValidatedSettings } from '../validation.js';
+import type { ConfigStore } from './config-store.js';
+import type { HdhrConfig } from './hdhr.js';
+import type { createLogger } from './logger.js';
+import type { Receiver } from './receiver.js';
+import type { RuntimeConfig } from './runtime-config.js';
+import type { StateStore } from './state-store.js';
+import type { SyncQueue } from './sync-queue.js';
+import type { createValidation, ValidatedSettings } from './validation.js';
 
 type Logger = ReturnType<typeof createLogger>;
 type AppRuntime = RuntimeConfig;
@@ -49,7 +49,7 @@ export interface RouteContext {
     cron: AppDeps['cron'];
     version: string;
     hdhrConfig: NonNullable<AppDeps['hdhrConfig']>;
-    hdhrModule: typeof import('../hdhr.js');
+    hdhrModule: typeof import('./hdhr.js');
     metrics: {
         httpRequests: number;
         httpErrors: number;

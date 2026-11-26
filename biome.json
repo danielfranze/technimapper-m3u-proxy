@@ -61,7 +61,7 @@
     },
     "overrides": [
         {
-            "includes": ["**/*.d.ts", "frontend/api.generated.d.ts", "dist/**", "public/app/js/**"],
+            "includes": ["**/*.d.ts", "frontend/generated/api.generated.d.ts", "dist/**", "public/app/js/**"],
             "formatter": {
                 "enabled": false
             },

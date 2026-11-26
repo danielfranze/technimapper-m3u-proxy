@@ -21,7 +21,7 @@
         "coverage": "npm run build && node --import tsx scripts/coverage.js",
         "test:e2e": "npm run build && playwright test",
         "test:all": "npm test && npm run test:e2e",
-        "types:openapi": "openapi-typescript docs/openapi.yaml -o frontend/api.generated.d.ts",
+        "types:openapi": "openapi-typescript docs/openapi.yaml -o frontend/generated/api.generated.d.ts",
         "lint": "npx biome check",
         "lint:fix": "npx biome check --fix",
         "format": "npx biome format --write",
