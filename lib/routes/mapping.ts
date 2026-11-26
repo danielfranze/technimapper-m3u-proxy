@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from 'express';
+import { HttpError } from '../http-error.js';
 import type { StateStore } from '../state-store.js';
-import { findDuplicateGroups, findDuplicateIds, HttpError, partitionMapping } from '../validation.js';
+import { findDuplicateGroups, findDuplicateIds, partitionMapping } from '../validation.js';
 
 interface MappingCtx {
     getState(): ReturnType<StateStore['get']>;

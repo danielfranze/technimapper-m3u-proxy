@@ -7,8 +7,8 @@ import {
     createOriginGuard,
     createRateLimiter,
     isPublicPath,
-} from '../lib/http-security.js';
-import { HttpError } from '../lib/validation.js';
+} from '../lib/http/middleware.js';
+import { HttpError } from '../lib/http-error.js';
 
 const quietLogger: { warn(...args: unknown[]): void; info(...args: unknown[]): void; error(...args: unknown[]): void } =
     { warn() {}, info() {}, error() {} };

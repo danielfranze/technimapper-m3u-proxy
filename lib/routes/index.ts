@@ -31,7 +31,7 @@ function registerAllRoutes(app: Express, ctx: RouteContext): void {
 }
 
 // Lazy indirection so the error handler stays a separate concern.
-import { createErrorHandler } from '../http-security.js';
+import { createErrorHandler } from '../http/middleware.js';
 
 function createErrorHandlerFrom(logger: RouteContext['logger']) {
     return createErrorHandler({

@@ -1,8 +1,9 @@
 import type { LineupEntry } from './hdhr.js';
+import { HttpError } from './http-error.js';
 import { buildM3u8 } from './m3u8.js';
 import { persistedSnapshot } from './state.js';
 import type { AppState, StateStore } from './state-store.js';
-import { HttpError, type ValidatedSettings } from './validation.js';
+import type { ValidatedSettings } from './validation.js';
 
 /**
  * Application service for receiver sync and playlist state.

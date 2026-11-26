@@ -17,7 +17,6 @@ export {
     validateMapping,
 } from './domain/mapping.js';
 export { type ValidatedSettings, validateSettings } from './domain/settings.js';
-export { HttpError } from './http-error.js';
 
 function createValidation({
     cronValidate,

@@ -16,7 +16,7 @@ import type { AppDeps, CronHandle, RouteContext } from './app/types.js';
 import type { ValidatedSettings } from './domain/settings.js';
 import { errorMessage } from './error-message.js';
 import * as hdhrModule from './hdhr.js';
-import { createAuth, createOriginGuard, createRateLimiter, securityHeaders } from './http-security.js';
+import { createAuth, createOriginGuard, createRateLimiter, securityHeaders } from './http/middleware.js';
 import { registerAllRoutes } from './routes/index.js';
 import type { StateStore } from './state-store.js';
 import { createSyncCoordinator } from './sync-coordinator.js';

@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { HttpError } from '../lib/http-error.js';
 import {
     createValidation,
     findDuplicateGroups,
     findDuplicateIds,
-    HttpError,
     partitionMapping,
     sortMapping,
 } from '../lib/validation.js';

@@ -263,7 +263,7 @@ npm start              # http://localhost:9191
 - `lib/state-store.ts` – immutable `StateStore` class (`get`/`commit`/`update`)
 - `lib/config-store.ts` – atomic `mapping.json` persistence
 - `lib/receiver.ts` – UPnP/SOAP receiver adapter
-- `lib/http/middleware.ts` – auth, CSRF/origin guard, rate limiting, security headers (`lib/http-security.ts` re-exports it)
+- `lib/http/middleware.ts` – auth, CSRF/origin guard, rate limiting, security headers
 - `lib/runtime-config.ts` – environment validation
 - `lib/logger.ts` – text/JSON logger
 - `lib/validation.ts` – facade for input validation (re-exports `lib/domain/*`)

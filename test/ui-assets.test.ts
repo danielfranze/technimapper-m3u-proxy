@@ -15,7 +15,10 @@ const server: string = fs.readFileSync(
     'utf8',
 );
 const security: string =
-    fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http-security.ts'), 'utf8') +
+    fs.readFileSync(
+        path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http', 'middleware.ts'),
+        'utf8',
+    ) +
     fs.readFileSync(
         path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'lib', 'http', 'middleware.ts'),
         'utf8',

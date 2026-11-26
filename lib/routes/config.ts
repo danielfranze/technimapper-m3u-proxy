@@ -1,9 +1,9 @@
 import type { Express, NextFunction, Request, Response } from 'express';
 import { errorMessage } from '../error-message.js';
 import * as hdhrModule from '../hdhr.js';
+import { HttpError } from '../http-error.js';
 import type { AppState, StateStore } from '../state-store.js';
 import type { ValidatedSettings } from '../validation.js';
-import { HttpError } from '../validation.js';
 
 interface PerformSyncResult {
     channels: { name: string; url: string }[];
