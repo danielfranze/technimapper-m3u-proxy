@@ -17,6 +17,7 @@ const result = spawnSync(
         '--test-coverage-exclude=e2e/**',
         '--test-coverage-exclude=public/**',
         '--test-coverage-exclude=frontend/**',
+        '--test-coverage-exclude=dist/**',
     ],
     {
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -48,7 +49,7 @@ if (!match) {
 }
 
 // Per-module advisory: list lib files below 90% line coverage (non-fatal).
-const fileLines = plain.matchAll(/^ℹ\s+(\S+\.js)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/gm);
+const fileLines = plain.matchAll(/^ℹ\s+(\S+\.(?:js|ts))\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/gm);
 const weak = [];
 for (const m of fileLines) {
     const file = m[1];

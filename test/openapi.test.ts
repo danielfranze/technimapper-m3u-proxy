@@ -38,7 +38,7 @@ const ROUTES_DIR = path.join(root, 'lib', 'routes');
 const SERVER_SRC = fs.readFileSync(path.join(root, 'server.ts'), 'utf8');
 
 test('every route registered in lib/routes or server.ts exists in docs/openapi.yaml', () => {
-    const specRoutes = Object.keys(openapi.paths).filter((p) => !p.startsWith('/api/docs'));
+    const specRoutes = Object.keys(openapi.paths);
     for (const file of fs.readdirSync(ROUTES_DIR)) {
         if (!file.endsWith('.ts')) continue;
         const src = fs.readFileSync(path.join(ROUTES_DIR, file), 'utf8');
@@ -46,8 +46,7 @@ test('every route registered in lib/routes or server.ts exists in docs/openapi.y
             assert.ok(specRoutes.includes(route), `${file}: ${route} missing in openapi.yaml`);
         }
     }
-    // app.use('/hdhr', hdhrRouter) is covered by the hdhrRouter.* registrations above;
-    // /api/docs is documented separately (interactive viewer).
+    // app.use('/hdhr', hdhrRouter) is covered by the hdhrRouter.* registrations above.
 });
 
 test('openapi.yaml statuses match the statuses we assert in app.test.ts', () => {

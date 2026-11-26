@@ -6,7 +6,6 @@ test-results
 playwright-report
 blob-report
 .playwright-data
-.tsc-out
 data
 mapping.json
 .git

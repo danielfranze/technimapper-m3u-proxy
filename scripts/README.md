@@ -5,6 +5,9 @@ UPnP/ContentDirectory structure. Useful to capture new receiver generations
 (STC, S, S1, S2, ...) and to verify that the fingerprint logic in
 `lib/receiver.ts` (`detectSSeriesGeneration`) still matches.
 
+Run `npm run build` once before using them: the probes import the compiled
+`dist/lib/receiver.js`.
+
 ## Usage
 
 Probe full structure + detected model:

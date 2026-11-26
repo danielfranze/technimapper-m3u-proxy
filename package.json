@@ -27,7 +27,7 @@
         "format": "npx biome format --write",
         "format:check": "npx biome format",
         "knip": "npx knip",
-        "clean": "node -e \"const fs=require('node:fs');for(const d of ['dist','public/app/js','.tsc-out']){fs.rmSync(d,{recursive:true,force:true});}\""
+        "clean": "node -e \"const fs=require('node:fs');for(const d of ['dist','public/app/js']){fs.rmSync(d,{recursive:true,force:true});}\""
     },
     "devDependencies": {
         "@biomejs/biome": "^2.6.9",

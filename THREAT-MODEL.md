@@ -18,7 +18,7 @@ receiver, serves a playlist and an HDHomeRun emulator to local clients.
 
 | Threat                                       | Mitigation in 2.0.0                                                                                                                   |
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| LAN SSRF/port scan via `/api/fetch-channels` | Receiver target changes go through authenticated `POST /api/save-settings`; sync uses stored settings. Private-IP validation remains. |
+| LAN SSRF/port scan via `/api/fetch-channels` | Receiver target changes go through `POST /api/save-settings` (authenticated when `ADMIN_USER`/`ADMIN_PASSWORD` are configured); sync uses stored settings. Private-IP validation remains. |
 | CSRF on state-changing `/api/*`              | JSON content-type required; same-origin `Origin`/`Referer` guard.                                                                     |
 | Auth brute force                             | Failed auth attempts are throttled before credentials are checked.                                                                    |
 | API abuse                                    | Bounded in-memory rate limiter for all `/api` routes.                                                                                 |

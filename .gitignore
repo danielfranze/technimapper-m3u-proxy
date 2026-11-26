@@ -44,8 +44,5 @@ blob-report/
 dist/
 public/app/js/
 
-# Generated test-helper typecheck output
-.tsc-out/
-
 # TS incremental build info
 *.tsbuildinfo

@@ -522,15 +522,3 @@ paths:
                     content:
                         text/plain; version=0.0.4:
                             schema: { type: string }
-
-    # ---------------------------------------------------------------- docs
-    /api/docs:
-        get:
-            tags: []
-            summary: Interactive API documentation (Redoc)
-            responses:
-                "200":
-                    description: HTML page with Redoc UI
-                    content:
-                        text/html:
-                            schema: { type: string }

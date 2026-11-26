@@ -22,7 +22,7 @@ TechniMapper 2.0 is a modernization release. The feature set is unchanged; the b
 - Docker image builds the frontend in the builder stage and copies the generated assets into the runtime image; release builds bypass the layer cache.
 - CI and release workflows run type checks, Biome, knip, OpenAPI freshness, tests, coverage, E2E, dependency audit and a container smoke test/Trivy scan.
 - Build output (`dist/`, `public/app/js/`) is generated and no longer tracked; `npm run build` starts from a clean state.
-- Tests and test helpers import the TypeScript sources directly (`tsx`) instead of compiled `dist/` output, so knip validates the real source graph without a prior build.
+- Tests and test helpers import the TypeScript sources directly (`tsx`) instead of compiled `dist/` output, so knip validates the real source graph without a prior build; coverage excludes generated `dist/` accordingly.
 - `LOG_FORMAT` defaults to `text` (as documented); set `LOG_FORMAT=json` for structured logs.
 - `GET /api/get-config` was renamed to `GET /api/config` (UI and tests updated).
 
@@ -32,6 +32,7 @@ TechniMapper 2.0 is a modernization release. The feature set is unchanged; the b
 - Frontend race conditions: config and sync state are awaited, sync requests are single-flight, and file import errors are surfaced.
 - UI XSS and M3U injection hardening; SSRF protection for receiver targets.
 - Copy-menu keyboard navigation no longer calls `.filter()` on a `NodeList`.
+- README and OpenAPI spec no longer advertise an unimplemented `/api/docs` Redoc endpoint; the spec now matches the registered routes exactly.
 
 ### Upgrade notes
 

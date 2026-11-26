@@ -24,7 +24,7 @@ You will get an initial response as soon as possible. Fixes are published as a n
 - Set `ADMIN_USER` / `ADMIN_PASSWORD` and put it behind a TLS-terminating reverse proxy
   (set `TRUST_PROXY` accordingly). Basic Auth over plain HTTP sends credentials unencrypted.
   If only one of the two variables is set, protected routes fail closed with `503`.
-- `/playlist.m3u8`, `/hdhr/*`, `/health` and `/health/live` are intentionally public (media centers such as Plex and Jellyfin, M3U8 clients and container health checks).
+- `/playlist.m3u8`, `/hdhr/*`, `/health`, `/health/live`, `/health/liveness` and `/health/ready` are intentionally public (media centers such as Plex and Jellyfin, M3U8 clients and container health checks).
   The playlist contains the stream URLs of your receiver.
 - Receiver IPs are restricted to private IPv4 ranges (SSRF protection); loopback and link-local
   addresses are rejected by default (loopback can be enabled explicitly for local mock testing).

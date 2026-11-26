@@ -82,7 +82,7 @@ volumes:
     technimapper-data:
 ```
 
-`latest` always points to the newest stable release (pre-releases such as `1.8.0-rc.1` never move `latest`, `1` or `1.7`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:1.7.0`.
+`latest` always points to the newest stable release (pre-releases such as `2.0.0-rc.6` never move `latest`, `2` or `2.0`; use their exact tag to test them). If you need reproducible deployments, pin a version tag instead, e.g. `ghcr.io/danielfranze/technimapper-m3u-proxy:2.0.0`.
 
 The repository also ships a ready-to-use `docker-compose.yml` (builds locally with `build: .`).
 
@@ -140,7 +140,7 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 | `DATA_DIR`                      | `/app/data` | Directory for `mapping.json`. Must be writable.                                                                                                                                                                  |
 | `REQUEST_TIMEOUT_MS`            | `5000`      | Idle timeout per UPnP request (hard deadline: 3×).                                                                                                                                                               |
 | `MAX_RESPONSE_BYTES`            | `2097152`   | Maximum accepted UPnP response size (2 MiB).                                                                                                                                                                     |
-| `SHUTDOWN_TIMEOUT_MS`           | `30000`     | Hard deadline for graceful shutdown; always at least 3× `REQUEST_TIMEOUT_MS` + 5 s.                                                                                                                              |
+| `SHUTDOWN_TIMEOUT_MS`           | `30000`     | Hard deadline for graceful shutdown; always at least 3× `REQUEST_TIMEOUT_MS` + 1 s.                                                                                                                              |
 | `ALLOW_NON_PRIVATE_IP`          | `false`     | Allow receiver IPs outside RFC1918 (VPN/CGNAT). Loopback and link-local stay blocked.                                                                                                                            |
 | `ALLOW_LOOPBACK_RECEIVER`       | `false`     | Allow a receiver on `127.0.0.1` for local mock testing. Keep disabled in production.                                                                                                                             |
 | `ADMIN_USER` / `ADMIN_PASSWORD` | –           | Enables HTTP Basic Auth for the UI and `/api/*`. Set both; if only one is set, protected routes fail closed with `503`.                                                                                          |
@@ -170,7 +170,8 @@ Everything related to the receiver (IP, port, cron schedule, channel list, mappi
 | `POST /api/save-mapping`                                                                       | Basic Auth¹ | Saves the channel-name → ID mapping.                                                                   |
 | `GET /api/export-config` / `POST /api/import-config`                                           | Basic Auth¹ | Backup and restore of settings and mapping.                                                            |
 | `GET /metrics`                                                                                 | Basic Auth¹ | Prometheus text metrics (`technimapper_*`).                                                            |
-| `GET /api/docs`                                                                                | Basic Auth¹ | Interactive API documentation (Redoc); full spec: [docs/openapi.yaml](docs/openapi.yaml).              |
+
+The full OpenAPI 3 specification is available at [docs/openapi.yaml](docs/openapi.yaml).
 
 ¹ Only enforced if `ADMIN_USER` and `ADMIN_PASSWORD` are set. State-changing `/api/*` requests must use `Content-Type: application/json` and a same-origin `Origin`/`Referer` (when the client sends one); cross-origin attempts are rejected.
 
@@ -286,11 +287,12 @@ npm start              # http://localhost:9191
 
 | Script                                  | Purpose                                                                                                                                               |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run coverage`                      | Backend with V8 coverage, thresholds: lines ≥90 %, branches ≥80 %, functions ≥85 % (`public/` excluded – frontend is reachable without backend build) |
+| `npm run coverage`                      | Backend with V8 coverage, thresholds: lines ≥90 %, branches ≥80 %, functions ≥85 % (generated `dist/`, `public/` and `frontend/` excluded)          |
 | `scripts/probe-receiver.js <ip> [port]` | Inspects a receiver's UPnP/ContentDirectory structure and prints the detected model                                                                   |
+| `scripts/probe-count.js <ip> …`         | Probes a single object with a custom `RequestedCount` (see [scripts/README.md](scripts/README.md))                                                   |
 | `scripts/mock-receiver.js`              | Minimal SOAP mock for manual testing (set `MOCK_RECEIVER_PORT`)                                                                                       |
 
-CI (GitHub Actions) runs type checks, Biome, knip, OpenAPI freshness, unit/integration tests, coverage, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v1.8.0-rc.1`) become pre-releases and do not move the `latest` image tag.
+CI (GitHub Actions) runs type checks, Biome, knip, OpenAPI freshness, unit/integration tests, coverage, `npm audit`, a Trivy image scan and a container smoke test on every push and pull request. Pushing a tag `vX.Y.Z` (matching `package.json`) builds, publishes and signs the release image and creates the GitHub release from the matching `CHANGELOG.md` section (`## [X.Y.Z]`). The tag fails fast if the version or the changelog entry is missing; tags containing a `-` (e.g. `v2.0.0-rc.6`) become pre-releases and do not move the `latest` image tag.
 
 ## Third-party fonts
 

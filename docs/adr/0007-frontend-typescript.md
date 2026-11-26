@@ -126,11 +126,10 @@ manual/E2E smoke test for `view`/`presenter`/`main`.
 
 - Update imports in `frontend-mvp.test.ts`, `ui-dirty.test.ts`,
   `ui-format.test.ts`, `ui-copy.test.ts`, `ui-ids.test.ts` to
-  `../frontend/src/...` (`.ts` specifiers, `tsx` runtime).
+  `../frontend/...` (`.ts` specifiers, `tsx` runtime).
 - Add `"lib": ["ES2022", "DOM", "DOM.Iterable"]` to `test/tsconfig.json`;
   a probe against the current suite showed no conflicts with `@types/node`.
-- Source-text tests (`ui-dropdown`, `ui-format`, `ui-copy`) read from
-  `frontend/src/`.
+- Source-text tests (`ui-dropdown`, `ui-format`, `ui-copy`) read from `frontend/`.
 - Replace the `node --check` syntax test with a build-artifact test:
   `public/app/js/main.js` exists, is ESM, and `index.html` references it.
 - E2E: fail the smoke test on `pageerror`; existing UI flows already prove the
@@ -142,8 +141,7 @@ manual/E2E smoke test for `view`/`presenter`/`main`.
   builds both halves.
 - README: new `frontend/` entry, `app/js` as generated output, updated build
   commands.
-- CHANGELOG: one entry (target `2.1.0` if the migration lands after the
-  `2.0.0` release; `2.0.0` if it lands before).
+- CHANGELOG: one entry; the migration landed in `2.0.0`.
 - ADR 0007 → Accepted; ADR 0005 gets a one-line pointer for the frontend part.
 
 ## Consequences
