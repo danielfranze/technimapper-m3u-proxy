@@ -47,6 +47,8 @@ jobs:
             - run: npm run check
             - run: npm run check:frontend
             - run: npm run check:tests
+            - run: npm run lint && npm run format:check && npm run knip
+            - run: npm run types:openapi && git diff --exit-code frontend/api.generated.d.ts
             - run: npm test
             - run: npm audit --omit=dev --audit-level=high
 

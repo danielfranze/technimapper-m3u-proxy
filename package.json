@@ -10,23 +10,24 @@
         "node": ">=26"
     },
     "scripts": {
-        "build": "npm run build:backend && npm run build:frontend",
+        "build": "npm run clean && npm run build:backend && npm run build:frontend",
         "build:backend": "tsc -p tsconfig.json",
-        "build:frontend": "tsc -p tsconfig.frontend.json",
+        "build:frontend": "npm run types:openapi && tsc -p tsconfig.frontend.json",
         "start": "node dist/server.js",
         "check": "tsc --noEmit -p tsconfig.json",
         "check:frontend": "tsc --noEmit -p tsconfig.frontend.json",
         "check:tests": "npx tsc --noEmit -p test && npx tsc --noEmit -p test-helpers",
         "test": "npm run build && node --import tsx --test",
         "coverage": "npm run build && node --import tsx scripts/coverage.js",
-        "test:e2e": "playwright test",
+        "test:e2e": "npm run build && playwright test",
         "test:all": "npm test && npm run test:e2e",
         "types:openapi": "openapi-typescript docs/openapi.yaml -o frontend/api.generated.d.ts",
         "lint": "npx biome check",
         "lint:fix": "npx biome check --fix",
         "format": "npx biome format --write",
         "format:check": "npx biome format",
-        "knip": "npx knip"
+        "knip": "npx knip",
+        "clean": "rm -rf dist public/app/js .tsc-out"
     },
     "devDependencies": {
         "@biomejs/biome": "^2.6.9",

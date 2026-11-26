@@ -42,3 +42,9 @@ blob-report/
 
 # Generated frontend build output
 public/app/js/
+# Generated test-helper typecheck output
+.tsc-out/
+
+# TS incremental build info
+*.tsbuildinfo
+

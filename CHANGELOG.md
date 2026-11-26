@@ -26,6 +26,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - **P3 Qualität:** **Biome** (`@biomejs/biome`) `npm run lint` / `lint:fix` / `format` / `format:check`; `biome.json`. **`knip`** `npm run knip`. `biome check` + `format` in CI.
 - **Konkurrenz/Frontend-Robustheit:** `await updateSyncTime()`; `loadInitialConfig` + `updateSyncTime` `await`; `setInterval`; **`syncInflight`**; `reader.onerror`; **`ApiError`** + `JsonResult.error`.
 
+### Changed
+- Build/CI hardening: `clean`; `types:openapi` in `build:frontend`; `test:e2e` builds; `.tsc-out`/`.tsbuildinfo`; `.env.example`.
+
 ## [2.0.0-rc.5]
 
 ### Added
