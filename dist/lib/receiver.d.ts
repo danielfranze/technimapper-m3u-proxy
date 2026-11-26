@@ -60,7 +60,7 @@ declare function asArray(value: XmlValue): XmlNode[];
 declare function parseContainerList(didl: XmlValue): ChannelList[];
 /** Extracts playable channel items from a DIDL-Lite payload. */
 declare function parseChannelItems(didl: XmlValue): Channel[];
-declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger, agent }?: {
+declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger, agent, }?: {
     requestTimeoutMs?: number;
     maxResponseBytes?: number;
     logger?: SoapReceiverLogger;
@@ -75,5 +75,5 @@ declare function createSoapReceiver({ requestTimeoutMs, maxResponseBytes, logger
     discoverTvLists: (ip: string, port: string | number) => Promise<DiscoveryResult>;
     close: () => void;
 };
-export { DISCOVERY_TARGETS, DiscoveryType, escapeXml, xmlText, asArray, parseContainerList, parseChannelItems, createSoapReceiver };
+export { asArray, createSoapReceiver, DISCOVERY_TARGETS, DiscoveryType, escapeXml, parseChannelItems, parseContainerList, xmlText, };
 export type Receiver = ReturnType<typeof createSoapReceiver>;

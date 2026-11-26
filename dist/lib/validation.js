@@ -4,18 +4,18 @@
  * This is the public facade: the actual implementations live in `lib/domain/*`.
  */
 import { isAllowedReceiverIp } from './domain/ids.js';
-import { validateSettings } from './domain/settings.js';
 import { validateMapping } from './domain/mapping.js';
-export { HttpError } from './http-error.js';
+import { validateSettings } from './domain/settings.js';
 export { ID_REGEX, isAllowedReceiverIp } from './domain/ids.js';
+export { findDuplicateGroups, findDuplicateIds, partitionMapping, sortMapping, validateMapping, } from './domain/mapping.js';
 export { validateSettings } from './domain/settings.js';
-export { validateMapping, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } from './domain/mapping.js';
-function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopback = false }) {
+export { HttpError } from './http-error.js';
+function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopback = false, }) {
     const deps = { cronValidate, allowNonPrivateIp, allowLoopback };
     return {
-        isAllowedReceiverIp: ip => isAllowedReceiverIp(ip, { allowNonPrivateIp, allowLoopback }),
-        validateSettings: raw => validateSettings(raw, deps),
-        validateMapping
+        isAllowedReceiverIp: (ip) => isAllowedReceiverIp(ip, { allowNonPrivateIp, allowLoopback }),
+        validateSettings: (raw) => validateSettings(raw, deps),
+        validateMapping,
     };
 }
 export { createValidation };

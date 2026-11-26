@@ -27,7 +27,9 @@ export function intFromEnv(raw, fallback, options = {}) {
     return n;
 }
 function booleanFromEnv(raw) {
-    return String(raw || '').trim().toLowerCase() === 'true';
+    return (String(raw || '')
+        .trim()
+        .toLowerCase() === 'true');
 }
 export function parseTrustProxy(raw, warnings = []) {
     const text = String(raw || '').trim();
@@ -41,7 +43,10 @@ export function parseTrustProxy(raw, warnings = []) {
         return true;
     if (text === 'false')
         return false;
-    const parts = text.split(',').map((p) => p.trim()).filter(Boolean);
+    const parts = text
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean);
     const valid = parts.length > 0 && parts.every((part) => TRUST_PROXY_TOKENS.has(part) || net.isIP(part) !== 0);
     if (valid)
         return text;
@@ -51,9 +56,24 @@ export function parseTrustProxy(raw, warnings = []) {
 export function loadRuntimeConfig(env = process.env) {
     const warnings = [];
     const port = intFromEnv(env.PORT, DEFAULT_PORT, { min: 1, max: 65535, name: 'PORT', warnings });
-    const requestTimeoutMs = intFromEnv(env.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, { min: 500, max: 120000, name: 'REQUEST_TIMEOUT_MS', warnings });
-    const maxResponseBytes = intFromEnv(env.MAX_RESPONSE_BYTES, DEFAULT_MAX_RESPONSE_BYTES, { min: 64 * 1024, max: 32 * 1024 * 1024, name: 'MAX_RESPONSE_BYTES', warnings });
-    const rawShutdown = intFromEnv(env.SHUTDOWN_TIMEOUT_MS, DEFAULT_SHUTDOWN_TIMEOUT_MS, { min: 1000, max: 300000, name: 'SHUTDOWN_TIMEOUT_MS', warnings });
+    const requestTimeoutMs = intFromEnv(env.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, {
+        min: 500,
+        max: 120000,
+        name: 'REQUEST_TIMEOUT_MS',
+        warnings,
+    });
+    const maxResponseBytes = intFromEnv(env.MAX_RESPONSE_BYTES, DEFAULT_MAX_RESPONSE_BYTES, {
+        min: 64 * 1024,
+        max: 32 * 1024 * 1024,
+        name: 'MAX_RESPONSE_BYTES',
+        warnings,
+    });
+    const rawShutdown = intFromEnv(env.SHUTDOWN_TIMEOUT_MS, DEFAULT_SHUTDOWN_TIMEOUT_MS, {
+        min: 1000,
+        max: 300000,
+        name: 'SHUTDOWN_TIMEOUT_MS',
+        warnings,
+    });
     const shutdownTimeoutMs = Math.max(rawShutdown, requestTimeoutMs * 3 + 1000);
     const dataDir = env.DATA_DIR ? path.resolve(env.DATA_DIR) : path.join(process.cwd(), 'data');
     const adminUser = (env.ADMIN_USER || '').trim();
@@ -91,7 +111,7 @@ export function loadRuntimeConfig(env = process.env) {
         apiRateWindowMs: 60 * 1000,
         apiRateMax: 60,
         maxRateEntries: 5000,
-        warnings
+        warnings,
     };
 }
 //# sourceMappingURL=runtime-config.js.map

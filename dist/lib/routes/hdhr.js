@@ -1,4 +1,3 @@
-'use strict';
 import express from 'express';
 import * as hdhrModule from '../hdhr.js';
 /**
@@ -7,7 +6,13 @@ import * as hdhrModule from '../hdhr.js';
  */
 function registerHdhrRoutes(app, ctx) {
     const { getState } = ctx;
-    const hdhrConfig = ctx.hdhrConfig || { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] };
+    const hdhrConfig = ctx.hdhrConfig || {
+        enabled: false,
+        friendlyName: null,
+        deviceId: '00000000',
+        tunerCount: 0,
+        warnings: [],
+    };
     if (!hdhrConfig.enabled)
         return;
     const hdhrRouter = express.Router();
@@ -26,7 +31,7 @@ function registerHdhrRoutes(app, ctx) {
     hdhrRouter.get('/lineup.json', withBaseUrl((_req, res, baseUrl) => res.json(hdhrModule.lineupPayload(getState().lineupEntries, baseUrl))));
     hdhrRouter.post('/lineup.post', (_req, res) => res.sendStatus(200));
     hdhrRouter.get('/stream/:id', (req, res) => {
-        const entry = getState().lineupEntries.find(item => item.guideNumber === req.params.id);
+        const entry = getState().lineupEntries.find((item) => item.guideNumber === req.params.id);
         if (!entry)
             return res.status(404).type('text/plain').send('Stream not found');
         return res.redirect(302, entry.url);

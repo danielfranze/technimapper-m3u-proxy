@@ -31,21 +31,19 @@
  * ============================================================================
  */
 
-'use strict';
-
-import cron from 'node-cron';
 import path from 'node:path';
-import packageJson from './package.json' with { type: 'json' };
+import cron from 'node-cron';
+import { createApp } from './lib/app.js';
+import { type ConfigStore, createJsonConfigStore } from './lib/config-store.js';
+import * as hdhr from './lib/hdhr.js';
 import { createLogger } from './lib/logger.js';
-import { loadRuntimeConfig } from './lib/runtime-config.js';
-import { createJsonConfigStore, type ConfigStore } from './lib/config-store.js';
 import { createSoapReceiver } from './lib/receiver.js';
-import { createState, applyPersistedState, persistedSnapshot } from './lib/state.js';
+import { loadRuntimeConfig } from './lib/runtime-config.js';
+import { installShutdownHandlers, runShutdown } from './lib/shutdown.js';
+import { applyPersistedState, createState, persistedSnapshot } from './lib/state.js';
 import { createStateStore } from './lib/state-store.js';
 import { createValidation, sortMapping } from './lib/validation.js';
-import * as hdhr from './lib/hdhr.js';
-import { createApp } from './lib/app.js';
-import { runShutdown, installShutdownHandlers } from './lib/shutdown.js';
+import packageJson from './package.json' with { type: 'json' };
 
 const APP_VERSION = packageJson.version;
 
@@ -54,14 +52,16 @@ import { errorMessage } from './lib/error-message.js';
 async function main() {
     const runtime = loadRuntimeConfig(process.env);
     const logger = createLogger({ level: runtime.logLevel, format: runtime.logFormat });
-    runtime.warnings.forEach(warning => logger.warn(warning));
+    runtime.warnings.forEach((warning) => {
+        logger.warn(warning);
+    });
 
     let configStore!: ConfigStore;
     try {
         configStore = createJsonConfigStore({
             dataDir: runtime.dataDir,
             configFile: runtime.configFile,
-            logger
+            logger,
         });
         configStore.ensureDataDir();
     } catch (err) {
@@ -71,9 +71,9 @@ async function main() {
     }
 
     const validation = createValidation({
-        cronValidate: expr => cron.validate(expr),
+        cronValidate: (expr) => cron.validate(expr),
         allowNonPrivateIp: runtime.allowNonPrivateIp,
-        allowLoopback: runtime.allowLoopbackReceiver
+        allowLoopback: runtime.allowLoopbackReceiver,
     });
     const { validateMapping, validateSettings, isAllowedReceiverIp } = validation;
 
@@ -87,9 +87,9 @@ async function main() {
                 sortMapping,
                 sanitizeModel: hdhr.sanitizeModel,
                 isAllowedReceiverIp,
-                cronValidate: expr => cron.validate(expr),
+                cronValidate: (expr) => cron.validate(expr),
                 defaultCron: runtime.defaultCron,
-                logger
+                logger,
             });
             stateStore.commit(draft);
             if (result.changed) {
@@ -108,11 +108,13 @@ async function main() {
     const receiver = createSoapReceiver({
         requestTimeoutMs: runtime.requestTimeoutMs,
         maxResponseBytes: runtime.maxResponseBytes,
-        logger
+        logger,
     });
 
     const hdhrConfig = hdhr.resolveConfig(process.env);
-    hdhrConfig.warnings.forEach(warning => logger.warn(warning));
+    hdhrConfig.warnings.forEach((warning) => {
+        logger.warn(warning);
+    });
 
     const { app, services } = createApp({
         runtime,
@@ -124,7 +126,7 @@ async function main() {
         cron,
         version: APP_VERSION,
         hdhrConfig,
-        publicDir: path.join(process.cwd(), 'public')
+        publicDir: path.join(process.cwd(), 'public'),
     });
 
     if (stateStore.get().configured) services.rebuildViews(); // serve the last known playlist immediately
@@ -156,7 +158,7 @@ async function main() {
             stopBackgroundCron: services.stopBackgroundCron,
             dispose: services.dispose,
             logger,
-            shutdownTimeoutMs: runtime.shutdownTimeoutMs
+            shutdownTimeoutMs: runtime.shutdownTimeoutMs,
         }).finally(() => process.exit(0));
     }
 
@@ -179,4 +181,4 @@ main().catch((err: unknown) => {
     process.exit(1);
 });
 
-export { main, APP_VERSION };
+export { APP_VERSION, main };

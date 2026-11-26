@@ -20,15 +20,24 @@
         "test": "npm run build && node --import tsx --test",
         "coverage": "npm run build && node --import tsx scripts/coverage.js",
         "test:e2e": "playwright test",
-        "test:all": "npm test && npm run test:e2e"
+        "test:all": "npm test && npm run test:e2e",
+        "types:openapi": "openapi-typescript docs/openapi.yaml -o frontend/api.generated.d.ts",
+        "lint": "npx biome check",
+        "lint:fix": "npx biome check --fix",
+        "format": "npx biome format --write",
+        "format:check": "npx biome format",
+        "knip": "npx knip"
     },
     "devDependencies": {
+        "@biomejs/biome": "^2.6.9",
         "@playwright/test": "^1.52.0",
         "@types/compression": "^1.8.1",
         "@types/express": "^5.0.6",
         "@types/node": "^26.6.6",
         "@types/xml2js": "^0.4.14",
         "fast-check": "^4.11.0",
+        "knip": "^6.48.0",
+        "openapi-typescript": "^7.13.0",
         "tsx": "^4.23.15",
         "typescript": "^5.9.3",
         "yaml": "^2.9.1"

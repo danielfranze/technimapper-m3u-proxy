@@ -17,7 +17,7 @@ async function runShutdown(signal, deps) {
     }, shutdownTimeoutMs);
     hardStop.unref();
     try {
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             server.close(async () => {
                 try {
                     await waitForSync(); // let a running sync finish (and persist) first
@@ -35,7 +35,9 @@ async function runShutdown(signal, deps) {
         try {
             dispose();
         }
-        catch { /* ignore */ }
+        catch {
+            /* ignore */
+        }
         clearTimeout(hardStop);
     }
 }
@@ -47,5 +49,5 @@ function installShutdownHandlers(onShutdown) {
     process.on('SIGTERM', () => onShutdown('SIGTERM'));
     process.on('SIGINT', () => onShutdown('SIGINT'));
 }
-export { runShutdown, installShutdownHandlers };
+export { installShutdownHandlers, runShutdown };
 //# sourceMappingURL=shutdown.js.map

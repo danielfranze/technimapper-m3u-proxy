@@ -52,7 +52,7 @@ const DEFAULT_CONFIG = Object.freeze({
     mapping: Object.freeze({}),
     channels: Object.freeze([]),
     lastSync: null,
-    detectedModel: null
+    detectedModel: null,
 });
 
 function createState(overrides: Partial<AppState> = {}): AppState {
@@ -60,7 +60,7 @@ function createState(overrides: Partial<AppState> = {}): AppState {
         ...DEFAULT_CONFIG,
         mapping: {},
         channels: [],
-        ...(overrides.config || {})
+        ...(overrides.config || {}),
     } as StateConfig;
 
     return {
@@ -71,11 +71,11 @@ function createState(overrides: Partial<AppState> = {}): AppState {
             lastAttemptAt: null,
             lastDurationMs: null,
             consecutiveFailures: 0,
-            ...(overrides.sync || {})
+            ...(overrides.sync || {}),
         },
         configured: Boolean(overrides.configured),
         cachedM3u8: overrides.cachedM3u8 ?? null,
-        lineupEntries: Array.isArray(overrides.lineupEntries) ? [...overrides.lineupEntries] : []
+        lineupEntries: Array.isArray(overrides.lineupEntries) ? [...overrides.lineupEntries] : [],
     };
 }
 
@@ -88,9 +88,9 @@ function persistedSnapshot(state: AppState): Record<string, unknown> {
         cronExpression: config.cronExpression,
         selectedListName: config.selectedListName,
         mapping: { ...config.mapping },
-        channels: config.channels.map(channel => ({ name: channel.name, url: channel.url })),
+        channels: config.channels.map((channel) => ({ name: channel.name, url: channel.url })),
         lastSync: config.lastSync,
-        detectedModel: config.detectedModel
+        detectedModel: config.detectedModel,
     };
 }
 
@@ -118,7 +118,9 @@ function repairPersistedSettings(state: AppState, deps: RepairDeps): boolean {
     let changed = false;
 
     const fix = (field: string, fallback: string, reason: string) => {
-        logger.warn(`Persisted ${field} "${String(config[field])}" is invalid (${reason}) - resetting to "${fallback}".`);
+        logger.warn(
+            `Persisted ${field} "${String(config[field])}" is invalid (${reason}) - resetting to "${fallback}".`,
+        );
         config[field] = fallback;
         changed = true;
     };
@@ -143,7 +145,11 @@ function repairPersistedSettings(state: AppState, deps: RepairDeps): boolean {
  * Applies a parsed mapping.json to the state. Invalid values are dropped or repaired;
  * nothing here talks to the receiver or the HTTP layer.
  */
-function applyPersistedState(state: AppState, parsed: unknown, deps: ApplyPersistedDeps): { changed: boolean; droppedMapping: number } {
+function applyPersistedState(
+    state: AppState,
+    parsed: unknown,
+    deps: ApplyPersistedDeps,
+): { changed: boolean; droppedMapping: number } {
     const { validateMapping, sortMapping, sanitizeModel, logger } = deps;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('not an object');
 
@@ -153,17 +159,27 @@ function applyPersistedState(state: AppState, parsed: unknown, deps: ApplyPersis
 
     const rawChannels = record.channels;
     const channels: Channel[] = Array.isArray(rawChannels)
-        ? rawChannels.filter((c): c is Channel => !!c && typeof c === 'object' && typeof (c as Channel).name === 'string' && typeof (c as Channel).url === 'string')
+        ? rawChannels.filter(
+              (c): c is Channel =>
+                  !!c &&
+                  typeof c === 'object' &&
+                  typeof (c as Channel).name === 'string' &&
+                  typeof (c as Channel).url === 'string',
+          )
         : [];
 
     const config = state.config;
     config.ip = typeof record.ip === 'string' ? record.ip : config.ip;
     config.port = record.port !== undefined ? String(record.port) : config.port;
     config.cronExpression = typeof record.cronExpression === 'string' ? record.cronExpression : config.cronExpression;
-    config.selectedListName = typeof record.selectedListName === 'string' ? record.selectedListName : config.selectedListName;
+    config.selectedListName =
+        typeof record.selectedListName === 'string' ? record.selectedListName : config.selectedListName;
     config.lastSync = typeof record.lastSync === 'string' ? record.lastSync : null;
     config.detectedModel = sanitizeModel(record.detectedModel);
-    config.mapping = sortMapping(mapping, channels.map(channel => channel.name));
+    config.mapping = sortMapping(
+        mapping,
+        channels.map((channel) => channel.name),
+    );
     config.channels = channels;
     state.configured = true;
 
@@ -171,4 +187,4 @@ function applyPersistedState(state: AppState, parsed: unknown, deps: ApplyPersis
     return { changed, droppedMapping: invalid.length };
 }
 
-export { createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };
+export { applyPersistedState, createState, persistedSnapshot, repairPersistedSettings };

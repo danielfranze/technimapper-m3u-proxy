@@ -16,18 +16,18 @@ receiver, serves a playlist and an HDHomeRun emulator to local clients.
 
 ## Identified threats and mitigations
 
-| Threat | Mitigation in 1.8.0 |
-|---|---|
+| Threat                                       | Mitigation in 1.8.0                                                                                                                   |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | LAN SSRF/port scan via `/api/fetch-channels` | Receiver target changes go through authenticated `POST /api/save-settings`; sync uses stored settings. Private-IP validation remains. |
-| CSRF on state-changing `/api/*` | JSON content-type required; same-origin `Origin`/`Referer` guard. |
-| Auth brute force | Failed auth attempts are throttled before credentials are checked. |
-| API abuse | Bounded in-memory rate limiter for all `/api` routes. |
-| XML entity/size abuse | UPnP response size limit (2 MiB, configurable); parser rejects non-http(s) URLs. |
-| Information disclosure | No external fonts/CDNs, `Permissions-Policy`, HSTS option, no-store for API/health. |
-| Receiver standby/failure | Last known playlist is retained; health/readiness expose degraded state. |
-| Abusive client memory growth | Rate limits, JSON body limit, UPnP size limit, bounded maps. |
-| Graceful shutdown while syncing | Shutdown waits for the active sync and uses a larger hard deadline. |
-| Startup crash from bad env | `TRUST_PROXY=false`/`0` are accepted; invalid values downgrade to `false`. |
+| CSRF on state-changing `/api/*`              | JSON content-type required; same-origin `Origin`/`Referer` guard.                                                                     |
+| Auth brute force                             | Failed auth attempts are throttled before credentials are checked.                                                                    |
+| API abuse                                    | Bounded in-memory rate limiter for all `/api` routes.                                                                                 |
+| XML entity/size abuse                        | UPnP response size limit (2 MiB, configurable); parser rejects non-http(s) URLs.                                                      |
+| Information disclosure                       | No external fonts/CDNs, `Permissions-Policy`, HSTS option, no-store for API/health.                                                   |
+| Receiver standby/failure                     | Last known playlist is retained; health/readiness expose degraded state.                                                              |
+| Abusive client memory growth                 | Rate limits, JSON body limit, UPnP size limit, bounded maps.                                                                          |
+| Graceful shutdown while syncing              | Shutdown waits for the active sync and uses a larger hard deadline.                                                                   |
+| Startup crash from bad env                   | `TRUST_PROXY=false`/`0` are accepted; invalid values downgrade to `false`.                                                            |
 
 ## Known accepted risks
 

@@ -1,5 +1,3 @@
-'use strict';
-
 import crypto from 'crypto';
 import type { Express, Request, Response } from 'express';
 import type { AppState } from '../state-store.js';
@@ -34,7 +32,9 @@ function registerPlaylistRoutes(app: Express, ctx: { getState(): AppState; playl
         res.set('Cache-Control', 'no-cache');
         return res.type('audio/x-mpegurl; charset=utf-8').send(snapshot.cachedM3u8);
     };
-    playlistPaths.forEach(route => app.get(route, servePlaylist));
+    playlistPaths.forEach((route) => {
+        app.get(route, servePlaylist);
+    });
 }
 
 export { registerPlaylistRoutes };

@@ -1,5 +1,3 @@
-'use strict';
-
 import type { Express, Request, Response } from 'express';
 import type { AppState } from '../state-store.js';
 
@@ -20,7 +18,8 @@ function registerHealthRoutes(app: Express, ctx: HealthCtx): void {
     function healthPayload() {
         const snapshot = getState();
         const hasPlaylist = snapshot.cachedM3u8 !== null;
-        const status = !snapshot.configured || (hasPlaylist && snapshot.sync.consecutiveFailures < 3) ? 'ok' : 'degraded';
+        const status =
+            !snapshot.configured || (hasPlaylist && snapshot.sync.consecutiveFailures < 3) ? 'ok' : 'degraded';
         return {
             status,
             version,
@@ -36,7 +35,7 @@ function registerHealthRoutes(app: Express, ctx: HealthCtx): void {
             mappedChannels: Object.keys(snapshot.config.mapping).length,
             uptimeSeconds: Math.round(process.uptime()),
             syncQueueLength: ctx.syncCoordinator.queueLength,
-            syncBackoffMs: ctx.syncCoordinator.backoffRemainingMs()
+            syncBackoffMs: ctx.syncCoordinator.backoffRemainingMs(),
         };
     }
 

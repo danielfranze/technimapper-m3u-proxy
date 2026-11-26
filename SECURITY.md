@@ -31,4 +31,4 @@ You will get an initial response as soon as possible. Fixes are published as a n
   endpoint, so a sync cannot be used as a general-purpose LAN port scanner.
 - State-changing `/api/*` requests require JSON and a same-origin `Origin`/`Referer`; API requests
   and failed authentication attempts are rate-limited.
-- Verify image signatures before deploying (see the README, section *Supply chain*).
+- Verify image signatures before deploying (see the README, section _Supply chain_).

@@ -5,10 +5,16 @@
 export const STREAM_URL_REGEX = /^https?:\/\/[^\s\x00-\x1f\x7f"<>]+$/;
 
 export function sanitizeM3u8Text(str: string): string {
-    return String(str).replace(/[\u0000-\u001f\u007f"]/g, ' ').replace(/\s+/g, ' ').trim();
+    return String(str)
+        .replace(/[\u0000-\u001f\u007f"]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
-export function buildM3u8(channels: { name: string; url: string }[], mapping: Record<string, string | number>): { m3u8: string; count: number } {
+export function buildM3u8(
+    channels: { name: string; url: string }[],
+    mapping: Record<string, string | number>,
+): { m3u8: string; count: number } {
     let m3u8 = '#EXTM3U\n';
     let count = 0;
 

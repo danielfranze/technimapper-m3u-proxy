@@ -1,10 +1,8 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import test from 'node:test';
 import { createJsonConfigStore } from '../dist/lib/config-store.js';
 
 const logger = { warn() {}, error() {} };
@@ -19,7 +17,7 @@ test('config store creates the data directory and writes/reads JSON atomically',
         assert.equal(store.exists(), false);
         assert.equal(store.read(), null);
 
-        await store.write({ ip: "192.168.1.10", mapping: { A: 1 } });
+        await store.write({ ip: '192.168.1.10', mapping: { A: 1 } });
         assert.equal(store.exists(), true);
         assert.deepEqual(store.read(), { ip: '192.168.1.10', mapping: { A: 1 } });
         assert.equal(fs.existsSync(`${configFile}.tmp`), false, 'the temporary file must be renamed');
@@ -49,14 +47,11 @@ test('config store serializes concurrent writes instead of racing on the temp fi
 
     try {
         store.ensureDataDir();
-        await Promise.all([
-            store.write({ value: 'first' }),
-            store.write({ value: 'second' })
-        ]);
+        await Promise.all([store.write({ value: 'first' }), store.write({ value: 'second' })]);
         assert.deepEqual(store.read(), { value: 'second' });
         assert.equal(fs.existsSync(`${configFile}.tmp`), false);
         // No leftover unique temp files either.
-        const leftovers = fs.readdirSync(dataDir).filter(name => name.includes('.tmp'));
+        const leftovers = fs.readdirSync(dataDir).filter((name) => name.includes('.tmp'));
         assert.deepEqual(leftovers, []);
     } finally {
         fs.rmSync(dataDir, { recursive: true, force: true });

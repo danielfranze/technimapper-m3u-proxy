@@ -1,5 +1,10 @@
-'use strict';
-function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxMs = 300000, now = Date.now } = {}) {
+/**
+ * Serialises sync work and applies backoff after failures.
+ *
+ * Only one sync runs at a time. Additional requests are queued up to `maxQueue`;
+ * when the queue is full the caller receives a "Sync queue is full" error.
+ */
+function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxMs = 300000, now = Date.now, } = {}) {
     let active = false;
     let queue = [];
     let consecutiveFailures = 0;
@@ -27,7 +32,9 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
             if (!active && queue.length === 0) {
                 const waiters = idleWaiters;
                 idleWaiters = [];
-                waiters.forEach(resolve => resolve());
+                waiters.forEach((resolve) => {
+                    resolve();
+                });
             }
         }
     }
@@ -64,19 +71,23 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
         nextAllowedAt = 0;
         const waiters = idleWaiters;
         idleWaiters = [];
-        waiters.forEach(resolve => resolve());
+        waiters.forEach((resolve) => {
+            resolve();
+        });
         // Reject any work that was queued but never ran, so callers do not hang.
-        queued.forEach(item => {
+        queued.forEach((item) => {
             try {
                 item.reject(new Error('Sync coordinator reset'));
             }
-            catch { /* ignore */ }
+            catch {
+                /* ignore */
+            }
         });
     }
     function waitForIdle() {
         if (!active && queue.length === 0)
             return Promise.resolve();
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             idleWaiters.push(resolve);
         });
     }
@@ -86,9 +97,15 @@ function createSyncCoordinator({ maxQueue = 4, backoffBaseMs = 5000, backoffMaxM
         clearBackoff,
         reset,
         waitForIdle,
-        get active() { return active; },
-        get queueLength() { return queue.length; },
-        get consecutiveFailures() { return consecutiveFailures; }
+        get active() {
+            return active;
+        },
+        get queueLength() {
+            return queue.length;
+        },
+        get consecutiveFailures() {
+            return consecutiveFailures;
+        },
     };
 }
 export { createSyncCoordinator };

@@ -1,9 +1,7 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHarness } from '../test-helpers/harness.ts';
 import type { Server } from 'node:http';
+import test from 'node:test';
+import { createHarness } from '../test-helpers/harness.ts';
 
 type Harness = ReturnType<typeof createHarness>;
 
@@ -11,12 +9,12 @@ const BASE_CONFIG = {
     ip: '192.168.1.10',
     port: '9100',
     cronExpression: '*/5 * * * *',
-    selectedListName: 'TV-Liste'
+    selectedListName: 'TV-Liste',
 };
 
 const CHANNELS = [
     { name: 'A', url: 'http://192.168.1.20/a' },
-    { name: 'B', url: 'http://192.168.1.20/b' }
+    { name: 'B', url: 'http://192.168.1.20/b' },
 ];
 
 async function withServer(harness: Harness, fn: (base: string, harness: Harness) => Promise<void>): Promise<void> {
@@ -38,45 +36,47 @@ async function withServer(harness: Harness, fn: (base: string, harness: Harness)
     }
 }
 
-const postJson = (base: string, path: string, body: unknown, headers: Record<string, string> = {}): Promise<Response> => fetch(base + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: typeof body === 'string' ? body : JSON.stringify(body)
-});
+const postJson = (base: string, path: string, body: unknown, headers: Record<string, string> = {}): Promise<Response> =>
+    fetch(base + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: typeof body === 'string' ? body : JSON.stringify(body),
+    });
 
-const basic = (user: string, password: string): string => `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
+const basic = (user: string, password: string): string =>
+    `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
 
 test('health endpoints report status, liveness and readiness', async () => {
     const harness = createHarness();
     await withServer(harness, async (base) => {
-        const health = await fetch(base + '/health');
+        const health = await fetch(`${base}/health`);
         assert.equal(health.status, 200);
-        const body = await health.json() as Record<string, unknown>;
+        const body = (await health.json()) as Record<string, unknown>;
         assert.equal(body.status, 'ok');
         assert.equal(body.configured, false);
         assert.equal(body.playlistAvailable, false);
         assert.equal(body.version, '1.8.0-test');
 
-        assert.equal((await fetch(base + '/health/live')).status, 200);
-        assert.equal((await fetch(base + '/health/ready')).status, 200, 'an unconfigured instance is ready for setup');
+        assert.equal((await fetch(`${base}/health/live`)).status, 200);
+        assert.equal((await fetch(`${base}/health/ready`)).status, 200, 'an unconfigured instance is ready for setup');
     });
 });
 
 test('a configured instance without a playlist is degraded and not ready', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
     });
 
     await withServer(harness, async (base) => {
-        const health = await fetch(base + '/health');
+        const health = await fetch(`${base}/health`);
         assert.equal(health.status, 200);
         assert.equal(((await health.json()) as Record<string, unknown>).status, 'degraded');
 
-        const ready = await fetch(base + '/health/ready');
+        const ready = await fetch(`${base}/health/ready`);
         assert.equal(ready.status, 503);
         assert.equal(((await ready.json()) as Record<string, unknown>).status, 'degraded');
 
-        const playlist = await fetch(base + '/playlist.m3u8');
+        const playlist = await fetch(`${base}/playlist.m3u8`);
         assert.equal(playlist.status, 503);
         assert.equal(playlist.headers.get('retry-after'), '60');
     });
@@ -86,41 +86,41 @@ test('HDHomeRun discovery, lineup and stream redirect work', async () => {
     const harness = createHarness({
         state: {
             configured: true,
-            config: { ...BASE_CONFIG, channels: CHANNELS, mapping: { A: 1 }, detectedModel: 'DIGIT ISIO STC' }
-        }
+            config: { ...BASE_CONFIG, channels: CHANNELS, mapping: { A: 1 }, detectedModel: 'DIGIT ISIO STC' },
+        },
     });
     harness.services.rebuildViews();
 
     await withServer(harness, async (base) => {
-        const discover = await (await fetch(base + '/hdhr/discover.json')).json() as Record<string, unknown>;
+        const discover = (await (await fetch(`${base}/hdhr/discover.json`)).json()) as Record<string, unknown>;
         assert.equal(discover.BaseURL, `${base}/hdhr`);
         assert.equal(discover.LineupURL, `${base}/hdhr/lineup.json`);
         assert.equal(discover.FriendlyName, 'TechniSat DIGIT ISIO STC');
 
-        const lineup = await (await fetch(base + '/hdhr/lineup.json')).json();
+        const lineup = await (await fetch(`${base}/hdhr/lineup.json`)).json();
         assert.deepEqual(lineup, [{ GuideNumber: '1', GuideName: 'A', URL: `${base}/hdhr/stream/1` }]);
 
-        const stream = await fetch(base + '/hdhr/stream/1', { redirect: 'manual' });
+        const stream = await fetch(`${base}/hdhr/stream/1`, { redirect: 'manual' });
         assert.equal(stream.status, 302);
         assert.equal(stream.headers.get('location'), 'http://192.168.1.20/a');
 
-        assert.equal((await fetch(base + '/hdhr/stream/99', { redirect: 'manual' })).status, 404);
+        assert.equal((await fetch(`${base}/hdhr/stream/99`, { redirect: 'manual' })).status, 404);
     });
 });
 
 test('Basic Auth protects the API but keeps public routes open', async () => {
     const harness = createHarness({ runtime: { adminUser: 'admin', adminPassword: 'secret' } });
     await withServer(harness, async (base) => {
-        assert.equal((await fetch(base + '/health')).status, 200);
-        assert.equal((await fetch(base + '/api/config')).status, 401);
+        assert.equal((await fetch(`${base}/health`)).status, 200);
+        assert.equal((await fetch(`${base}/api/config`)).status, 401);
 
-        const unauthorized = await fetch(base + '/api/config', {
-            headers: { Authorization: basic('admin', 'wrong') }
+        const unauthorized = await fetch(`${base}/api/config`, {
+            headers: { Authorization: basic('admin', 'wrong') },
         });
         assert.equal(unauthorized.status, 401);
 
-        const authorized = await fetch(base + '/api/config', {
-            headers: { Authorization: basic('admin', 'secret') }
+        const authorized = await fetch(`${base}/api/config`, {
+            headers: { Authorization: basic('admin', 'secret') },
         });
         assert.equal(authorized.status, 200);
     });
@@ -129,8 +129,8 @@ test('Basic Auth protects the API but keeps public routes open', async () => {
 test('a single configured auth credential fails closed', async () => {
     const harness = createHarness({ runtime: { adminUser: 'admin', adminPassword: '' } });
     await withServer(harness, async (base) => {
-        assert.equal((await fetch(base + '/health')).status, 200);
-        const res = await fetch(base + '/api/config');
+        assert.equal((await fetch(`${base}/health`)).status, 200);
+        const res = await fetch(`${base}/api/config`);
         assert.equal(res.status, 503);
         assert.match(String(((await res.json()) as Record<string, string>).error), /misconfigured/);
     });
@@ -138,7 +138,7 @@ test('a single configured auth credential fails closed', async () => {
 
 test('state-changing API requests require JSON and a same-origin origin', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
     });
 
     await withServer(harness, async (base) => {
@@ -149,13 +149,13 @@ test('state-changing API requests require JSON and a same-origin origin', async 
 
 test('the receiver target is changed through settings, not through a sync', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
     });
 
     await withServer(harness, async (base) => {
         const blocked = await postJson(base, '/api/fetch-channels', {
             ...BASE_CONFIG,
-            ip: '192.168.1.99'
+            ip: '192.168.1.99',
         });
         assert.equal(blocked.status, 409);
         assert.equal(harness.calls.length, 0, 'the receiver must not be contacted for a blocked target');
@@ -175,35 +175,35 @@ test('the receiver target is changed through settings, not through a sync', asyn
 
 test('save-mapping rebuilds playlist and lineup and reports duplicates and orphans', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
     });
 
     await withServer(harness, async (base) => {
         const saved = await postJson(base, '/api/save-mapping', {
-            mapping: { A: 1, B: '1', Old: 2 }
+            mapping: { A: 1, B: '1', Old: 2 },
         });
         assert.equal(saved.status, 200);
 
-        const body = await saved.json() as Record<string, unknown>;
+        const body = (await saved.json()) as Record<string, unknown>;
         assert.deepEqual(body.duplicateGroups, [{ id: '1', channels: ['A', 'B'] }]);
         assert.deepEqual(body.orphans, ['Old']);
         assert.equal(harness.writes.length, 1);
 
-        const playlist = await fetch(base + '/playlist.m3u8');
+        const playlist = await fetch(`${base}/playlist.m3u8`);
         assert.equal(playlist.status, 200);
         assert.match(playlist.headers.get('content-type') || '', /audio\/x-mpegurl/);
         const text = await playlist.text();
         assert.match(text, /tvg-id="1"/);
         assert.match(text, /http:\/\/192\.168\.1\.20\/a/);
 
-        const lineup = await (await fetch(base + '/hdhr/lineup.json')).json() as unknown[];
+        const lineup = (await (await fetch(`${base}/hdhr/lineup.json`)).json()) as unknown[];
         assert.equal(lineup.length, 1, 'duplicate IDs appear only once in the lineup');
     });
 });
 
 test('invalid mapping IDs are rejected without changing state', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: { A: 1 } } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: { A: 1 } } },
     });
 
     await withServer(harness, async (base) => {
@@ -217,17 +217,20 @@ test('invalid mapping IDs are rejected without changing state', async () => {
 
 test('export and import round-trip settings and mapping', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: { A: 1 } } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: { A: 1 } } },
     });
 
     await withServer(harness, async (base) => {
-        const exported = await (await fetch(base + '/api/export-config')).json() as Record<string, any>;
+        const exported = (await (await fetch(`${base}/api/export-config`)).json()) as {
+            config: { ip?: string };
+            mapping: unknown;
+        };
         assert.equal(exported.config.ip, '192.168.1.10');
         assert.deepEqual(exported.mapping, { A: 1 });
 
         const imported = await postJson(base, '/api/import-config', {
             config: { ...BASE_CONFIG, ip: '192.168.1.30', selectedListName: 'Radio' },
-            mapping: { A: 2 }
+            mapping: { A: 2 },
         });
         assert.equal(imported.status, 200);
         assert.equal(harness.state.get().config.ip, '192.168.1.30');
@@ -244,7 +247,9 @@ test('export and import round-trip settings and mapping', async () => {
 test('a failed sync keeps the last known playlist and records the error', async () => {
     const harness = createHarness({
         state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: { A: 1 } } },
-        fetchChannels: async () => { throw new Error('receiver unreachable'); }
+        fetchChannels: async () => {
+            throw new Error('receiver unreachable');
+        },
     });
     harness.services.rebuildViews();
     const before = harness.state.get().cachedM3u8;
@@ -255,7 +260,7 @@ test('a failed sync keeps the last known playlist and records the error', async 
         assert.match(String(((await res.json()) as Record<string, string>).error), /receiver unreachable/);
         assert.equal(harness.state.get().cachedM3u8, before, 'the last known playlist must survive a failed sync');
         assert.equal(harness.state.get().sync.consecutiveFailures, 1);
-        assert.match(harness.state.get().sync.lastError!, /receiver unreachable/);
+        assert.match(harness.state.get().sync.lastError ?? '', /receiver unreachable/);
         assert.equal(harness.state.get().config.mapping.A, 1);
     });
 });
@@ -263,9 +268,9 @@ test('a failed sync keeps the last known playlist and records the error', async 
 test('API rate limiting returns 429 after the configured budget', async () => {
     const harness = createHarness({ runtime: { apiRateMax: 2, apiRateWindowMs: 60000 } });
     await withServer(harness, async (base) => {
-        assert.equal((await fetch(base + '/api/config')).status, 200);
-        assert.equal((await fetch(base + '/api/config')).status, 200);
-        const limited = await fetch(base + '/api/config');
+        assert.equal((await fetch(`${base}/api/config`)).status, 200);
+        assert.equal((await fetch(`${base}/api/config`)).status, 200);
+        const limited = await fetch(`${base}/api/config`);
         assert.equal(limited.status, 429);
         assert.ok(Number(limited.headers.get('retry-after')) >= 1);
     });
@@ -279,21 +284,21 @@ test('two concurrent sync requests are serialized', async () => {
         fetchChannels: async () => {
             active++;
             maxActive = Math.max(maxActive, active);
-            await new Promise<void>(resolve => setTimeout(resolve, 20));
+            await new Promise<void>((resolve) => setTimeout(resolve, 20));
             active--;
             return {
                 channels: CHANNELS,
                 selectedListName: 'TV-Liste',
                 availableLists: ['TV-Liste'],
-                detectedModel: 'STC'
+                detectedModel: 'STC',
             };
-        }
+        },
     });
 
     await withServer(harness, async (base) => {
         const [first, second] = await Promise.all([
             postJson(base, '/api/fetch-channels', {}),
-            postJson(base, '/api/fetch-channels', {})
+            postJson(base, '/api/fetch-channels', {}),
         ]);
         assert.equal(first.status, 200);
         assert.equal(second.status, 200);
@@ -303,9 +308,11 @@ test('two concurrent sync requests are serialized', async () => {
 
 test('a persistence failure returns 500 without leaving a broken response', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
     });
-    harness.configStore.write = () => { throw new Error('disk full'); };
+    harness.configStore.write = () => {
+        throw new Error('disk full');
+    };
 
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-mapping', { mapping: { A: 1 } });
@@ -318,7 +325,7 @@ test('metrics endpoint returns Prometheus text', async () => {
     const harness = createHarness({ state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } } });
     harness.services.rebuildViews();
     await withServer(harness, async (base) => {
-        const res = await fetch(base + '/metrics');
+        const res = await fetch(`${base}/metrics`);
         assert.equal(res.status, 200);
         assert.match(res.headers.get('content-type') || '', /text\/plain/);
         const body = await res.text();
@@ -334,7 +341,7 @@ test('malformed JSON and unknown API routes use the central error handling', asy
         assert.equal(badJson.status, 400);
         assert.equal(((await badJson.json()) as Record<string, string>).error, 'Invalid JSON payload');
 
-        const notFound = await fetch(base + '/api/does-not-exist');
+        const notFound = await fetch(`${base}/api/does-not-exist`);
         assert.equal(notFound.status, 404);
         assert.equal(((await notFound.json()) as Record<string, string>).error, 'Not found');
     });
@@ -353,7 +360,10 @@ test('a sync whose settings change mid-flight is discarded instead of overwritin
     let resolveFetch: (value: Record<string, unknown>) => void = () => {};
     const harness = createHarness({
         state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
-        fetchChannels: () => new Promise<Record<string, unknown>>(resolve => { resolveFetch = resolve; })
+        fetchChannels: () =>
+            new Promise<Record<string, unknown>>((resolve) => {
+                resolveFetch = resolve;
+            }),
     });
     harness.services.rebuildViews();
     const before = harness.state.get().cachedM3u8;
@@ -370,7 +380,7 @@ test('a sync whose settings change mid-flight is discarded instead of overwritin
             channels: CHANNELS,
             selectedListName: 'TV-Liste',
             availableLists: ['TV-Liste'],
-            detectedModel: 'STC'
+            detectedModel: 'STC',
         });
 
         const syncRes = await syncPromise;
@@ -385,9 +395,11 @@ test('a sync whose settings change mid-flight is discarded instead of overwritin
 
 test('a persistence failure rolls back in-memory mapping state', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: {} } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: {} } },
     });
-    harness.configStore.write = () => { throw new Error('disk full'); };
+    harness.configStore.write = () => {
+        throw new Error('disk full');
+    };
 
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-mapping', { mapping: { A: 1 } });
@@ -400,9 +412,11 @@ test('a persistence failure rolls back in-memory mapping state', async () => {
 
 test('a persistence failure rolls back in-memory settings state', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG } }
+        state: { configured: true, config: { ...BASE_CONFIG } },
     });
-    harness.configStore.write = () => { throw new Error('disk full'); };
+    harness.configStore.write = () => {
+        throw new Error('disk full');
+    };
 
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/save-settings', { ip: '192.168.1.99' });
@@ -414,12 +428,14 @@ test('a persistence failure rolls back in-memory settings state', async () => {
 
 test('a persistence failure during sync preserves last-known-good channels', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS } },
     });
     harness.services.rebuildViews();
     const beforeChannels = harness.state.get().config.channels;
     const beforeCached = harness.state.get().cachedM3u8;
-    harness.configStore.write = () => { throw new Error('disk full'); };
+    harness.configStore.write = () => {
+        throw new Error('disk full');
+    };
 
     await withServer(harness, async (base) => {
         const res = await postJson(base, '/api/fetch-channels', { ...BASE_CONFIG });
@@ -431,12 +447,17 @@ test('a persistence failure during sync preserves last-known-good channels', asy
 
 test('a persistence failure during import-config rolls back state', async () => {
     const harness = createHarness({
-        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: {} } }
+        state: { configured: true, config: { ...BASE_CONFIG, channels: CHANNELS, mapping: {} } },
     });
-    harness.configStore.write = () => { throw new Error('disk full'); };
+    harness.configStore.write = () => {
+        throw new Error('disk full');
+    };
 
     await withServer(harness, async (base) => {
-        const res = await postJson(base, '/api/import-config', { config: { ...BASE_CONFIG, ip: '192.168.1.99' }, mapping: { A: 1 } });
+        const res = await postJson(base, '/api/import-config', {
+            config: { ...BASE_CONFIG, ip: '192.168.1.99' },
+            mapping: { A: 1 },
+        });
         assert.equal(res.status, 500);
         assert.equal(harness.state.get().config.ip, BASE_CONFIG.ip);
         assert.deepEqual(harness.state.get().config.mapping, {});

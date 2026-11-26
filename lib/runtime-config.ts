@@ -39,7 +39,11 @@ export interface RuntimeConfig {
     warnings: string[];
 }
 
-export function intFromEnv(raw: unknown, fallback: number, options: { min?: number; max?: number; name?: string; warnings?: string[] } = {}): number {
+export function intFromEnv(
+    raw: unknown,
+    fallback: number,
+    options: { min?: number; max?: number; name?: string; warnings?: string[] } = {},
+): number {
     const { min = Number.MIN_SAFE_INTEGER, max = Number.MAX_SAFE_INTEGER, name = 'value', warnings = [] } = options;
     if (raw === undefined || raw === null || String(raw).trim() === '') return fallback;
     const text = String(raw).trim();
@@ -56,7 +60,11 @@ export function intFromEnv(raw: unknown, fallback: number, options: { min?: numb
 }
 
 function booleanFromEnv(raw: unknown): boolean {
-    return String(raw || '').trim().toLowerCase() === 'true';
+    return (
+        String(raw || '')
+            .trim()
+            .toLowerCase() === 'true'
+    );
 }
 
 export function parseTrustProxy(raw: unknown, warnings: string[] = []): number | boolean | string {
@@ -66,7 +74,10 @@ export function parseTrustProxy(raw: unknown, warnings: string[] = []): number |
     if (/^\d+$/.test(text)) return parseInt(text, 10);
     if (text === 'true') return true;
     if (text === 'false') return false;
-    const parts = text.split(',').map((p) => p.trim()).filter(Boolean);
+    const parts = text
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean);
     const valid = parts.length > 0 && parts.every((part) => TRUST_PROXY_TOKENS.has(part) || net.isIP(part) !== 0);
     if (valid) return text;
     warnings.push(`TRUST_PROXY "${text}" is not a valid hop count, subnet or named range - using false.`);
@@ -76,17 +87,37 @@ export function parseTrustProxy(raw: unknown, warnings: string[] = []): number |
 export function loadRuntimeConfig(env: Record<string, string | undefined> = process.env): RuntimeConfig {
     const warnings: string[] = [];
     const port = intFromEnv(env.PORT, DEFAULT_PORT, { min: 1, max: 65535, name: 'PORT', warnings });
-    const requestTimeoutMs = intFromEnv(env.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, { min: 500, max: 120000, name: 'REQUEST_TIMEOUT_MS', warnings });
-    const maxResponseBytes = intFromEnv(env.MAX_RESPONSE_BYTES, DEFAULT_MAX_RESPONSE_BYTES, { min: 64 * 1024, max: 32 * 1024 * 1024, name: 'MAX_RESPONSE_BYTES', warnings });
-    const rawShutdown = intFromEnv(env.SHUTDOWN_TIMEOUT_MS, DEFAULT_SHUTDOWN_TIMEOUT_MS, { min: 1000, max: 300000, name: 'SHUTDOWN_TIMEOUT_MS', warnings });
+    const requestTimeoutMs = intFromEnv(env.REQUEST_TIMEOUT_MS, DEFAULT_REQUEST_TIMEOUT_MS, {
+        min: 500,
+        max: 120000,
+        name: 'REQUEST_TIMEOUT_MS',
+        warnings,
+    });
+    const maxResponseBytes = intFromEnv(env.MAX_RESPONSE_BYTES, DEFAULT_MAX_RESPONSE_BYTES, {
+        min: 64 * 1024,
+        max: 32 * 1024 * 1024,
+        name: 'MAX_RESPONSE_BYTES',
+        warnings,
+    });
+    const rawShutdown = intFromEnv(env.SHUTDOWN_TIMEOUT_MS, DEFAULT_SHUTDOWN_TIMEOUT_MS, {
+        min: 1000,
+        max: 300000,
+        name: 'SHUTDOWN_TIMEOUT_MS',
+        warnings,
+    });
     const shutdownTimeoutMs = Math.max(rawShutdown, requestTimeoutMs * 3 + 1000);
 
     const dataDir = env.DATA_DIR ? path.resolve(env.DATA_DIR) : path.join(process.cwd(), 'data');
     const adminUser = (env.ADMIN_USER || '').trim();
     const adminPassword = (env.ADMIN_PASSWORD || '').trim();
-    if (adminUser && !adminPassword) warnings.push('Only one of ADMIN_USER / ADMIN_PASSWORD is set - protected routes will answer 503.');
-    if (!adminUser && adminPassword) warnings.push('Only one of ADMIN_USER / ADMIN_PASSWORD is set - protected routes will answer 503.');
-    if (!adminUser && !adminPassword) warnings.push('No ADMIN_USER/ADMIN_PASSWORD set - the UI and API are unauthenticated. Do not expose this service to the internet.');
+    if (adminUser && !adminPassword)
+        warnings.push('Only one of ADMIN_USER / ADMIN_PASSWORD is set - protected routes will answer 503.');
+    if (!adminUser && adminPassword)
+        warnings.push('Only one of ADMIN_USER / ADMIN_PASSWORD is set - protected routes will answer 503.');
+    if (!adminUser && !adminPassword)
+        warnings.push(
+            'No ADMIN_USER/ADMIN_PASSWORD set - the UI and API are unauthenticated. Do not expose this service to the internet.',
+        );
 
     const trustProxy = parseTrustProxy(env.TRUST_PROXY, warnings);
 
@@ -118,6 +149,6 @@ export function loadRuntimeConfig(env: Record<string, string | undefined> = proc
         apiRateWindowMs: 60 * 1000,
         apiRateMax: 60,
         maxRateEntries: 5000,
-        warnings
+        warnings,
     };
 }

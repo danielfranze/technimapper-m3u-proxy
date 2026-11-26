@@ -1,125 +1,125 @@
 name: Release
 
 on:
-  push:
-    tags: ['v*.*.*']
+    push:
+        tags: ["v*.*.*"]
 
 env:
-  IMAGE: ghcr.io/danielfranze/technimapper-m3u-proxy
+    IMAGE: ghcr.io/danielfranze/technimapper-m3u-proxy
 
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  release:
-    name: Build, publish and sign image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-      id-token: write   # keyless image signing with cosign (OIDC)
-    steps:
-      - uses: actions/checkout@v7
+    release:
+        name: Build, publish and sign image
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+            id-token: write # keyless image signing with cosign (OIDC)
+        steps:
+            - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 26
-          cache: npm
+            - uses: actions/setup-node@v7
+              with:
+                  node-version: 26
+                  cache: npm
 
-      - name: Verify tag matches package.json version
-        run: |
-          PKG="v$(node -p "require('./package.json').version")"
-          if [ "$PKG" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match package.json version $PKG"
-            exit 1
-          fi
+            - name: Verify tag matches package.json version
+              run: |
+                  PKG="v$(node -p "require('./package.json').version")"
+                  if [ "$PKG" != "$GITHUB_REF_NAME" ]; then
+                    echo "Tag $GITHUB_REF_NAME does not match package.json version $PKG"
+                    exit 1
+                  fi
 
-      - name: Verify CHANGELOG.md has an entry for this version
-        run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          bash .github/scripts/release-notes.sh "$VERSION" > /tmp/notes.md
-          if [ ! -s /tmp/notes.md ]; then
-            echo "CHANGELOG.md has no section '## [$VERSION]'"
-            exit 1
-          fi
+            - name: Verify CHANGELOG.md has an entry for this version
+              run: |
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  bash .github/scripts/release-notes.sh "$VERSION" > /tmp/notes.md
+                  if [ ! -s /tmp/notes.md ]; then
+                    echo "CHANGELOG.md has no section '## [$VERSION]'"
+                    exit 1
+                  fi
 
-      - run: npm ci
-      - run: npm run check
-      - run: npm run check:frontend
-      - run: npm run check:tests
-      - run: npm test
-      - run: npm audit --omit=dev --audit-level=high
+            - run: npm ci
+            - run: npm run check
+            - run: npm run check:frontend
+            - run: npm run check:tests
+            - run: npm test
+            - run: npm audit --omit=dev --audit-level=high
 
-      - uses: docker/setup-qemu-action@v4
-      - uses: docker/setup-buildx-action@v4
+            - uses: docker/setup-qemu-action@v4
+            - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - uses: docker/login-action@v4
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Image metadata (tags & OCI labels)
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.IMAGE }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref_name, '-') }}
-            type=semver,pattern={{major}},enable=${{ !contains(github.ref_name, '-') }}
-            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+            - name: Image metadata (tags & OCI labels)
+              id: meta
+              uses: docker/metadata-action@v6
+              with:
+                  images: ${{ env.IMAGE }}
+                  tags: |
+                      type=semver,pattern={{version}}
+                      type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref_name, '-') }}
+                      type=semver,pattern={{major}},enable=${{ !contains(github.ref_name, '-') }}
+                      type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
 
-      - name: Build & push (multi-arch, SBOM, provenance)
-        id: build
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          sbom: true
-          provenance: mode=max
-          no-cache: true
+            - name: Build & push (multi-arch, SBOM, provenance)
+              id: build
+              uses: docker/build-push-action@v7
+              with:
+                  context: .
+                  platforms: linux/amd64,linux/arm64
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  sbom: true
+                  provenance: mode=max
+                  no-cache: true
 
-      - uses: sigstore/cosign-installer@v4.1.3
+            - uses: sigstore/cosign-installer@v4.1.3
 
-      - name: Sign image (keyless)
-        run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
+            - name: Sign image (keyless)
+              run: cosign sign --yes "${IMAGE}@${{ steps.build.outputs.digest }}"
 
-  github-release:
-    name: Create GitHub release
-    needs: release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write   # only this job may create releases
-    steps:
-      - uses: actions/checkout@v7
+    github-release:
+        name: Create GitHub release
+        needs: release
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write # only this job may create releases
+        steps:
+            - uses: actions/checkout@v7
 
-      - name: Create or update the release from CHANGELOG.md
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
-          bash .github/scripts/release-notes.sh "$VERSION" > release-notes.md
-          {
-            echo
-            echo "## Docker image"
-            echo
-            echo '```bash'
-            echo "docker pull ${IMAGE}:${VERSION}"
-            echo '```'
-          } >> release-notes.md
+            - name: Create or update the release from CHANGELOG.md
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  set -euo pipefail
+                  VERSION="${GITHUB_REF_NAME#v}"
+                  bash .github/scripts/release-notes.sh "$VERSION" > release-notes.md
+                  {
+                    echo
+                    echo "## Docker image"
+                    echo
+                    echo '```bash'
+                    echo "docker pull ${IMAGE}:${VERSION}"
+                    echo '```'
+                  } >> release-notes.md
 
-          FLAGS=()
-          if [[ "$VERSION" == *-* ]]; then FLAGS+=(--prerelease); fi
+                  FLAGS=()
+                  if [[ "$VERSION" == *-* ]]; then FLAGS+=(--prerelease); fi
 
-          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-              --title "TechniMapper $GITHUB_REF_NAME" --notes-file release-notes.md "${FLAGS[@]}"
-          else
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag \
-              --title "TechniMapper $GITHUB_REF_NAME" --notes-file release-notes.md "${FLAGS[@]}"
-          fi
+                  if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+                    gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+                      --title "TechniMapper $GITHUB_REF_NAME" --notes-file release-notes.md "${FLAGS[@]}"
+                  else
+                    gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag \
+                      --title "TechniMapper $GITHUB_REF_NAME" --notes-file release-notes.md "${FLAGS[@]}"
+                  fi

@@ -2,29 +2,37 @@
  * Typed API client for the backend.
  *
  * Every endpoint wrapper documents its response shape, so the presenter gets
- * checked field access without a build step.
+ * checked field access.
  */
 
-import type { Mapping, DuplicateGroup } from './lib/model.js';
+import type { components } from './api.generated.js';
+import type { DuplicateGroup, Mapping } from './lib/model.js';
+
+/** Schemas generated from `docs/openapi.yaml` by `npm run types:openapi`. */
+export type OpenApiSchemas = components['schemas'];
 
 export interface JsonResult<T> {
     ok: boolean;
     res: Response;
     data: T;
+    /** Populated when `!ok`: a message from the backend (`error`/`message`) or `HTTP <status>`. */
+    error?: string;
 }
 
-export interface ConfigResponse {
-    version: string;
-    ip: string;
-    port: string;
-    cronExpression: string;
-    selectedListName: string;
-    lastSync: string | null;
-    lastError: string | null;
-    lastErrorAt: string | null;
-    consecutiveFailures: number;
-    hdhrEnabled: boolean;
+/** Uniform error for a failed `fetch` (network error, etc.). HTTP errors use `ok=false`, not a throw. */
+export class ApiError extends Error {
+    readonly status: number;
+    readonly data: unknown;
+    constructor(message: string, status: number, data: unknown) {
+        super(message);
+        this.name = 'ApiError';
+        this.status = status;
+        this.data = data;
+    }
 }
+
+/** `GET /api/config` – generated `GetConfig` schema. */
+export type ConfigResponse = OpenApiSchemas['GetConfig'];
 
 export interface SettingsPayload {
     ip: string;
@@ -38,14 +46,8 @@ export interface SaveSettingsResponse extends SettingsPayload {
     error?: string;
 }
 
-export interface FetchChannelsResponse {
-    channels: string[];
-    availableLists: string[];
-    selectedListName: string;
-    mapping: Mapping;
-    detectedModel: string;
-    error?: string;
-}
+/** `POST /api/fetch-channels` – generated `FetchChannelsResult`, plus `error` for a graceful backend message. */
+export type FetchChannelsResponse = OpenApiSchemas['FetchChannelsResult'] & { error?: string };
 
 export interface SaveMappingResponse {
     success: boolean;
@@ -63,27 +65,49 @@ export interface ImportConfigResponse {
 }
 
 // Backend origin for all API calls.
-export const BACKEND_URL: string =
-    (typeof window !== 'undefined' && window.location) ? window.location.origin : '';
+export const BACKEND_URL: string = typeof window !== 'undefined' && window.location ? window.location.origin : '';
 
 function parseJson(res: Response): Promise<unknown> {
     return res.json().catch(() => ({}));
 }
 
+/** Extracts a human-readable message from an error response body. */
+function errorFrom(data: unknown, res: Response): string {
+    if (data && typeof data === 'object') {
+        const body = data as { error?: unknown; message?: unknown };
+        if (typeof body.error === 'string' && body.error) return body.error;
+        if (typeof body.message === 'string' && body.message) return body.message;
+    }
+    const statusText = res.statusText ? ` ${res.statusText}` : '';
+    return `HTTP ${res.status}${statusText}`;
+}
+
 export async function postJson<T>(path: string, body: unknown): Promise<JsonResult<T>> {
-    const res = await fetch(BACKEND_URL + path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
+    let res: Response;
+    try {
+        res = await fetch(BACKEND_URL + path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+        });
+    } catch (err) {
+        throw new ApiError(`POST ${path} failed: ${err instanceof Error ? err.message : String(err)}`, 0, null);
+    }
     const data = await parseJson(res);
-    return { ok: res.ok, res, data: data as T };
+    const error = res.ok ? undefined : errorFrom(data, res);
+    return { ok: res.ok, res, data: data as T, ...(error ? { error } : {}) };
 }
 
 export async function getJson<T>(path: string): Promise<JsonResult<T>> {
-    const res = await fetch(BACKEND_URL + path);
+    let res: Response;
+    try {
+        res = await fetch(BACKEND_URL + path);
+    } catch (err) {
+        throw new ApiError(`GET ${path} failed: ${err instanceof Error ? err.message : String(err)}`, 0, null);
+    }
     const data = await parseJson(res);
-    return { ok: res.ok, res, data: data as T };
+    const error = res.ok ? undefined : errorFrom(data, res);
+    return { ok: res.ok, res, data: data as T, ...(error ? { error } : {}) };
 }
 
 export async function getConfig(): Promise<JsonResult<ConfigResponse>> {

@@ -1,9 +1,7 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { loadRuntimeConfig, parseTrustProxy, intFromEnv } from '../dist/lib/runtime-config.js';
+import test from 'node:test';
+import { intFromEnv, loadRuntimeConfig, parseTrustProxy } from '../dist/lib/runtime-config.js';
 
 test('runtime config uses safe defaults and warns about missing authentication', () => {
     const config = loadRuntimeConfig({});
@@ -14,7 +12,7 @@ test('runtime config uses safe defaults and warns about missing authentication',
     assert.equal(config.adminUser, '');
     assert.equal(config.adminPassword, '');
     assert.equal(config.hsts, false);
-    assert.ok(config.warnings.some(w => /unauthenticated/.test(w)));
+    assert.ok(config.warnings.some((w) => /unauthenticated/.test(w)));
     assert.equal(config.configFile, path.join(config.dataDir, 'mapping.json'));
 });
 
@@ -53,12 +51,12 @@ test('admin credentials and HSTS are read from the environment', () => {
     assert.equal(config.adminUser, 'admin');
     assert.equal(config.adminPassword, 'secret');
     assert.equal(config.hsts, true);
-    assert.ok(!config.warnings.some(w => /Only one of|unauthenticated/.test(w)));
+    assert.ok(!config.warnings.some((w) => /Only one of|unauthenticated/.test(w)));
 });
 
 test('only one admin credential produces a fail-closed warning', () => {
     const config = loadRuntimeConfig({ ADMIN_USER: 'admin' });
-    assert.ok(config.warnings.some(w => /Only one of ADMIN_USER/.test(w)));
+    assert.ok(config.warnings.some((w) => /Only one of ADMIN_USER/.test(w)));
 });
 
 test('runtime config handles empty numeric values and comma-separated trust proxies', () => {

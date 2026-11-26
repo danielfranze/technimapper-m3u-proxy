@@ -1,5 +1,5 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import { model } from '../frontend/lib/model.ts';
 import { autoFillFromName, updateId } from '../frontend/lib/presenter.ts';
 
@@ -17,14 +17,35 @@ const ui: UiModel = model as unknown as UiModel;
 
 function fakeEl(): Record<string, unknown> {
     return {
-        id: '', hidden: false, textContent: '', innerText: '', innerHTML: '', className: '', style: {},
-        setAttribute() {}, appendChild() {}, append() {}, remove() {}, removeEventListener() {},
-        classList: { add() {}, remove() {}, toggle() {}, contains: () => false }, value: '', disabled: false,
-        querySelector: () => null, querySelectorAll: () => [], focus() {},
+        id: '',
+        hidden: false,
+        textContent: '',
+        innerText: '',
+        innerHTML: '',
+        className: '',
+        style: {},
+        setAttribute() {},
+        appendChild() {},
+        append() {},
+        remove() {},
+        removeEventListener() {},
+        classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+        value: '',
+        disabled: false,
+        querySelector: () => null,
+        querySelectorAll: () => [],
+        focus() {},
     };
 }
 
-Object.assign(globalThis, { document: { querySelectorAll: () => [], querySelector: () => null, getElementById: () => fakeEl(), createElement: () => fakeEl() } });
+Object.assign(globalThis, {
+    document: {
+        querySelectorAll: () => [],
+        querySelector: () => null,
+        getElementById: () => fakeEl(),
+        createElement: () => fakeEl(),
+    },
+});
 (globalThis as Record<string, unknown>).showToast = () => undefined;
 
 function resetModel() {

@@ -1,7 +1,5 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import http from 'http';
 import { createSoapReceiver, escapeXml } from '../dist/lib/receiver.js';
 
@@ -18,7 +16,10 @@ function startServer(handler: http.RequestListener): Promise<{ server: http.Serv
 }
 
 function stopServer(server: http.Server): Promise<void> {
-    return new Promise(resolve => { if (typeof server.closeAllConnections === "function") server.closeAllConnections(); server.close(() => resolve()); });
+    return new Promise((resolve) => {
+        if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
+        server.close(() => resolve());
+    });
 }
 
 function soapResponse(resultInner: string): string {
@@ -90,7 +91,11 @@ test('S2 SOAP flow is detected as S2', async () => {
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 1000,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         const result = await receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' });
         receiver.close();
 
@@ -98,7 +103,10 @@ test('S2 SOAP flow is detected as S2', async () => {
         assert.equal(result.selectedListName, 'TV-Liste');
         assert.deepEqual(result.availableLists, ['TV-Liste']);
         assert.equal(result.channels.length, 2);
-        assert.deepEqual(result.channels.map((channel: { name: string }) => channel.name), ['Das Erste HD', 'ZDF HD']);
+        assert.deepEqual(
+            result.channels.map((channel: { name: string }) => channel.name),
+            ['Das Erste HD', 'ZDF HD'],
+        );
     } finally {
         await stopServer(server);
     }
@@ -164,14 +172,21 @@ test('S1 SOAP flow is detected as S1 via the Astra-TV-Liste container', async ()
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 1000,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         const result = await receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' });
         receiver.close();
 
         assert.equal(result.detectedModel, 'S1');
         assert.equal(result.selectedListName, 'TV-Liste');
         assert.equal(result.channels.length, 2);
-        assert.deepEqual(result.channels.map((channel: { name: string }) => channel.name), ['Das Erste HD', 'ZDF HD']);
+        assert.deepEqual(
+            result.channels.map((channel: { name: string }) => channel.name),
+            ['Das Erste HD', 'ZDF HD'],
+        );
         assert.deepEqual(result.availableLists, ['Astra-TV-Liste', 'TV-Liste']);
     } finally {
         await stopServer(server);
@@ -213,7 +228,11 @@ test('an unknown S-series container structure falls back to S_SERIES', async () 
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 1000,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         const result = await receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'Foo' });
         receiver.close();
 

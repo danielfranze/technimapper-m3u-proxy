@@ -1,19 +1,17 @@
-'use strict';
-
 /**
  * Shared AppDeps interface for `createApp` + `lib/app/wiring.ts`.
  */
 
-import type { Server } from 'http';
 import type { Express } from 'express';
-import { createLogger } from '../logger.js';
-import { type RuntimeConfig } from '../runtime-config.js';
-import { type Receiver } from '../receiver.js';
-import { createValidation, type ValidatedSettings } from '../validation.js';
+import type { Server } from 'http';
+import type { ConfigStore } from '../config-store.js';
+import type { HdhrConfig } from '../hdhr.js';
+import type { createLogger } from '../logger.js';
+import type { Receiver } from '../receiver.js';
+import type { RuntimeConfig } from '../runtime-config.js';
+import type { StateStore } from '../state-store.js';
 import type { SyncCoordinator } from '../sync-coordinator.js';
-import { type ConfigStore } from '../config-store.js';
-import { type StateStore } from '../state-store.js';
-import { type HdhrConfig } from '../hdhr.js';
+import type { createValidation, ValidatedSettings } from '../validation.js';
 
 type Logger = ReturnType<typeof createLogger>;
 type AppRuntime = RuntimeConfig;
@@ -54,7 +52,13 @@ export interface RouteContext {
     version: string;
     hdhrConfig: NonNullable<AppDeps['hdhrConfig']>;
     hdhrModule: typeof import('../hdhr.js');
-    metrics: { httpRequests: number; httpErrors: number; syncRuns: number; syncFailures: number; syncDurationMs: number };
+    metrics: {
+        httpRequests: number;
+        httpErrors: number;
+        syncRuns: number;
+        syncFailures: number;
+        syncDurationMs: number;
+    };
     syncCoordinator: SyncCoordinator;
     currentSettings: () => ValidatedSettings;
     mergeSettings: (overrides: Record<string, unknown> | null) => ValidatedSettings;
@@ -73,5 +77,4 @@ export interface RouteContext {
 }
 
 /** Express server handle (used by lib/shutdown). */
-export type { Express, Server };
-export type { HdhrConfig, SyncCoordinator, CronHandle, CronScheduler, Logger, AppRuntime, Receiver };
+export type { AppRuntime, CronHandle, CronScheduler, Express, HdhrConfig, Logger, Receiver, Server, SyncCoordinator };

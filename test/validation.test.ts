@@ -1,16 +1,19 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HttpError, createValidation, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } from '../dist/lib/validation.js';
+import test from 'node:test';
+import {
+    createValidation,
+    findDuplicateGroups,
+    findDuplicateIds,
+    HttpError,
+    partitionMapping,
+    sortMapping,
+} from '../dist/lib/validation.js';
 
 // Simple stand-in for node-cron's validate(): five whitespace-separated fields.
 const fakeCron = (s: unknown): boolean => typeof s === 'string' && s.trim().split(/\s+/).length === 5;
 
 const strict = createValidation({ cronValidate: fakeCron });
 const permissive = createValidation({ cronValidate: fakeCron, allowNonPrivateIp: true });
-
-
 
 test('isAllowedReceiverIp accepts private IPv4 ranges', () => {
     for (const ip of ['192.168.178.28', '10.0.0.1', '172.16.0.1', '172.31.255.254']) {
@@ -19,8 +22,21 @@ test('isAllowedReceiverIp accepts private IPv4 ranges', () => {
 });
 
 test('isAllowedReceiverIp rejects loopback, link-local, multicast, public and malformed values', () => {
-    for (const ip of ['127.0.0.1', '0.0.0.0', '169.254.169.254', '224.0.0.1', '8.8.8.8', '172.32.0.1',
-        '999.1.1.1', '192.168.1', 'localhost', '', null, undefined, 42]) {
+    for (const ip of [
+        '127.0.0.1',
+        '0.0.0.0',
+        '169.254.169.254',
+        '224.0.0.1',
+        '8.8.8.8',
+        '172.32.0.1',
+        '999.1.1.1',
+        '192.168.1',
+        'localhost',
+        '',
+        null,
+        undefined,
+        42,
+    ]) {
         assert.equal(strict.isAllowedReceiverIp(ip as unknown), false, String(ip));
     }
 });
@@ -33,24 +49,46 @@ test('allowNonPrivateIp permits public/CGNAT ranges but never loopback or metada
 });
 
 test('validateSettings normalises valid input', () => {
-    const out = strict.validateSettings({ ip: ' 192.168.1.10 ', port: 9100, cronExpression: '*/5 * * * *', selectedListName: ' TV-Liste ' });
-    assert.deepEqual(out, { ip: '192.168.1.10', port: '9100', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' });
+    const out = strict.validateSettings({
+        ip: ' 192.168.1.10 ',
+        port: 9100,
+        cronExpression: '*/5 * * * *',
+        selectedListName: ' TV-Liste ',
+    });
+    assert.deepEqual(out, {
+        ip: '192.168.1.10',
+        port: '9100',
+        cronExpression: '*/5 * * * *',
+        selectedListName: 'TV-Liste',
+    });
 });
 
 test('validateSettings rejects bad ports', () => {
     for (const port of ['0', '65536', '70000', 'abc', '', '12.5', '-1']) {
         assert.throws(
-            () => strict.validateSettings({ ip: '192.168.1.10', port, cronExpression: '* * * * *', selectedListName: 'x' }),
+            () =>
+                strict.validateSettings({
+                    ip: '192.168.1.10',
+                    port,
+                    cronExpression: '* * * * *',
+                    selectedListName: 'x',
+                }),
             (e: unknown) => e instanceof HttpError && e.status === 400 && /port/i.test(e.message),
-            `port ${port}`
+            `port ${port}`,
         );
     }
 });
 
 test('validateSettings rejects the port number used as cron expression (regression)', () => {
     assert.throws(
-        () => strict.validateSettings({ ip: '192.168.1.10', port: '9100', cronExpression: '9100', selectedListName: 'x' }),
-        (e: unknown) => e instanceof HttpError && /cron/i.test(e.message) && e.message.includes('9100')
+        () =>
+            strict.validateSettings({
+                ip: '192.168.1.10',
+                port: '9100',
+                cronExpression: '9100',
+                selectedListName: 'x',
+            }),
+        (e: unknown) => e instanceof HttpError && /cron/i.test(e.message) && e.message.includes('9100'),
     );
 });
 
@@ -62,14 +100,28 @@ test('validateSettings rejects empty or oversized list names and bad IPs', () =>
 });
 
 test('validateMapping keeps valid IDs and drops empty values', () => {
-    const { mapping, invalid } = strict.validateMapping({ 'Das Erste': 1, ZDF: '2', RTL: '', Sat1: null, 'ts-ch': 'ts-ch5' });
+    const { mapping, invalid } = strict.validateMapping({
+        'Das Erste': 1,
+        ZDF: '2',
+        RTL: '',
+        Sat1: null,
+        'ts-ch': 'ts-ch5',
+    });
     assert.deepEqual(mapping, { 'Das Erste': 1, ZDF: '2', 'ts-ch': 'ts-ch5' });
     assert.deepEqual(invalid, []);
 });
 
 test('validateMapping flags unusable IDs', () => {
     const { mapping, invalid } = strict.validateMapping({
-        A: 'has space', B: 'quo"te', C: 'line\nbreak', D: -1, E: 1.5, F: 'x'.repeat(33), G: {}, H: [], OK: 7
+        A: 'has space',
+        B: 'quo"te',
+        C: 'line\nbreak',
+        D: -1,
+        E: 1.5,
+        F: 'x'.repeat(33),
+        G: {},
+        H: [],
+        OK: 7,
     });
     assert.deepEqual(mapping, { OK: 7 });
     assert.deepEqual(invalid.sort(), ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
@@ -92,10 +144,17 @@ test('findDuplicateIds reports IDs used more than once, comparing numbers and st
 });
 
 test('findDuplicateGroups names the channels that share an ID', () => {
-    const groups = findDuplicateGroups({ 'Das Erste HD': 1, 'Das Erste SD': '1', ZDF: 2, '3sat': 3, 'Drei': 3, 'Drei2': 3 });
+    const groups = findDuplicateGroups({
+        'Das Erste HD': 1,
+        'Das Erste SD': '1',
+        ZDF: 2,
+        '3sat': 3,
+        Drei: 3,
+        Drei2: 3,
+    });
     assert.deepEqual(groups, [
         { id: '1', channels: ['Das Erste HD', 'Das Erste SD'] },
-        { id: '3', channels: ['3sat', 'Drei', 'Drei2'] }
+        { id: '3', channels: ['3sat', 'Drei', 'Drei2'] },
     ]);
     assert.deepEqual(findDuplicateGroups({ A: 1, B: 2 }), []);
 });
@@ -105,8 +164,8 @@ test('partitionMapping separates stale entries so they do not cause false duplic
     const { active, orphans } = partitionMapping(mapping, ['001 Das Erste HD', '002 ZDF HD']);
     assert.deepEqual(active, { '001 Das Erste HD': 1, '002 ZDF HD': 2 });
     assert.deepEqual(orphans, ['ATV', 'FOX']);
-    assert.deepEqual(findDuplicateGroups(active), []);        // no false positive
-    assert.equal(findDuplicateGroups(mapping).length, 2);     // the old behaviour would have reported both
+    assert.deepEqual(findDuplicateGroups(active), []); // no false positive
+    assert.equal(findDuplicateGroups(mapping).length, 2); // the old behaviour would have reported both
 });
 
 test('partitionMapping treats nothing as stale while the channel list is unknown', () => {
@@ -119,8 +178,8 @@ test('sortMapping orders entries like the channel list and keeps stale entries i
     const mapping = { '004 SAT.1': 4, 'ZZ old': 99, '003 RTL': 3, 'AA old': 98, '001 Das Erste HD': 1 };
     const sorted = sortMapping(mapping, ['001 Das Erste HD', '002 ZDF HD', '003 RTL', '004 SAT.1']);
     assert.deepEqual(Object.keys(sorted), ['001 Das Erste HD', '003 RTL', '004 SAT.1', 'ZZ old', 'AA old']);
-    assert.deepEqual(sorted, mapping);                                    // same content, only the order differs
-    assert.deepEqual(Object.keys(mapping)[0], '004 SAT.1');               // input is not mutated
+    assert.deepEqual(sorted, mapping); // same content, only the order differs
+    assert.deepEqual(Object.keys(mapping)[0], '004 SAT.1'); // input is not mutated
 });
 
 test('sortMapping is idempotent and keeps the order while the channel list is unknown', () => {
@@ -138,6 +197,9 @@ test('sortMapping copes with duplicate channel names and prototype-like names', 
 test('validateSettings rejects non-object payloads', () => {
     const strictLocal = createValidation({ cronValidate: () => true });
     for (const bad of [null, undefined, 42, 'x', [1, 2]]) {
-        assert.throws(() => strictLocal.validateSettings(bad), (e: unknown) => e instanceof HttpError && e.status === 400);
+        assert.throws(
+            () => strictLocal.validateSettings(bad),
+            (e: unknown) => e instanceof HttpError && e.status === 400,
+        );
     }
 });

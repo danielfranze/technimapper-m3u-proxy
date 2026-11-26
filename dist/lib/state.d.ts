@@ -69,4 +69,4 @@ declare function applyPersistedState(state: AppState, parsed: unknown, deps: App
     changed: boolean;
     droppedMapping: number;
 };
-export { createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };
+export { applyPersistedState, createState, persistedSnapshot, repairPersistedSettings };

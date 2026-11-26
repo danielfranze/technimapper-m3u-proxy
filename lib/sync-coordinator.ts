@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Serialises sync work and applies backoff after failures.
  *
@@ -28,7 +26,7 @@ function createSyncCoordinator({
     maxQueue = 4,
     backoffBaseMs = 5000,
     backoffMaxMs = 300000,
-    now = Date.now
+    now = Date.now,
 }: {
     maxQueue?: number;
     backoffBaseMs?: number;
@@ -61,7 +59,9 @@ function createSyncCoordinator({
             if (!active && queue.length === 0) {
                 const waiters = idleWaiters;
                 idleWaiters = [];
-                waiters.forEach(resolve => resolve());
+                waiters.forEach((resolve) => {
+                    resolve();
+                });
             }
         }
     }
@@ -101,16 +101,22 @@ function createSyncCoordinator({
         nextAllowedAt = 0;
         const waiters = idleWaiters;
         idleWaiters = [];
-        waiters.forEach(resolve => resolve());
+        waiters.forEach((resolve) => {
+            resolve();
+        });
         // Reject any work that was queued but never ran, so callers do not hang.
-        queued.forEach(item => {
-            try { item.reject(new Error('Sync coordinator reset')); } catch { /* ignore */ }
+        queued.forEach((item) => {
+            try {
+                item.reject(new Error('Sync coordinator reset'));
+            } catch {
+                /* ignore */
+            }
         });
     }
 
     function waitForIdle(): Promise<void> {
         if (!active && queue.length === 0) return Promise.resolve();
-        return new Promise<void>(resolve => {
+        return new Promise<void>((resolve) => {
             idleWaiters.push(resolve);
         });
     }
@@ -121,9 +127,15 @@ function createSyncCoordinator({
         clearBackoff,
         reset,
         waitForIdle,
-        get active() { return active; },
-        get queueLength() { return queue.length; },
-        get consecutiveFailures() { return consecutiveFailures; }
+        get active() {
+            return active;
+        },
+        get queueLength() {
+            return queue.length;
+        },
+        get consecutiveFailures() {
+            return consecutiveFailures;
+        },
     };
 }
 

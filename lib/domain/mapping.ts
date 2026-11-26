@@ -25,7 +25,8 @@ function validateMapping(input: unknown): { mapping: Mapping; invalid: string[] 
             invalid.push(name);
             continue;
         }
-        const isValidNumber = typeof value === 'number' && Number.isInteger(value) && Number.isSafeInteger(value) && value >= 0;
+        const isValidNumber =
+            typeof value === 'number' && Number.isInteger(value) && Number.isSafeInteger(value) && value >= 0;
         const isValidString = typeof value === 'string' && ID_REGEX.test(value);
         if (isValidNumber && String(value).length <= 32) mapping[name] = value;
         else if (isValidString) mapping[name] = value;
@@ -90,7 +91,7 @@ function sortMapping(mapping: Mapping, channelNames: string[]): Mapping {
         const value = mapping[name];
         if (value !== undefined && Object.hasOwn(mapping, name) && !Object.hasOwn(sorted, name)) sorted[name] = value;
     }
-    const rest = Object.keys(mapping).filter(name => !Object.hasOwn(sorted, name));
+    const rest = Object.keys(mapping).filter((name) => !Object.hasOwn(sorted, name));
     // Unknown/stale entries keep their current (insertion) order instead of being
     // re-sorted alphabetically, so the user's manual ordering is preserved.
     for (const name of rest) {
@@ -100,4 +101,4 @@ function sortMapping(mapping: Mapping, channelNames: string[]): Mapping {
     return sorted;
 }
 
-export { validateMapping, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping };
+export { findDuplicateGroups, findDuplicateIds, partitionMapping, sortMapping, validateMapping };

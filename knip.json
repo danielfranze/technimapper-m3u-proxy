@@ -1,0 +1,23 @@
+{
+    "$schema": "https://unpkg.com/knip@latest/schema.json",
+    "entry": [
+        "server.ts",
+        "public/app/js/main.js",
+        "frontend/main.ts",
+        "scripts/*.ts",
+        "scripts/*.js",
+        "test/*.test.ts",
+        "test-helpers/*.ts",
+        "e2e/*.spec.ts",
+        "e2e/*.ts"
+    ],
+    "project": ["**/*.{ts,js}", "!dist/**", "!public/app/js/**", "!node_modules/**"],
+    "ignore": ["**/*.d.ts", "frontend/api.generated.d.ts", "dist/**", "public/app/js/**", "**/__fixtures__/**"],
+    "ignoreExportsUsedInFile": false,
+    "ignoreDependencies": [],
+    "rules": {
+        "exports": "warn",
+        "types": "warn",
+        "duplicates": "warn"
+    }
+}

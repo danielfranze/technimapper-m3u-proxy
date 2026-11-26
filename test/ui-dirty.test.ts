@@ -1,5 +1,5 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import { model } from '../frontend/lib/model.ts';
 
 type UiModel = {
@@ -26,7 +26,29 @@ function resetModel() {
 }
 
 function fakeEl() {
-    return { id: '', hidden: false, textContent: '', innerText: '', innerHTML: '', className: '', style: {}, setAttribute() {}, appendChild() {}, append() {}, remove() {}, classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } }, value: '', disabled: false };
+    return {
+        id: '',
+        hidden: false,
+        textContent: '',
+        innerText: '',
+        innerHTML: '',
+        className: '',
+        style: {},
+        setAttribute() {},
+        appendChild() {},
+        append() {},
+        remove() {},
+        classList: {
+            add() {},
+            remove() {},
+            toggle() {},
+            contains() {
+                return false;
+            },
+        },
+        value: '',
+        disabled: false,
+    };
 }
 
 // Minimal document stub so model/view logic can run headless.

@@ -1,7 +1,7 @@
-import { defineConfig, devices } from '@playwright/test';
+import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import fs from 'node:fs';
+import { defineConfig, devices } from '@playwright/test';
 
 const E2E_DATA_DIR = path.join(os.tmpdir(), 'technimapper-e2e-mock');
 fs.mkdirSync(E2E_DATA_DIR, { recursive: true });
@@ -18,13 +18,13 @@ export default defineConfig({
     outputDir: path.join(os.tmpdir(), 'technimapper-playwright-results'),
     use: {
         baseURL: 'http://127.0.0.1:9191',
-        trace: 'on-first-retry'
+        trace: 'on-first-retry',
     },
     projects: [
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] }
-        }
+            use: { ...devices['Desktop Chrome'] },
+        },
     ],
     webServer: {
         command: 'npm start',
@@ -35,7 +35,7 @@ export default defineConfig({
             LOG_LEVEL: 'warn',
             DATA_DIR: E2E_DATA_DIR,
             ALLOW_NON_PRIVATE_IP: 'true',
-            ALLOW_LOOPBACK_RECEIVER: 'true'
-        }
-    }
+            ALLOW_LOOPBACK_RECEIVER: 'true',
+        },
+    },
 });

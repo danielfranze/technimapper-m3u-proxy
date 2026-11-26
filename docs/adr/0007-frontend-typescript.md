@@ -42,11 +42,11 @@ Constraints:
    `npm run check:frontend` runs it with `--noEmit`; `npm run build:frontend`
    emits.
 4. **Build is split, not replaced.**
-   - `build:backend` → `tsc -p tsconfig.json` (today's `npm run build`)
-   - `build:frontend` → `tsc -p tsconfig.frontend.json`
-   - `build` → both, in that order
-   - `check` stays backend-only; `check:frontend` stays separate so CI can
-     label failures precisely.
+    - `build:backend` → `tsc -p tsconfig.json` (today's `npm run build`)
+    - `build:frontend` → `tsc -p tsconfig.frontend.json`
+    - `build` → both, in that order
+    - `check` stays backend-only; `check:frontend` stays separate so CI can
+      label failures precisely.
 5. **Keep `frontend/lib/dom.ts`.** The helpers are not a JSDoc workaround; they
    are the explicit DOM contract (`byId` fails fast, `maybeInputById` returns
    `null`, `queryAll` returns a real array). They translate 1:1 to TypeScript.
@@ -99,9 +99,8 @@ public/fonts/        # unchanged
 Convert one module per commit, without behaviour changes:
 
 1. `dom.ts` – pure signatures, no logic changes.
-2. `model.ts` – `Mapping`, `Channel`, `Filter`, `CopySource`,
-   `DuplicateGroup`, `Model` as exported types; `localStorage` access stays
-   guarded.
+2. `model.ts` – `Mapping`, `Filter`, `CopySource`, `DuplicateGroup`,
+   `Model` as exported types; `localStorage` access stays guarded.
 3. `api.ts` – `ConfigResponse`, `SaveSettingsResponse`, `FetchChannelsResponse`,
    `SaveMappingResponse`, `ImportConfigResponse`; generic `postJson<T>` /
    `getJson<T>`; `JSON.parse` stays `unknown` behind the typed wrapper.

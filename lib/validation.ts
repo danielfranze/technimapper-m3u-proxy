@@ -5,17 +5,25 @@
  */
 
 import { isAllowedReceiverIp } from './domain/ids.js';
-import { validateSettings, type SettingsDeps, type ValidatedSettings } from './domain/settings.js';
 import { validateMapping } from './domain/mapping.js';
+import { type SettingsDeps, type ValidatedSettings, validateSettings } from './domain/settings.js';
 
-export {
-    HttpError
-} from './http-error.js';
 export { ID_REGEX, isAllowedReceiverIp } from './domain/ids.js';
-export { validateSettings, type ValidatedSettings } from './domain/settings.js';
-export { validateMapping, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } from './domain/mapping.js';
+export {
+    findDuplicateGroups,
+    findDuplicateIds,
+    partitionMapping,
+    sortMapping,
+    validateMapping,
+} from './domain/mapping.js';
+export { type ValidatedSettings, validateSettings } from './domain/settings.js';
+export { HttpError } from './http-error.js';
 
-function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopback = false }: {
+function createValidation({
+    cronValidate,
+    allowNonPrivateIp = false,
+    allowLoopback = false,
+}: {
     cronValidate: (expr: string) => boolean;
     allowNonPrivateIp?: boolean;
     allowLoopback?: boolean;
@@ -26,9 +34,9 @@ function createValidation({ cronValidate, allowNonPrivateIp = false, allowLoopba
 } {
     const deps: SettingsDeps = { cronValidate, allowNonPrivateIp, allowLoopback };
     return {
-        isAllowedReceiverIp: ip => isAllowedReceiverIp(ip, { allowNonPrivateIp, allowLoopback }),
-        validateSettings: raw => validateSettings(raw, deps),
-        validateMapping
+        isAllowedReceiverIp: (ip) => isAllowedReceiverIp(ip, { allowNonPrivateIp, allowLoopback }),
+        validateSettings: (raw) => validateSettings(raw, deps),
+        validateMapping,
     };
 }
 

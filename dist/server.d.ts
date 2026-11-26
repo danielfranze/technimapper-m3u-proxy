@@ -32,4 +32,4 @@
  */
 declare const APP_VERSION: string;
 declare function main(): Promise<void>;
-export { main, APP_VERSION };
+export { APP_VERSION, main };

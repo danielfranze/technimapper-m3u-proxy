@@ -36,7 +36,7 @@ export function query(selector: string): HTMLElement | null {
 }
 
 export function queryAll(selector: string): HTMLElement[] {
-    return Array.from(document.querySelectorAll(selector), element => element as HTMLElement);
+    return Array.from(document.querySelectorAll(selector), (element) => element as HTMLElement);
 }
 
 export function eventTarget(event: Event): Element | null {

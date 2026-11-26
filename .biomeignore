@@ -1,0 +1,8 @@
+node_modules/
+dist/
+public/app/js/
+test-results/
+playwright-report/
+coverage/
+*.map
+frontend/api.generated.d.ts

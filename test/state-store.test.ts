@@ -1,7 +1,5 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import { createStateStore } from '../dist/lib/state-store.js';
 
 test('state store commits immutable snapshots', () => {
@@ -14,15 +12,22 @@ test('state store commits immutable snapshots', () => {
     assert.notEqual(first, second);
     assert.equal(first.count, 1);
     assert.equal(second.count, 2);
-    assert.throws(() => { first.count = 9; }, TypeError);
-    assert.throws(() => { second.nested.value = 9; }, TypeError);
+    assert.throws(() => {
+        first.count = 9;
+    }, TypeError);
+    assert.throws(() => {
+        second.nested.value = 9;
+    }, TypeError);
 });
 
 test('state store update clones before mutating', () => {
     const store = createStateStore({ items: [1, 2] });
     const before = store.get();
 
-    const after = store.update((draft: { items: number[] }) => { draft.items.push(3); draft.items[0] = 9; });
+    const after = store.update((draft: { items: number[] }) => {
+        draft.items.push(3);
+        draft.items[0] = 9;
+    });
 
     assert.deepEqual(before.items, [1, 2]);
     assert.deepEqual(after.items, [9, 2, 3]);

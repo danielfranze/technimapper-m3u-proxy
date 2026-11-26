@@ -1,18 +1,17 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import {
-    isPublicPath,
     createAuth,
-    createRateLimiter,
+    createErrorHandler,
     createFailureLimiter,
     createOriginGuard,
-    createErrorHandler
+    createRateLimiter,
+    isPublicPath,
 } from '../dist/lib/http-security.js';
 import { HttpError } from '../dist/lib/validation.js';
 
-const quietLogger: { warn(...args: unknown[]): void; info(...args: unknown[]): void; error(...args: unknown[]): void } = { warn() {}, info() {}, error() {} };
+const quietLogger: { warn(...args: unknown[]): void; info(...args: unknown[]): void; error(...args: unknown[]): void } =
+    { warn() {}, info() {}, error() {} };
 
 interface FakeRequest {
     method: string;
@@ -22,14 +21,26 @@ interface FakeRequest {
     get(name: string): string | undefined;
 }
 
-function fakeRequest({ method = 'GET', path = '/api/config', ip = '192.168.1.50', headers = {} as Record<string, string> }: { method?: string; path?: string; ip?: string; headers?: Record<string, string> } = {}): FakeRequest {
+function fakeRequest({
+    method = 'GET',
+    path = '/api/config',
+    ip = '192.168.1.50',
+    headers = {} as Record<string, string>,
+}: {
+    method?: string;
+    path?: string;
+    ip?: string;
+    headers?: Record<string, string>;
+} = {}): FakeRequest {
     const normalized = Object.fromEntries(Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]));
     return {
         method,
         path,
         ip,
         socket: { remoteAddress: ip },
-        get(name: string) { return normalized[String(name).toLowerCase()]; }
+        get(name: string) {
+            return normalized[String(name).toLowerCase()];
+        },
     };
 }
 
@@ -49,16 +60,31 @@ function fakeResponse(): FakeResponse {
         statusCode: 200,
         headers: {},
         body: undefined,
-        set(name: string, value: string) { this.headers[name] = value; return this; },
-        setHeader(name: string, value: string) { this.headers[name] = value; },
-        status(code: number) { this.statusCode = code; return this; },
-        json(payload: unknown) { this.body = payload; return this; },
-        send(payload: unknown) { this.body = payload; return this; }
+        set(name: string, value: string) {
+            this.headers[name] = value;
+            return this;
+        },
+        setHeader(name: string, value: string) {
+            this.headers[name] = value;
+        },
+        status(code: number) {
+            this.statusCode = code;
+            return this;
+        },
+        json(payload: unknown) {
+            this.body = payload;
+            return this;
+        },
+        send(payload: unknown) {
+            this.body = payload;
+            return this;
+        },
     };
     return response;
 }
 
-const basic = (user: string, password: string): string => `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
+const basic = (user: string, password: string): string =>
+    `Basic ${Buffer.from(`${user}:${password}`).toString('base64')}`;
 
 test('public paths are explicit and /hdhr is matched as a prefix', () => {
     const paths = ['/health', '/playlist.m3u8'];
@@ -75,20 +101,26 @@ test('Basic Auth protects non-public routes and accepts valid credentials', () =
 
     const publicRes = fakeResponse();
     let publicNext = false;
-    auth(fakeRequest({ path: '/health' }), publicRes, () => { publicNext = true; });
+    auth(fakeRequest({ path: '/health' }), publicRes, () => {
+        publicNext = true;
+    });
     assert.equal(publicNext, true);
     assert.equal(publicRes.statusCode, 200);
 
     const missingRes = fakeResponse();
     let missingNext = false;
-    auth(fakeRequest(), missingRes, () => { missingNext = true; });
+    auth(fakeRequest(), missingRes, () => {
+        missingNext = true;
+    });
     assert.equal(missingNext, false);
     assert.equal(missingRes.statusCode, 401);
     assert.match(String(missingRes.headers['WWW-Authenticate']), /Basic/);
 
     const okRes = fakeResponse();
     let okNext = false;
-    auth(fakeRequest({ headers: { authorization: basic('admin', 'secret') } }), okRes, () => { okNext = true; });
+    auth(fakeRequest({ headers: { authorization: basic('admin', 'secret') } }), okRes, () => {
+        okNext = true;
+    });
     assert.equal(okNext, true);
     assert.equal(okRes.statusCode, 200);
 });
@@ -97,14 +129,20 @@ test('a single configured credential fails closed with 503', () => {
     const auth = createAuth({ user: 'admin', password: '', publicPaths: ['/health'], logger: quietLogger });
     const res = fakeResponse();
     let next = false;
-    auth(fakeRequest(), res, () => { next = true; });
+    auth(fakeRequest(), res, () => {
+        next = true;
+    });
     assert.equal(next, false);
     assert.equal(res.statusCode, 503);
 });
 
 test('failed authentication is throttled before credentials are checked', () => {
     const auth = createAuth({
-        user: 'admin', password: 'secret', logger: quietLogger, failureMax: 2, failureWindowMs: 60000
+        user: 'admin',
+        password: 'secret',
+        logger: quietLogger,
+        failureMax: 2,
+        failureWindowMs: 60000,
     });
 
     for (let i = 0; i < 2; i++) {
@@ -115,7 +153,9 @@ test('failed authentication is throttled before credentials are checked', () => 
 
     const blocked = fakeResponse();
     let next = false;
-    auth(fakeRequest({ headers: { authorization: basic('admin', 'secret') } }), blocked, () => { next = true; });
+    auth(fakeRequest({ headers: { authorization: basic('admin', 'secret') } }), blocked, () => {
+        next = true;
+    });
     assert.equal(next, false);
     assert.equal(blocked.statusCode, 429);
     assert.ok(Number(blocked.headers['Retry-After']) >= 1);
@@ -127,9 +167,15 @@ test('rate limiter is bounded and returns 429 with Retry-After', () => {
 
     const first = fakeResponse();
     let next = 0;
-    limiter(fakeRequest(), first, () => { next++; });
-    limiter(fakeRequest(), first, () => { next++; });
-    limiter(fakeRequest(), first, () => { next++; });
+    limiter(fakeRequest(), first, () => {
+        next++;
+    });
+    limiter(fakeRequest(), first, () => {
+        next++;
+    });
+    limiter(fakeRequest(), first, () => {
+        next++;
+    });
     assert.equal(next, 2);
     assert.equal(first.statusCode, 429);
 
@@ -140,7 +186,9 @@ test('rate limiter is bounded and returns 429 with Retry-After', () => {
 
     now += 2000;
     const afterWindow = fakeResponse();
-    limiter(fakeRequest(), afterWindow, () => { next++; });
+    limiter(fakeRequest(), afterWindow, () => {
+        next++;
+    });
     assert.equal(afterWindow.statusCode, 200);
 });
 
@@ -159,44 +207,62 @@ test('origin guard requires JSON and a same-origin browser request', () => {
 
     const noJson = fakeResponse();
     let next = false;
-    guard(fakeRequest({ ...post, headers: { host: 'technimapper.local:9191' } }), noJson, () => { next = true; });
+    guard(fakeRequest({ ...post, headers: { host: 'technimapper.local:9191' } }), noJson, () => {
+        next = true;
+    });
     assert.equal(next, false);
     assert.equal(noJson.statusCode, 415);
 
     const crossOrigin = fakeResponse();
-    guard(fakeRequest({
-        ...post,
-        headers: {
-            host: 'technimapper.local:9191',
-            'content-type': 'application/json',
-            origin: 'http://evil.example'
-        }
-    }), crossOrigin, () => {});
+    guard(
+        fakeRequest({
+            ...post,
+            headers: {
+                host: 'technimapper.local:9191',
+                'content-type': 'application/json',
+                origin: 'http://evil.example',
+            },
+        }),
+        crossOrigin,
+        () => {},
+    );
     assert.equal(crossOrigin.statusCode, 403);
 
     const sameOrigin = fakeResponse();
     let sameOriginNext = false;
-    guard(fakeRequest({
-        ...post,
-        headers: {
-            host: 'technimapper.local:9191',
-            'content-type': 'application/json; charset=utf-8',
-            origin: 'http://technimapper.local:9191'
-        }
-    }), sameOrigin, () => { sameOriginNext = true; });
+    guard(
+        fakeRequest({
+            ...post,
+            headers: {
+                host: 'technimapper.local:9191',
+                'content-type': 'application/json; charset=utf-8',
+                origin: 'http://technimapper.local:9191',
+            },
+        }),
+        sameOrigin,
+        () => {
+            sameOriginNext = true;
+        },
+    );
     assert.equal(sameOriginNext, true);
 
     const noOrigin = fakeResponse();
     let noOriginNext = false;
-    guard(fakeRequest({
-        ...post,
-        headers: { host: 'technimapper.local:9191', 'content-type': 'application/json' }
-    }), noOrigin, () => { noOriginNext = true; });
+    guard(
+        fakeRequest({
+            ...post,
+            headers: { host: 'technimapper.local:9191', 'content-type': 'application/json' },
+        }),
+        noOrigin,
+        () => {
+            noOriginNext = true;
+        },
+    );
     assert.equal(noOriginNext, true);
 });
 
 test('failure limiter evicts the oldest entry when full', () => {
-    let now = 1000;
+    const now = 1000;
     const failures = createFailureLimiter({ windowMs: 1000, max: 1, maxEntries: 1, now: () => now });
     failures.fail('a');
     failures.fail('b');
@@ -208,14 +274,18 @@ test('failure limiter evicts the oldest entry when full', () => {
 test('origin guard rejects an invalid origin URL', () => {
     const guard = createOriginGuard();
     const res = fakeResponse();
-    guard(fakeRequest({
-        method: 'POST',
-        headers: {
-            host: 'technimapper.local:9191',
-            'content-type': 'application/json',
-            origin: 'not a url'
-        }
-    }), res, () => {});
+    guard(
+        fakeRequest({
+            method: 'POST',
+            headers: {
+                host: 'technimapper.local:9191',
+                'content-type': 'application/json',
+                origin: 'not a url',
+            },
+        }),
+        res,
+        () => {},
+    );
     assert.equal(res.statusCode, 403);
 });
 

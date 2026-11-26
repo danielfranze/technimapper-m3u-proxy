@@ -1,14 +1,12 @@
-'use strict';
-
+import { type AppDeps, createApp } from '../dist/lib/app.js';
+import type { ConfigStore } from '../dist/lib/config-store.js';
+import { createLogger } from '../dist/lib/logger.js';
+import type { Receiver } from '../dist/lib/receiver.js';
+import { createState } from '../dist/lib/state.js';
 import type { StateStore } from '../dist/lib/state-store.js';
 import { createStateStore } from '../dist/lib/state-store.js';
-import { createState } from '../dist/lib/state.js';
-import { createValidation } from '../dist/lib/validation.js';
-import { createLogger } from '../dist/lib/logger.js';
-import { createApp, type AppDeps } from '../dist/lib/app.js';
-import type { ConfigStore } from '../dist/lib/config-store.js';
-import type { Receiver } from '../dist/lib/receiver.js';
 import type { SyncCoordinator } from '../dist/lib/sync-coordinator.js';
+import { createValidation } from '../dist/lib/validation.js';
 
 const fakeCron = (value: string): boolean => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
 
@@ -30,7 +28,7 @@ function baseRuntime(overrides: Record<string, unknown> = {}): AppDeps['runtime'
         apiRateMax: 1000,
         maxRateEntries: 100,
         defaultCron: '*/5 * * * *',
-        ...overrides
+        ...overrides,
     } as unknown as AppDeps['runtime'];
 }
 
@@ -47,25 +45,42 @@ interface HarnessOptions {
 function createHarness(options: HarnessOptions = {}): {
     app: ReturnType<typeof createApp>['app'];
     services: ReturnType<typeof createApp>['services'];
-        state: StateStore;
+    state: StateStore;
     writes: unknown[];
     calls: Record<string, unknown>[];
     configStore: ConfigStore;
     scheduled: () => number;
     CHANNELS: { name: string; url: string }[];
 } {
-    const { state: stateOverrides, runtime: runtimeOverrides, fetchChannels, channels, syncCoordinator, hdhrEnabled, version } = options;
-    const CHANNELS = channels || [{ name: 'A', url: 'http://192.168.1.20/a' }, { name: 'B', url: 'http://192.168.1.20/b' }];
+    const {
+        state: stateOverrides,
+        runtime: runtimeOverrides,
+        fetchChannels,
+        channels,
+        syncCoordinator,
+        hdhrEnabled,
+        version,
+    } = options;
+    const CHANNELS = channels || [
+        { name: 'A', url: 'http://192.168.1.20/a' },
+        { name: 'B', url: 'http://192.168.1.20/b' },
+    ];
     const state = createStateStore(createState(stateOverrides));
     const writes: unknown[] = [];
     const calls: Record<string, unknown>[] = [];
     let scheduled = 0;
 
     const configStore: ConfigStore = {
-        async write(data) { writes.push(data); },
-        read() { return null; },
-        exists() { return false; },
-        ensureDataDir() {}
+        async write(data) {
+            writes.push(data);
+        },
+        read() {
+            return null;
+        },
+        exists() {
+            return false;
+        },
+        ensureDataDir() {},
     };
 
     const receiver = {
@@ -76,10 +91,10 @@ function createHarness(options: HarnessOptions = {}): {
                 channels: CHANNELS,
                 selectedListName: settings.selectedListName,
                 availableLists: ['TV-Liste', 'Radio'],
-                detectedModel: 'STC'
+                detectedModel: 'STC',
             };
         },
-        close() {}
+        close() {},
     } as unknown as Receiver;
 
     const cron = {
@@ -87,7 +102,7 @@ function createHarness(options: HarnessOptions = {}): {
         schedule() {
             scheduled++;
             return { stop() {}, destroy() {} };
-        }
+        },
     };
 
     const validation = createValidation({ cronValidate: fakeCron });
@@ -100,12 +115,17 @@ function createHarness(options: HarnessOptions = {}): {
         validation: { validateSettings: validation.validateSettings, validateMapping: validation.validateMapping },
         cron,
         version: version || '1.8.0-test',
-        hdhrConfig: { enabled: hdhrEnabled !== false, friendlyName: null, deviceId: '12345678', tunerCount: 2, warnings: [] },
-        syncCoordinator
+        hdhrConfig: {
+            enabled: hdhrEnabled !== false,
+            friendlyName: null,
+            deviceId: '12345678',
+            tunerCount: 2,
+            warnings: [],
+        },
+        syncCoordinator,
     });
 
     return { app, services, state, writes, calls, configStore, scheduled: () => scheduled, CHANNELS };
 }
 
-export { createHarness, baseRuntime, quietLogger, fakeCron };
-
+export { baseRuntime, createHarness, fakeCron, quietLogger };

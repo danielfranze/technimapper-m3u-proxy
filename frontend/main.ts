@@ -1,20 +1,56 @@
 /**
- * Frontend MVP – main.js: event wiring / bootstrap. Thin layer that connects
- * DOM events to `presenter.js` actions. Logic lives in model + presenter.
+ * Frontend MVP – main: event wiring / bootstrap. Thin layer that connects
+ * DOM events to `presenter` actions. Logic lives in model + presenter.
  */
 
-import { model } from './lib/model.js';
-import { removeStaleMappings, setFilter, autoFillFromName, updateId,
-    saveMapping, exportConfig, loadInitialConfig, updateSyncTime, fetchChannels,
-    chooseCopySource, chooseList, syncSearchInputs, handleImportFile } from './lib/presenter.js';
-import { openCopyMenu, closeCopyMenu, toggleCopyMenu, openListMenu, closeListMenu,
-    fitLayout, copySelectedUrl, listMenuItems } from './lib/view.js';
 import { byId, dialogById, eventTarget, maybeInputById, queryAll } from './lib/dom.js';
-import type { CopySource } from './lib/model.js';
+import { model } from './lib/model.js';
+import {
+    autoFillFromName,
+    chooseCopySource,
+    chooseList,
+    exportConfig,
+    fetchChannels,
+    handleImportFile,
+    loadInitialConfig,
+    removeStaleMappings,
+    saveMapping,
+    setFilter,
+    syncSearchInputs,
+    updateId,
+    updateSyncTime,
+} from './lib/presenter.js';
+import {
+    closeCopyMenu,
+    closeListMenu,
+    copySelectedUrl,
+    fitLayout,
+    listMenuItems,
+    openCopyMenu,
+    openListMenu,
+    toggleCopyMenu,
+} from './lib/view.js';
+
+/** Maps a keyboard key to a wrap-around dropdown index. `undefined` = not a movement key. */
+function dropdownMove(key: string, i: number, len: number): number | undefined {
+    if (len === 0) return undefined;
+    switch (key) {
+        case 'ArrowDown':
+            return (i + 1) % len;
+        case 'ArrowUp':
+            return (i - 1 + len) % len;
+        case 'Home':
+            return 0;
+        case 'End':
+            return len - 1;
+        default:
+            return undefined;
+    }
+}
 
 // Unsaved-changes dialog choices
-queryAll('#unsavedDialog [data-choice]').forEach(btn => {
-    btn.addEventListener('click', () => dialogById('unsavedDialog').close(btn.dataset.choice));
+queryAll('#unsavedDialog [data-choice]').forEach((btn) => {
+    btn.addEventListener('click', () => dialogById('unsavedDialog').close(btn.dataset['choice']));
 });
 
 window.addEventListener('beforeunload', (event) => {
@@ -28,10 +64,10 @@ window.addEventListener('beforeunload', (event) => {
 byId('copyToggle').addEventListener('click', toggleCopyMenu);
 byId('copyMenu').addEventListener('click', (event) => {
     const target = eventTarget(event);
-    const item = target?.closest('.dd-item');
+    const item = target?.closest<HTMLElement>('.dd-item');
     if (!item) return;
-    const source = (item as HTMLElement).dataset.source;
-    if (source === 'hdhr' || source === 'm3u8') chooseCopySource(source as CopySource);
+    const source = item.dataset['source'];
+    if (source === 'hdhr' || source === 'm3u8') chooseCopySource(source);
 });
 
 // ---- Channel list dropdown wiring ----
@@ -41,9 +77,9 @@ byId('listToggle').addEventListener('click', () => {
 });
 byId('listMenu').addEventListener('click', (event) => {
     const target = eventTarget(event);
-    const item = target?.closest('.dd-item');
+    const item = target?.closest<HTMLElement>('.dd-item');
     if (!item) return;
-    const value = (item as HTMLElement).dataset.value;
+    const value = item.dataset['value'];
     if (value) chooseList(value);
 });
 
@@ -66,13 +102,7 @@ byId('listMenu').addEventListener('click', (event) => {
         } else if (!menu.hidden && target?.classList.contains('dd-item')) {
             const items = listMenuItems();
             const i = items.indexOf(target as HTMLElement);
-            const moves: Record<string, number> = {
-                ArrowDown: (i + 1) % items.length,
-                ArrowUp: (i - 1 + items.length) % items.length,
-                Home: 0,
-                End: items.length - 1
-            };
-            const move = moves[event.key];
+            const move = dropdownMove(event.key, i, items.length);
             if (move !== undefined) {
                 event.preventDefault();
                 items[move]?.focus();
@@ -82,10 +112,12 @@ byId('listMenu').addEventListener('click', (event) => {
                 // type-ahead: jump to the next list that starts with the typed letters
                 clearTimeout(typedTimer ?? undefined);
                 typed += event.key.toLowerCase();
-                typedTimer = setTimeout(() => { typed = ''; }, 600);
+                typedTimer = setTimeout(() => {
+                    typed = '';
+                }, 600);
                 const start = typed.length === 1 ? i + 1 : i;
                 const ordered = [...items.slice(start), ...items.slice(0, start)];
-                const match = ordered.find(item => (item.dataset.value ?? '').toLowerCase().startsWith(typed));
+                const match = ordered.find((item) => (item.dataset['value'] ?? '').toLowerCase().startsWith(typed));
                 if (match) match.focus();
             }
         }
@@ -110,15 +142,9 @@ byId('listMenu').addEventListener('click', (event) => {
             event.preventDefault();
             if (menu.hidden) openCopyMenu();
         } else if (!menu.hidden && target?.classList.contains('dd-item')) {
-            const items = queryAll('#copyMenu .dd-item').filter(item => !item.hidden);
+            const items = queryAll('#copyMenu .dd-item').filter((item) => !item.hidden);
             const i = items.indexOf(target as HTMLElement);
-            const moves: Record<string, number> = {
-                ArrowDown: (i + 1) % items.length,
-                ArrowUp: (i - 1 + items.length) % items.length,
-                Home: 0,
-                End: items.length - 1
-            };
-            const move = moves[event.key];
+            const move = dropdownMove(event.key, i, items.length);
             if (move !== undefined) {
                 event.preventDefault();
                 items[move]?.focus();
@@ -133,28 +159,40 @@ byId('listMenu').addEventListener('click', (event) => {
     });
 })();
 
-// ---- Copy menu (cont.): outside-click wiring was added above ----
-
 // ---- Config form events ----
-queryAll('[data-action]').forEach(el => {
+queryAll('[data-action]').forEach((el) => {
     el.addEventListener('click', () => {
-        switch (el.dataset.action) {
-            case 'copy': copySelectedUrl(model.copySource); break;
-            case 'export': exportConfig(); break;
-            case 'import': byId('importFileInput').click(); break;
-            case 'fetch': fetchChannels(); break;
+        switch (el.dataset['action']) {
+            case 'copy':
+                copySelectedUrl(model.copySource);
+                break;
+            case 'export':
+                exportConfig();
+                break;
+            case 'import':
+                byId('importFileInput').click();
+                break;
+            case 'fetch':
+                fetchChannels();
+                break;
             case 'filter': {
-                const filter = el.dataset.filter;
-                if (filter === 'all' || filter === 'mapped' || filter === 'unmapped') setFilter(filter, el);
+                const filter = el.dataset['filter'];
+                if (filter === 'all' || filter === 'mapped' || filter === 'unmapped') setFilter(filter);
                 break;
             }
-            case 'autofill': autoFillFromName(); break;
-            case 'clean': removeStaleMappings(); break;
-            case 'save': saveMapping(); break;
+            case 'autofill':
+                autoFillFromName();
+                break;
+            case 'clean':
+                removeStaleMappings();
+                break;
+            case 'save':
+                saveMapping();
+                break;
         }
     });
 });
-queryAll('[data-action="search"]').forEach(el => {
+queryAll('[data-action="search"]').forEach((el) => {
     el.addEventListener('input', (event) => {
         const target = eventTarget(event) as HTMLInputElement | null;
         if (target) syncSearchInputs(target.value);
@@ -181,18 +219,20 @@ if (channelTableBody) {
     channelTableBody.addEventListener('change', (event) => {
         const target = eventTarget(event);
         const input = target?.closest('.id-input') as HTMLInputElement | null;
-        if (input && input.dataset.name !== undefined) {
-            updateId(input.dataset.name, input.value, Number(input.dataset.index));
+        if (input && input.dataset['name'] !== undefined) {
+            updateId(input.dataset['name'], input.value, Number(input.dataset['index']));
         }
     });
 }
 
 // ---- Init ----
-document.addEventListener('DOMContentLoaded', () => {
-    loadInitialConfig();
-    updateSyncTime();
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadInitialConfig();
+    await updateSyncTime();
     setInterval(updateSyncTime, 30000);
 });
 
-window.addEventListener('resize', () => { fitLayout(); });
+window.addEventListener('resize', () => {
+    fitLayout();
+});
 document.fonts.ready.then(fitLayout);

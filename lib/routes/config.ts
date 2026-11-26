@@ -1,11 +1,9 @@
-'use strict';
-
 import type { Express, NextFunction, Request, Response } from 'express';
-import { HttpError } from '../validation.js';
 import { errorMessage } from '../error-message.js';
-import type { ValidatedSettings } from '../validation.js';
-import type { StateStore, AppState } from '../state-store.js';
 import * as hdhrModule from '../hdhr.js';
+import type { AppState, StateStore } from '../state-store.js';
+import type { ValidatedSettings } from '../validation.js';
+import { HttpError } from '../validation.js';
 
 interface PerformSyncResult {
     channels: { name: string; url: string }[];
@@ -30,7 +28,12 @@ interface ConfigCtx {
     version: string;
     hdhrConfig: { enabled: boolean };
     logger: { error(...args: unknown[]): void };
-    performSync(candidate: { ip: string; port: string | number; selectedListName: string; cronExpression: string }): Promise<PerformSyncResult>;
+    performSync(candidate: {
+        ip: string;
+        port: string | number;
+        selectedListName: string;
+        cronExpression: string;
+    }): Promise<PerformSyncResult>;
     rebuildViews(): void;
 }
 
@@ -52,7 +55,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
         version,
         hdhrConfig,
         logger,
-        performSync
+        performSync,
     } = ctx;
     const { validateMapping } = validation;
 
@@ -68,14 +71,14 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
             lastError: snapshot.sync.lastError,
             lastErrorAt: snapshot.sync.lastErrorAt,
             consecutiveFailures: snapshot.sync.consecutiveFailures,
-            hdhrEnabled: hdhrConfig.enabled
+            hdhrEnabled: hdhrConfig.enabled,
         });
     });
 
     app.post('/api/save-settings', async (req: Request, res: Response) => {
         const settings = mergeSettings((req.body || {}) as Record<string, unknown>);
         const before = getState();
-        updateState(s => {
+        updateState((s) => {
             Object.assign(s.config, settings);
             s.configured = true;
         });
@@ -92,7 +95,10 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
 
     app.post('/api/fetch-channels', async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body as Record<string, unknown> : {};
+            const body =
+                req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+                    ? (req.body as Record<string, unknown>)
+                    : {};
             const candidate = mergeSettings(body);
 
             if (getState().configured && (body.ip !== undefined || body.port !== undefined)) {
@@ -102,7 +108,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
                 }
             }
 
-            const result = await syncCoordinator.request(() => performSync(candidate)) as PerformSyncResult;
+            const result = (await syncCoordinator.request(() => performSync(candidate))) as PerformSyncResult;
             if (result?.stale) {
                 throw HttpError.conflict('Receiver settings changed during sync. Please retry.');
             }
@@ -110,11 +116,11 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
 
             const snapshot = getState();
             res.json({
-                channels: snapshot.config.channels.map(channel => channel.name),
+                channels: snapshot.config.channels.map((channel) => channel.name),
                 availableLists: result.availableLists,
                 selectedListName: snapshot.config.selectedListName,
                 mapping: snapshot.config.mapping,
-                detectedModel: hdhrModule.modelLabel(result.detectedModel ?? null)
+                detectedModel: hdhrModule.modelLabel(result.detectedModel ?? null),
             });
         } catch (err) {
             if (err instanceof HttpError) return next(err);
@@ -130,24 +136,28 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
             version,
             exportedAt: new Date().toISOString(),
             config: currentSettings(),
-            mapping: snapshot.config.mapping || {}
+            mapping: snapshot.config.mapping || {},
         });
     });
 
     app.post('/api/import-config', async (req: Request, res: Response) => {
         const data = req.body as { config?: unknown; mapping?: unknown } | null | undefined;
-        if (!data || typeof data !== 'object' || Array.isArray(data)) throw HttpError.badRequest('Invalid JSON payload');
+        if (!data || typeof data !== 'object' || Array.isArray(data))
+            throw HttpError.badRequest('Invalid JSON payload');
 
         const settings = data.config ? mergeSettings(data.config as Record<string, unknown>) : null;
         let mapping: Record<string, string | number> | null = null;
         if (data.mapping !== undefined) {
             const checked = validateMapping(data.mapping);
-            if (checked.invalid.length) throw HttpError.badRequest(`Invalid channel ID in import for: ${checked.invalid.slice(0, 5).join(', ')}`);
+            if (checked.invalid.length)
+                throw HttpError.badRequest(
+                    `Invalid channel ID in import for: ${checked.invalid.slice(0, 5).join(', ')}`,
+                );
             mapping = checked.mapping;
         }
 
         const beforeImport = getState();
-        updateState(s => {
+        updateState((s) => {
             if (settings) Object.assign(s.config, settings);
             if (mapping) s.config.mapping = mapping;
             s.configured = true;

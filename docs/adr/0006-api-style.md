@@ -15,9 +15,9 @@ Fix the API style:
 
 1. **Base path for all API routes:** `/api/` (see `lib/routes/*.ts`).
 2. **HTTP methods:**
-   - `GET` – read-only, no side effects (`/health*`, `/api/config`, `/api/export-config`, `/hdhr/*`).
-   - `POST` – state-changing or sync operations (`/api/save-settings`, `/api/fetch-channels`, `/api/save-mapping`, `/api/import-config`).
-   - `PUT`/`DELETE` are currently **not used** – keep them that way unless a use case arrives.
+    - `GET` – read-only, no side effects (`/health*`, `/api/config`, `/api/export-config`, `/hdhr/*`).
+    - `POST` – state-changing or sync operations (`/api/save-settings`, `/api/fetch-channels`, `/api/save-mapping`, `/api/import-config`).
+    - `PUT`/`DELETE` are currently **not used** – keep them that way unless a use case arrives.
 3. **Status codes** are single-sourced per route (`HttpError` factories in
    `lib/http-error.ts`); new routes reuse the existing set:
    `400`, `401`, `404`, `409`, `413`, `429`, `500`, `502`, `503`.

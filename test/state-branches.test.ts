@@ -1,8 +1,6 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, applyPersistedState, persistedSnapshot, type AppState } from '../dist/lib/state.js';
+import test from 'node:test';
+import { type AppState, applyPersistedState, createState, persistedSnapshot } from '../dist/lib/state.js';
 import { createDeps } from '../test-helpers/state-deps.ts';
 
 test('applyPersistedState handles missing and invalid persisted fields', () => {
@@ -10,16 +8,27 @@ test('applyPersistedState handles missing and invalid persisted fields', () => {
     const logger = { warn: (...args: unknown[]) => warnings.push(args.join(' ')), info() {}, error() {} };
     const deps = createDeps(logger);
 
-    const state = createState({ config: { ip: '192.168.1.10', port: '9100', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' } as AppState['config'] });
-    const result = applyPersistedState(state, {
-        port: 9100,
-        cronExpression: 42,
-        selectedListName: null,
-        mapping: null,
-        channels: 'not an array',
-        detectedModel: 123,
-        lastSync: 42
-    }, deps);
+    const state = createState({
+        config: {
+            ip: '192.168.1.10',
+            port: '9100',
+            cronExpression: '*/5 * * * *',
+            selectedListName: 'TV-Liste',
+        } as AppState['config'],
+    });
+    const result = applyPersistedState(
+        state,
+        {
+            port: 9100,
+            cronExpression: 42,
+            selectedListName: null,
+            mapping: null,
+            channels: 'not an array',
+            detectedModel: 123,
+            lastSync: 42,
+        },
+        deps,
+    );
 
     assert.equal(state.config.port, '9100');
     assert.equal(state.config.cronExpression, '*/5 * * * *');
@@ -31,8 +40,22 @@ test('applyPersistedState handles missing and invalid persisted fields', () => {
 });
 
 test('persistedSnapshot clones mapping and channels', () => {
-    const state = createState({ config: { ip: '192.168.1.10', port: '9100', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste', mapping: { A: 1 }, channels: [{ name: 'A', url: 'http://x' }], lastSync: null, detectedModel: null } });
-    const snapshot = persistedSnapshot(state) as { mapping: Record<string, string | number>; channels: Array<{ name: string; url: string }> };
+    const state = createState({
+        config: {
+            ip: '192.168.1.10',
+            port: '9100',
+            cronExpression: '*/5 * * * *',
+            selectedListName: 'TV-Liste',
+            mapping: { A: 1 },
+            channels: [{ name: 'A', url: 'http://x' }],
+            lastSync: null,
+            detectedModel: null,
+        },
+    });
+    const snapshot = persistedSnapshot(state) as {
+        mapping: Record<string, string | number>;
+        channels: Array<{ name: string; url: string }>;
+    };
     snapshot.mapping.A = 2;
     const snapshotChannel = snapshot.channels[0];
     assert.ok(snapshotChannel);

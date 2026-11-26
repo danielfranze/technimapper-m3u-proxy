@@ -1,13 +1,11 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildM3u8, sanitizeM3u8Text, STREAM_URL_REGEX } from '../dist/lib/m3u8.js';
+import test from 'node:test';
+import { buildM3u8, STREAM_URL_REGEX, sanitizeM3u8Text } from '../dist/lib/m3u8.js';
 
 const channels: { name: string; url: string }[] = [
     { name: 'Das Erste HD', url: 'http://192.168.1.10:8080/stream/1' },
     { name: 'ZDF HD', url: 'http://192.168.1.10:8080/stream/2' },
-    { name: 'Unmapped', url: 'http://192.168.1.10:8080/stream/3' }
+    { name: 'Unmapped', url: 'http://192.168.1.10:8080/stream/3' },
 ];
 
 test('buildM3u8 emits header and entries only for mapped channels', () => {
@@ -18,7 +16,7 @@ test('buildM3u8 emits header and entries only for mapped channels', () => {
     assert.equal(lines.length, 5);
     assert.equal(
         lines[1],
-        '#EXTINF:-1 tvg-id="1" tvg-name="Das Erste HD" tvg-chno="1" cuid="1" group-title="TechniSat",Das Erste HD'
+        '#EXTINF:-1 tvg-id="1" tvg-name="Das Erste HD" tvg-chno="1" cuid="1" group-title="TechniSat",Das Erste HD',
     );
     assert.equal(lines[2], 'http://192.168.1.10:8080/stream/1');
     assert.match(lines[3] ?? '', /tvg-id="ts-ch2".*tvg-chno="2"/);
@@ -31,8 +29,10 @@ test('buildM3u8 returns count 0 when nothing is mapped (caller must answer 503)'
 });
 
 test('buildM3u8 cannot be tricked by line breaks or quotes in channel names', () => {
-    const evil: { name: string; url: string }[] = [{ name: 'Evil"\r\n#EXTINF:-1,Injected\nhttp://evil.example/x', url: 'http://192.168.1.10/s' }];
-    const { m3u8, count } = buildM3u8(evil, { [evil[0]!.name]: 9 });
+    const evil: { name: string; url: string }[] = [
+        { name: 'Evil"\r\n#EXTINF:-1,Injected\nhttp://evil.example/x', url: 'http://192.168.1.10/s' },
+    ];
+    const { m3u8, count } = buildM3u8(evil, { [evil[0]?.name ?? '']: 9 });
     assert.equal(count, 1);
     const lines = m3u8.trimEnd().split('\n');
     assert.equal(lines.length, 3); // header, one EXTINF, one URL - nothing injected
@@ -45,7 +45,7 @@ test('buildM3u8 skips channels with unsafe or non-http stream URLs', () => {
         { name: 'A', url: 'javascript:alert(1)' },
         { name: 'B', url: 'http://host/with space' },
         { name: 'C', url: 'http://host/ok\nhttp://evil/' },
-        { name: 'D', url: 'http://192.168.1.10/ok' }
+        { name: 'D', url: 'http://192.168.1.10/ok' },
     ];
     const { count, m3u8 } = buildM3u8(bad, { A: 1, B: 2, C: 3, D: 4 });
     assert.equal(count, 1);
@@ -53,7 +53,10 @@ test('buildM3u8 skips channels with unsafe or non-http stream URLs', () => {
 });
 
 test('buildM3u8 ignores inherited object properties (prototype keys)', () => {
-    const odd: { name: string; url: string }[] = [{ name: 'constructor', url: 'http://192.168.1.10/a' }, { name: '__proto__', url: 'http://192.168.1.10/b' }];
+    const odd: { name: string; url: string }[] = [
+        { name: 'constructor', url: 'http://192.168.1.10/a' },
+        { name: '__proto__', url: 'http://192.168.1.10/b' },
+    ];
     assert.equal(buildM3u8(odd, {}).count, 0);
 });
 

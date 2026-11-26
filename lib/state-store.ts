@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Immutable application state store.
  *
@@ -51,4 +49,4 @@ function createStateStore<T = AppState>(initial: T): StateStore<T> {
     return new StateStore<T>(initial);
 }
 
-export { deepFreeze, createStateStore };
+export { createStateStore, deepFreeze };

@@ -3,8 +3,8 @@
  *
  * Pure, no Express, no I/O – unit-testable in isolation.
  */
-import { isAllowedReceiverIp } from './ids.js';
 import { HttpError } from '../http-error.js';
+import { isAllowedReceiverIp } from './ids.js';
 /**
  * Validates a full settings object and returns a normalised copy. Throws HttpError(400).
  */
@@ -16,7 +16,7 @@ function validateSettings(raw, { cronValidate, allowNonPrivateIp, allowLoopback 
     const ip = String(input.ip ?? '').trim();
     if (!isAllowedReceiverIp(ip, {
         allowNonPrivateIp: allowNonPrivateIp === true,
-        allowLoopback: allowLoopback === true
+        allowLoopback: allowLoopback === true,
     })) {
         throw HttpError.badRequest('Invalid receiver IP. Use a private IPv4 address (10.x, 172.16-31.x, 192.168.x).');
     }

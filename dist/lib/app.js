@@ -1,16 +1,15 @@
-'use strict';
-import crypto from 'crypto';
-import express from 'express';
-import compression from 'compression';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import compression from 'compression';
+import crypto from 'crypto';
+import express from 'express';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-import * as hdhrModule from './hdhr.js';
 import { errorMessage } from './error-message.js';
-import { createSyncCoordinator } from './sync-coordinator.js';
-import { securityHeaders, createAuth, createRateLimiter, createOriginGuard } from './http-security.js';
-import { createSyncService } from './sync-service.js';
+import * as hdhrModule from './hdhr.js';
+import { createAuth, createOriginGuard, createRateLimiter, securityHeaders } from './http-security.js';
 import { registerAllRoutes } from './routes/index.js';
+import { createSyncCoordinator } from './sync-coordinator.js';
+import { createSyncService } from './sync-service.js';
 /**
  * HTTP application factory.
  *
@@ -18,18 +17,23 @@ import { registerAllRoutes } from './routes/index.js';
  * It never starts a listener, which is what makes integration tests possible:
  * tests can call it with fake receiver, persistence and cron implementations.
  */
-function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] }, publicDir = path.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep }) {
+function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] }, publicDir = path.join(__dirname, '..', 'public'), syncCoordinator: syncCoordinatorDep, }) {
     const state = stateDep;
     const { validateSettings, validateMapping } = validation;
-    const playlistPaths = runtime.playlistPaths ? [...runtime.playlistPaths] : ['/playlist.m3u8', '/playlist.m3u'];
-    const publicPaths = runtime.publicPaths ? [...runtime.publicPaths] : [...playlistPaths, '/health', '/health/live', '/health/ready'];
+    const playlistPaths = runtime.playlistPaths
+        ? [...runtime.playlistPaths]
+        : ['/playlist.m3u8', '/playlist.m3u'];
+    const publicPaths = runtime.publicPaths
+        ? [...runtime.publicPaths]
+        : [...playlistPaths, '/health', '/health/live', '/health/ready'];
     let cronTask = null;
     let shuttingDown = false;
-    const syncCoordinator = syncCoordinatorDep || createSyncCoordinator({
-        maxQueue: 4,
-        backoffBaseMs: 5000,
-        backoffMaxMs: 300000
-    });
+    const syncCoordinator = syncCoordinatorDep ||
+        createSyncCoordinator({
+            maxQueue: 4,
+            backoffBaseMs: 5000,
+            backoffMaxMs: 300000,
+        });
     const app = express();
     app.disable('x-powered-by');
     if (runtime.trustProxy !== false && runtime.trustProxy !== undefined) {
@@ -37,9 +41,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
     }
     // Request context: a stable ID for correlating logs and responses.
     app.use((req, res, next) => {
-        const requestId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        const requestId = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         req.requestId = requestId;
         res.setHeader('X-Request-Id', requestId);
         next();
@@ -52,7 +54,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
         publicPaths,
         failureWindowMs: runtime.authFailureWindowMs,
         failureMax: runtime.authFailureMax,
-        logger
+        logger,
     });
     app.use(auth);
     // State-changing API requests must be JSON and same-origin. This also blocks
@@ -62,7 +64,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
     const apiLimiter = createRateLimiter({
         windowMs: runtime.apiRateWindowMs,
         max: runtime.apiRateMax,
-        maxEntries: runtime.maxRateEntries
+        maxEntries: runtime.maxRateEntries,
     });
     app.use('/api', apiLimiter);
     app.use(express.static(publicDir, {
@@ -70,7 +72,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
             // Bundled fonts rarely change: let browsers cache them for a week.
             if (filePath.endsWith('.woff2'))
                 res.setHeader('Cache-Control', 'public, max-age=604800');
-        }
+        },
     }));
     const metrics = { httpRequests: 0, httpErrors: 0, syncRuns: 0, syncFailures: 0, syncDurationMs: 0 };
     app.use((req, res, next) => {
@@ -93,7 +95,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
         validation: { validateSettings, validateMapping },
         hdhrModule,
         logger,
-        metrics
+        metrics,
     });
     const { getState, updateState, currentSettings, mergeSettings, persistState, rebuildViews, performSync } = syncService;
     async function runScheduledSync() {
@@ -114,7 +116,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
                 ip: snapshot.config.ip,
                 port: snapshot.config.port,
                 cronExpression: snapshot.config.cronExpression,
-                selectedListName: snapshot.config.selectedListName
+                selectedListName: snapshot.config.selectedListName,
             });
         }
         catch (err) {
@@ -178,7 +180,7 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
         runScheduledSync,
         startBackgroundCron,
         stopBackgroundCron,
-        playlistPaths
+        playlistPaths,
     };
     registerAllRoutes(app, ctx);
     return {
@@ -197,8 +199,8 @@ function createApp({ runtime, logger, state: stateDep, configStore, receiver, va
             },
             dispose() {
                 stopBackgroundCron();
-            }
-        }
+            },
+        },
     };
 }
 export { createApp };

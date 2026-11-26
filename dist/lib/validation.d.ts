@@ -4,11 +4,11 @@
  * This is the public facade: the actual implementations live in `lib/domain/*`.
  */
 import { type ValidatedSettings } from './domain/settings.js';
-export { HttpError } from './http-error.js';
 export { ID_REGEX, isAllowedReceiverIp } from './domain/ids.js';
-export { validateSettings, type ValidatedSettings } from './domain/settings.js';
-export { validateMapping, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping } from './domain/mapping.js';
-declare function createValidation({ cronValidate, allowNonPrivateIp, allowLoopback }: {
+export { findDuplicateGroups, findDuplicateIds, partitionMapping, sortMapping, validateMapping, } from './domain/mapping.js';
+export { type ValidatedSettings, validateSettings } from './domain/settings.js';
+export { HttpError } from './http-error.js';
+declare function createValidation({ cronValidate, allowNonPrivateIp, allowLoopback, }: {
     cronValidate: (expr: string) => boolean;
     allowNonPrivateIp?: boolean;
     allowLoopback?: boolean;

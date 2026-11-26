@@ -1,4 +1,3 @@
-'use strict';
 /**
  * HTTP middleware factories: security headers, Basic Auth, CSRF/origin checks and
  * bounded in-memory rate limiting.
@@ -21,13 +20,13 @@ export function isPublicPath(requestPath, publicPaths = [], publicPrefixes = ['/
     const path = String(requestPath || '');
     if (publicPaths.includes(path))
         return true;
-    return publicPrefixes.some(prefix => path === prefix.slice(0, -1) || path.startsWith(prefix));
+    return publicPrefixes.some((prefix) => path === prefix.slice(0, -1) || path.startsWith(prefix));
 }
 /**
  * Bounded map of failed authentication attempts. Only failures are counted, so
  * a legitimate client is not locked out by successful requests.
  */
-export function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now }) {
+export function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now, }) {
     const entries = new Map();
     function prune(currentTime) {
         for (const [key, entry] of entries) {
@@ -72,7 +71,7 @@ export function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = D
  * else is protected as soon as both credentials are configured. If only one
  * credential is present, protected routes fail closed with 503.
  */
-export function createAuth({ user = '', password = '', publicPaths = [], publicPrefixes = ['/hdhr/'], failureWindowMs = 15 * 60 * 1000, failureMax = 20, logger = console, now = Date.now } = {}) {
+export function createAuth({ user = '', password = '', publicPaths = [], publicPrefixes = ['/hdhr/'], failureWindowMs = 15 * 60 * 1000, failureMax = 20, logger = console, now = Date.now, } = {}) {
     const hasUser = typeof user === 'string' && user.length > 0;
     const hasPassword = typeof password === 'string' && password.length > 0;
     const enabled = hasUser && hasPassword;
@@ -125,7 +124,7 @@ export function createAuth({ user = '', password = '', publicPaths = [], publicP
  * Bounded fixed-window limiter. The map never grows without limit; the oldest
  * entry is evicted when `maxEntries` is reached.
  */
-export function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, now = Date.now }) {
+export function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, now = Date.now, }) {
     const hits = new Map();
     function consume(identifier) {
         const currentTime = now();
@@ -201,7 +200,7 @@ export function createOriginGuard() {
  * Static security headers. `Cache-Control: no-store` is applied to API and health
  * responses so proxies and browsers never keep stale configuration or status.
  */
-export function securityHeaders({ hsts = false } = {}) {
+export function securityHeaders({ hsts = false, } = {}) {
     return (req, res, next) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
@@ -214,7 +213,10 @@ export function securityHeaders({ hsts = false } = {}) {
         if (hsts)
             res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
         const requestPath = String(req.path || '');
-        if (requestPath === '/api' || requestPath.startsWith('/api/') || requestPath === '/health' || requestPath.startsWith('/health/')) {
+        if (requestPath === '/api' ||
+            requestPath.startsWith('/api/') ||
+            requestPath === '/health' ||
+            requestPath.startsWith('/health/')) {
             res.setHeader('Cache-Control', 'no-store');
         }
         next();

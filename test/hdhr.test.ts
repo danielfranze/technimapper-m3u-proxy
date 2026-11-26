@@ -1,17 +1,24 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import {
-    DEFAULTS, LINEUP_STATUS, resolveConfig, modelLabel, sanitizeModel, defaultFriendlyName,
-    guideName, buildLineup, baseUrlFrom, discoverPayload, lineupPayload
+    baseUrlFrom,
+    buildLineup,
+    DEFAULTS,
+    defaultFriendlyName,
+    discoverPayload,
+    guideName,
+    LINEUP_STATUS,
+    lineupPayload,
+    modelLabel,
+    resolveConfig,
+    sanitizeModel,
 } from '../dist/lib/hdhr.js';
 
 const channels: { name: string; url: string }[] = [
     { name: '001 Das Erste HD', url: 'http://192.168.178.230:9100/disk/a.ts' },
     { name: '002 ZDF HD', url: 'http://192.168.178.230:9100/disk/b.ts' },
     { name: '3sat HD', url: 'http://192.168.178.230:9100/disk/c.ts' },
-    { name: '004 Unmapped', url: 'http://192.168.178.230:9100/disk/d.ts' }
+    { name: '004 Unmapped', url: 'http://192.168.178.230:9100/disk/d.ts' },
 ];
 
 test('guideName removes a leading channel number but keeps names that start with a digit', () => {
@@ -28,7 +35,7 @@ test('buildLineup lists only mapped channels, in receiver order, with the mapped
     assert.deepEqual(lineup, [
         { guideNumber: '1', guideName: 'Das Erste HD', url: 'http://192.168.178.230:9100/disk/a.ts' },
         { guideNumber: '2', guideName: 'ZDF HD', url: 'http://192.168.178.230:9100/disk/b.ts' },
-        { guideNumber: '3', guideName: '3sat HD', url: 'http://192.168.178.230:9100/disk/c.ts' }
+        { guideNumber: '3', guideName: '3sat HD', url: 'http://192.168.178.230:9100/disk/c.ts' },
     ]);
 });
 
@@ -41,9 +48,16 @@ test('buildLineup keeps stream URLs unambiguous: the first channel wins when an 
 });
 
 test('buildLineup skips unsafe stream URLs and prototype-like names', () => {
-    const odd: { name: string; url: string }[] = [{ name: 'constructor', url: 'http://192.168.1.1/a.ts' }, { name: 'Bad', url: 'javascript:alert(1)' }, { name: 'Ok', url: 'http://192.168.1.1/ok.ts' }];
+    const odd: { name: string; url: string }[] = [
+        { name: 'constructor', url: 'http://192.168.1.1/a.ts' },
+        { name: 'Bad', url: 'javascript:alert(1)' },
+        { name: 'Ok', url: 'http://192.168.1.1/ok.ts' },
+    ];
     const lineup = buildLineup(odd, { Bad: 1, Ok: 2 });
-    assert.deepEqual(lineup.map(e => e.guideName), ['Ok']);
+    assert.deepEqual(
+        lineup.map((e) => e.guideName),
+        ['Ok'],
+    );
     assert.deepEqual(buildLineup(odd, {}), []);
 });
 
@@ -52,7 +66,16 @@ test('baseUrlFrom accepts normal Host headers and rejects anything else', () => 
     assert.equal(baseUrlFrom('https', 'mapper.lan'), 'https://mapper.lan');
     assert.equal(baseUrlFrom('http', '[fe80::1]:3000'), 'http://[fe80::1]:3000');
     assert.equal(baseUrlFrom('ftp', 'host'), 'http://host');
-    for (const bad of ['evil.com/path', 'a b', 'host@evil.com', 'host:99999x', '', undefined, 'host\r\nX: y', '<script>']) {
+    for (const bad of [
+        'evil.com/path',
+        'a b',
+        'host@evil.com',
+        'host:99999x',
+        '',
+        undefined,
+        'host\r\nX: y',
+        '<script>',
+    ]) {
         assert.equal(baseUrlFrom('http', bad as string), null, String(bad));
     }
 });
@@ -73,7 +96,10 @@ test('the tuner name is built from the detected model unless a custom name is se
     assert.equal(discoverPayload('http://h', auto, 'DIGIT ISIO STC').FriendlyName, 'TechniSat DIGIT ISIO STC');
     assert.equal(discoverPayload('http://h', auto, 'DIGIT ISIO S/S1/S2').FriendlyName, 'TechniSat DIGIT ISIO S/S1/S2');
     assert.equal(discoverPayload('http://h', auto, null).FriendlyName, 'TechniSat');
-    assert.equal(discoverPayload('http://h', resolveConfig({ HDHR_FRIENDLY_NAME: 'Wohnzimmer' }), 'DIGIT ISIO STC').FriendlyName, 'Wohnzimmer');
+    assert.equal(
+        discoverPayload('http://h', resolveConfig({ HDHR_FRIENDLY_NAME: 'Wohnzimmer' }), 'DIGIT ISIO STC').FriendlyName,
+        'Wohnzimmer',
+    );
     assert.equal(defaultFriendlyName(undefined as unknown as string | null), 'TechniSat');
 });
 
@@ -90,7 +116,8 @@ test('modelLabel maps the discovered device type, sanitizeModel only accepts pla
     assert.equal(sanitizeModel('DIGIT ISIO STC'), 'DIGIT ISIO STC');
     assert.equal(sanitizeModel('  x\ny  '), 'x y');
     assert.equal(sanitizeModel('a'.repeat(100))?.length, 60);
-    for (const bad of [null, undefined, 42, {}, '', '   ']) assert.equal(sanitizeModel(bad as unknown), null, String(bad));
+    for (const bad of [null, undefined, 42, {}, '', '   '])
+        assert.equal(sanitizeModel(bad as unknown), null, String(bad));
 });
 
 test('lineup.json points every channel at the redirect endpoint below /hdhr/stream', () => {
@@ -104,11 +131,22 @@ test('lineup.json points every channel at the redirect endpoint below /hdhr/stre
 });
 
 test('lineup_status.json reports an idle tuner that cannot be scanned in progress', () => {
-    assert.deepEqual(JSON.parse(JSON.stringify(LINEUP_STATUS)), { ScanInProgress: 0, ScanPossible: 1, Source: 'Cable', SourceList: ['Cable'] });
+    assert.deepEqual(JSON.parse(JSON.stringify(LINEUP_STATUS)), {
+        ScanInProgress: 0,
+        ScanPossible: 1,
+        Source: 'Cable',
+        SourceList: ['Cable'],
+    });
 });
 
 test('resolveConfig applies defaults, accepts valid overrides and warns about invalid ones', () => {
-    assert.deepEqual(resolveConfig({}), { enabled: true, friendlyName: null, deviceId: DEFAULTS.deviceId, tunerCount: 2, warnings: [] });
+    assert.deepEqual(resolveConfig({}), {
+        enabled: true,
+        friendlyName: null,
+        deviceId: DEFAULTS.deviceId,
+        tunerCount: 2,
+        warnings: [],
+    });
     const ok = resolveConfig({ HDHR_ENABLED: 'false', HDHR_DEVICE_ID: 'abcdef12', HDHR_TUNER_COUNT: '3' });
     assert.deepEqual([ok.enabled, ok.deviceId, ok.tunerCount, ok.warnings.length], [false, 'ABCDEF12', 3, 0]);
     const bad = resolveConfig({ HDHR_DEVICE_ID: 'xyz', HDHR_TUNER_COUNT: '99' });
@@ -130,8 +168,11 @@ test('hdhr helpers cover remaining branches', () => {
     assert.ok(config.warnings.length >= 2);
 
     const lineup = buildLineup(
-        [{ name: 'A', url: 'http://192.168.1.20/a' }, { name: 'B', url: 'not a url' }],
-        { A: 1, B: 2, Missing: 3 }
+        [
+            { name: 'A', url: 'http://192.168.1.20/a' },
+            { name: 'B', url: 'not a url' },
+        ],
+        { A: 1, B: 2, Missing: 3 },
     );
     assert.deepEqual(lineup, [{ guideNumber: '1', guideName: 'A', url: 'http://192.168.1.20/a' }]);
 });

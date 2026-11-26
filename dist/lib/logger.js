@@ -28,7 +28,7 @@ export function defaultSink() {
     return {
         info: (...args) => console.log(...args),
         warn: (...args) => console.warn(...args),
-        error: (...args) => console.error(...args)
+        error: (...args) => console.error(...args),
     };
 }
 export function createLogger(options = {}) {
@@ -53,7 +53,7 @@ export function createLogger(options = {}) {
         format,
         info: (...args) => write('info', args),
         warn: (...args) => write('warn', args),
-        error: (...args) => write('error', args)
+        error: (...args) => write('error', args),
     };
 }
 export { LEVELS };

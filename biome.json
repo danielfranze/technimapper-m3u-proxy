@@ -1,0 +1,86 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.6.9/schema.json",
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true,
+        "defaultBranch": "main"
+    },
+    "files": {
+        "ignoreUnknown": true,
+        "includes": ["**/*.ts", "**/*.js", "**/*.json", "**/*.jsonc"]
+    },
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 120,
+        "formatWithErrors": false
+    },
+    "assist": {
+        "enabled": true,
+        "actions": {
+            "source": {
+                "organizeImports": "on"
+            }
+        }
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "preset": "recommended",
+            "correctness": {
+                "noUnusedVariables": "error",
+                "noUnusedImports": "error",
+                "noUndeclaredVariables": "error"
+            },
+            "suspicious": {
+                "noExplicitAny": "error",
+                "noConsole": "off",
+                "noFallthroughSwitchClause": "error"
+            },
+            "style": {
+                "noNonNullAssertion": "error",
+                "useConst": "error",
+                "useNodejsImportProtocol": "off"
+            },
+            "complexity": {
+                "noUselessTypeConstraint": "error",
+                "useLiteralKeys": "off"
+            }
+        }
+    },
+    "javascript": {
+        "formatter": {
+            "quoteStyle": "single",
+            "semicolons": "always",
+            "trailingCommas": "all",
+            "arrowParentheses": "always",
+            "bracketSpacing": true
+        }
+    },
+    "overrides": [
+        {
+            "includes": ["**/*.d.ts", "frontend/api.generated.d.ts", "dist/**", "public/app/js/**"],
+            "formatter": {
+                "enabled": false
+            },
+            "linter": {
+                "enabled": false
+            },
+            "assist": {
+                "enabled": false
+            }
+        },
+        {
+            "includes": ["lib/hdhr.ts", "lib/m3u8.ts", "scripts/coverage.js"],
+            "linter": {
+                "rules": {
+                    "suspicious": {
+                        "noControlCharactersInRegex": "off"
+                    }
+                }
+            }
+        }
+    ]
+}

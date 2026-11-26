@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * HTTP middleware factories: security headers, Basic Auth, CSRF/origin checks and
  * bounded in-memory rate limiting.
@@ -48,10 +46,14 @@ function safeEqual(a: string, b: string): boolean {
     return crypto.timingSafeEqual(ha, hb);
 }
 
-export function isPublicPath(requestPath: string | undefined, publicPaths: string[] = [], publicPrefixes: string[] = ['/hdhr/']): boolean {
+export function isPublicPath(
+    requestPath: string | undefined,
+    publicPaths: string[] = [],
+    publicPrefixes: string[] = ['/hdhr/'],
+): boolean {
     const path = String(requestPath || '');
     if (publicPaths.includes(path)) return true;
-    return publicPrefixes.some(prefix => path === prefix.slice(0, -1) || path.startsWith(prefix));
+    return publicPrefixes.some((prefix) => path === prefix.slice(0, -1) || path.startsWith(prefix));
 }
 
 interface FailureLimiterResult {
@@ -65,7 +67,12 @@ interface FailureLimiterResult {
  * Bounded map of failed authentication attempts. Only failures are counted, so
  * a legitimate client is not locked out by successful requests.
  */
-export function createFailureLimiter({ windowMs, max, maxEntries = 5000, now = Date.now }: {
+export function createFailureLimiter({
+    windowMs,
+    max,
+    maxEntries = 5000,
+    now = Date.now,
+}: {
     windowMs: number;
     max: number;
     maxEntries?: number;
@@ -132,7 +139,7 @@ export function createAuth({
     failureWindowMs = 15 * 60 * 1000,
     failureMax = 20,
     logger = console as AuthLogger,
-    now = Date.now
+    now = Date.now,
 }: {
     user?: string;
     password?: string;
@@ -209,7 +216,13 @@ interface RateLimitResult {
  * Bounded fixed-window limiter. The map never grows without limit; the oldest
  * entry is evicted when `maxEntries` is reached.
  */
-export function createRateLimiter({ windowMs, max, maxEntries = 5000, key = clientKey, now = Date.now }: {
+export function createRateLimiter({
+    windowMs,
+    max,
+    maxEntries = 5000,
+    key = clientKey,
+    now = Date.now,
+}: {
     windowMs: number;
     max: number;
     maxEntries?: number;
@@ -301,21 +314,32 @@ export function createOriginGuard(): (req: RequestLike, res: ResponseLike, next:
  * Static security headers. `Cache-Control: no-store` is applied to API and health
  * responses so proxies and browsers never keep stale configuration or status.
  */
-export function securityHeaders({ hsts = false }: { hsts?: boolean } = {}): (req: RequestLike, res: ResponseLike, next: NextLike) => void {
+export function securityHeaders({
+    hsts = false,
+}: {
+    hsts?: boolean;
+} = {}): (req: RequestLike, res: ResponseLike, next: NextLike) => void {
     return (req, res, next) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
         res.setHeader('Referrer-Policy', 'no-referrer');
         res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
-        res.setHeader('Content-Security-Policy',
+        res.setHeader(
+            'Content-Security-Policy',
             "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
-            "font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; " +
-            "frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+                "font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; " +
+                "frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+        );
         if (hsts) res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
 
         const requestPath = String(req.path || '');
-        if (requestPath === '/api' || requestPath.startsWith('/api/') || requestPath === '/health' || requestPath.startsWith('/health/')) {
+        if (
+            requestPath === '/api' ||
+            requestPath.startsWith('/api/') ||
+            requestPath === '/health' ||
+            requestPath.startsWith('/health/')
+        ) {
             res.setHeader('Cache-Control', 'no-store');
         }
         next();

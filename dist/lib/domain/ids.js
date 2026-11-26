@@ -4,7 +4,7 @@
 import net from 'net';
 // "." and ".." are valid in a character class but would be normalised by URL
 // parsing and could escape the /hdhr/stream/:id route.
-const ID_REGEX = /^(?!\.{1,2}$)[A-Za-z0-9_.\-]{1,32}$/;
+const ID_REGEX = /^(?!\.{1,2}$)[A-Za-z0-9_.-]{1,32}$/;
 /**
  * Receiver must be a valid IPv4; loopback/link-local/multicast are always rejected.
  */

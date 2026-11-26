@@ -1,10 +1,9 @@
-'use strict';
-
-import crypto from 'crypto';
-import express from 'express';
-import compression from 'compression';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import compression from 'compression';
+import crypto from 'crypto';
+import express from 'express';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 declare module 'express-serve-static-core' {
@@ -13,14 +12,15 @@ declare module 'express-serve-static-core' {
     }
 }
 
-import * as hdhrModule from './hdhr.js';
+import type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver, RouteContext } from './app/types.js';
+import type { ValidatedSettings } from './domain/settings.js';
 import { errorMessage } from './error-message.js';
+import * as hdhrModule from './hdhr.js';
+import { createAuth, createOriginGuard, createRateLimiter, securityHeaders } from './http-security.js';
+import { registerAllRoutes } from './routes/index.js';
 import type { StateStore } from './state-store.js';
 import { createSyncCoordinator } from './sync-coordinator.js';
-import { securityHeaders, createAuth, createRateLimiter, createOriginGuard } from './http-security.js';
 import { createSyncService } from './sync-service.js';
-import { registerAllRoutes } from './routes/index.js';
-import type { AppDeps, RouteContext, CronHandle, Receiver, AppRuntime, CronScheduler, Logger } from './app/types.js';
 
 /**
  * HTTP application factory.
@@ -41,24 +41,28 @@ function createApp({
     version,
     hdhrConfig = { enabled: false, friendlyName: null, deviceId: '00000000', tunerCount: 0, warnings: [] },
     publicDir = path.join(__dirname, '..', 'public'),
-    syncCoordinator: syncCoordinatorDep
+    syncCoordinator: syncCoordinatorDep,
 }: AppDeps) {
-
     const state: StateStore = stateDep;
 
     const { validateSettings, validateMapping } = validation;
-    const playlistPaths: string[] = runtime.playlistPaths ? [...runtime.playlistPaths] : ['/playlist.m3u8', '/playlist.m3u'];
-    const publicPaths: string[] = runtime.publicPaths ? [...runtime.publicPaths] : [...playlistPaths, '/health', '/health/live', '/health/ready'];
-
+    const playlistPaths: string[] = runtime.playlistPaths
+        ? [...runtime.playlistPaths]
+        : ['/playlist.m3u8', '/playlist.m3u'];
+    const publicPaths: string[] = runtime.publicPaths
+        ? [...runtime.publicPaths]
+        : [...playlistPaths, '/health', '/health/live', '/health/ready'];
 
     let cronTask: CronHandle = null;
     let shuttingDown = false;
 
-    const syncCoordinator = syncCoordinatorDep || createSyncCoordinator({
-        maxQueue: 4,
-        backoffBaseMs: 5000,
-        backoffMaxMs: 300000
-    });
+    const syncCoordinator =
+        syncCoordinatorDep ||
+        createSyncCoordinator({
+            maxQueue: 4,
+            backoffBaseMs: 5000,
+            backoffMaxMs: 300000,
+        });
 
     const app = express();
     app.disable('x-powered-by');
@@ -68,9 +72,7 @@ function createApp({
 
     // Request context: a stable ID for correlating logs and responses.
     app.use((req, res, next) => {
-        const requestId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        const requestId = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
         req.requestId = requestId;
         res.setHeader('X-Request-Id', requestId);
         next();
@@ -85,7 +87,7 @@ function createApp({
         publicPaths,
         failureWindowMs: runtime.authFailureWindowMs,
         failureMax: runtime.authFailureMax,
-        logger
+        logger,
     });
     app.use(auth);
 
@@ -97,16 +99,18 @@ function createApp({
     const apiLimiter = createRateLimiter({
         windowMs: runtime.apiRateWindowMs,
         max: runtime.apiRateMax,
-        maxEntries: runtime.maxRateEntries
+        maxEntries: runtime.maxRateEntries,
     });
     app.use('/api', apiLimiter);
 
-    app.use(express.static(publicDir, {
-        setHeaders: (res: express.Response, filePath: string) => {
-            // Bundled fonts rarely change: let browsers cache them for a week.
-            if (filePath.endsWith('.woff2')) res.setHeader('Cache-Control', 'public, max-age=604800');
-        }
-    }));
+    app.use(
+        express.static(publicDir, {
+            setHeaders: (res: express.Response, filePath: string) => {
+                // Bundled fonts rarely change: let browsers cache them for a week.
+                if (filePath.endsWith('.woff2')) res.setHeader('Cache-Control', 'public, max-age=604800');
+            },
+        }),
+    );
 
     const metrics = { httpRequests: 0, httpErrors: 0, syncRuns: 0, syncFailures: 0, syncDurationMs: 0 };
 
@@ -130,9 +134,10 @@ function createApp({
         validation: { validateSettings, validateMapping },
         hdhrModule,
         logger,
-        metrics
+        metrics,
     });
-    const { getState, updateState, currentSettings, mergeSettings, persistState, rebuildViews, performSync } = syncService;
+    const { getState, updateState, currentSettings, mergeSettings, persistState, rebuildViews, performSync } =
+        syncService;
 
     async function runScheduledSync() {
         if (shuttingDown) return;
@@ -146,14 +151,16 @@ function createApp({
         }
 
         const snapshot = getState();
-        let candidate;
+        let candidate: ValidatedSettings;
         try {
-            candidate = validateSettings(snapshot.config && {
-                ip: snapshot.config.ip,
-                port: snapshot.config.port,
-                cronExpression: snapshot.config.cronExpression,
-                selectedListName: snapshot.config.selectedListName
-            });
+            candidate = validateSettings(
+                snapshot.config && {
+                    ip: snapshot.config.ip,
+                    port: snapshot.config.port,
+                    cronExpression: snapshot.config.cronExpression,
+                    selectedListName: snapshot.config.selectedListName,
+                },
+            );
         } catch (err) {
             logger.error(`[Sync] Invalid stored settings: ${errorMessage(err)}`);
             return;
@@ -162,7 +169,9 @@ function createApp({
         try {
             await syncCoordinator.request(() => performSync(candidate));
         } catch (err) {
-            logger.error(`[Sync] ${errorMessage(err)} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`);
+            logger.error(
+                `[Sync] ${errorMessage(err)} (consecutive failures: ${syncCoordinator.consecutiveFailures}) - serving last known playlist.`,
+            );
         }
     }
 
@@ -216,7 +225,7 @@ function createApp({
         runScheduledSync,
         startBackgroundCron,
         stopBackgroundCron,
-        playlistPaths
+        playlistPaths,
     };
 
     registerAllRoutes(app, ctx);
@@ -237,10 +246,10 @@ function createApp({
             },
             dispose() {
                 stopBackgroundCron();
-            }
-        }
+            },
+        },
     };
 }
 
+export type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver };
 export { createApp };
-export type { AppDeps, AppRuntime, Receiver, CronHandle, CronScheduler, Logger };

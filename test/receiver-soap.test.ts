@@ -1,8 +1,6 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import test from 'node:test';
 import { createSoapReceiver, escapeXml } from '../dist/lib/receiver.js';
 
 const quietLogger = { info() {}, warn() {}, error() {} };
@@ -23,7 +21,10 @@ function startServer(handler: http.RequestListener): Promise<StartedServer> {
 }
 
 function stopServer(server: http.Server): Promise<void> {
-    return new Promise(resolve => { if (typeof server.closeAllConnections === "function") server.closeAllConnections(); server.close(() => resolve()); });
+    return new Promise((resolve) => {
+        if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
+        server.close(() => resolve());
+    });
 }
 
 function soapResponse(resultInner: string): string {
@@ -75,7 +76,11 @@ test('STC SOAP flow returns channels from a mock receiver', async () => {
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 1000,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         const result = await receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' });
         receiver.close();
 
@@ -83,7 +88,10 @@ test('STC SOAP flow returns channels from a mock receiver', async () => {
         assert.deepEqual(result.availableLists, ['Astra-TV-Liste', 'TV-Liste']);
         assert.equal(result.detectedModel, 'STC');
         assert.equal(result.channels.length, 2);
-        assert.deepEqual(result.channels.map((channel: { name: string }) => channel.name), ['001 Das Erste HD', '002 ZDF HD']);
+        assert.deepEqual(
+            result.channels.map((channel: { name: string }) => channel.name),
+            ['001 Das Erste HD', '002 ZDF HD'],
+        );
         const firstChannel = result.channels[0];
         assert.ok(firstChannel);
         assert.match(firstChannel.url, /O0I268\.ts$/);
@@ -95,14 +103,21 @@ test('STC SOAP flow returns channels from a mock receiver', async () => {
 test('SOAP receiver reports an HTTP error from the receiver', async () => {
     const { server, port } = await startServer((req, res) => {
         req.resume();
-        req.on('end', () => { res.statusCode = 500; res.end('boom'); });
+        req.on('end', () => {
+            res.statusCode = 500;
+            res.end('boom');
+        });
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 1000,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         await assert.rejects(
             receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' }),
-            /UPnP request failed with HTTP 500/
+            /UPnP request failed with HTTP 500/,
         );
         receiver.close();
     } finally {
@@ -123,7 +138,7 @@ test('SOAP receiver rejects an oversized response', async () => {
         const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64, logger: quietLogger });
         await assert.rejects(
             receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' }),
-            /UPnP response too large/
+            /UPnP response too large/,
         );
         receiver.close();
     } finally {
@@ -138,10 +153,14 @@ test('SOAP receiver reports a timeout', async () => {
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 200, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 200,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         await assert.rejects(
             receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' }),
-            /timed out|exceeded total deadline/
+            /timed out|exceeded total deadline/,
         );
         receiver.close();
     } finally {

@@ -1,4 +1,3 @@
-'use strict';
 /**
  * @param {import('express').Express} app
  * @param {any} ctx

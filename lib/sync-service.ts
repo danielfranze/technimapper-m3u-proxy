@@ -1,10 +1,8 @@
-'use strict';
-
-import type { AppState, StateStore } from './state-store.js';
-import { persistedSnapshot } from './state.js';
-import { buildM3u8 } from './m3u8.js';
-import { HttpError, type ValidatedSettings } from './validation.js';
 import type { LineupEntry } from './hdhr.js';
+import { buildM3u8 } from './m3u8.js';
+import { persistedSnapshot } from './state.js';
+import type { AppState, StateStore } from './state-store.js';
+import { HttpError, type ValidatedSettings } from './validation.js';
 
 /**
  * Application service for receiver sync and playlist state.
@@ -67,7 +65,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         // it is empty: validateSettings() then rejects it instead of silently
         // keeping the old value. Keys that are absent leave the stored value.
         for (const key of Object.keys(merged)) {
-            if (Object.prototype.hasOwnProperty.call(overrides, key)) {
+            if (Object.hasOwn(overrides, key)) {
                 merged[key] = overrides[key];
             }
         }
@@ -81,7 +79,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
     function rebuildViews(): number {
         const snapshot = getState();
         const { m3u8, count } = buildM3u8(snapshot.config.channels, snapshot.config.mapping);
-        updateState(s => {
+        updateState((s) => {
             s.cachedM3u8 = count > 0 ? m3u8 : null;
             s.lineupEntries = hdhrModule.buildLineup(s.config.channels, s.config.mapping);
         });
@@ -89,9 +87,13 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         return count;
     }
 
-    async function performSync(candidate: ValidatedSettings): Promise<Awaited<ReturnType<typeof receiver.fetchChannels>> & { stale?: boolean }> {
+    async function performSync(
+        candidate: ValidatedSettings,
+    ): Promise<Awaited<ReturnType<typeof receiver.fetchChannels>> & { stale?: boolean }> {
         const startedAt = Date.now();
-        updateState(s => { s.sync.lastAttemptAt = new Date().toISOString(); });
+        updateState((s) => {
+            s.sync.lastAttemptAt = new Date().toISOString();
+        });
 
         // Snapshot taken after the attempt timestamp is recorded but before any
         // receiver result is applied. Used to roll back in-memory state if
@@ -106,17 +108,18 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             // result belongs to the old target and must not overwrite the new
             // settings or be persisted. The newer operation will run next.
             const current = currentSettings();
-            const stale = current.ip !== candidate.ip
-                || current.port !== candidate.port
-                || current.cronExpression !== candidate.cronExpression
-                || current.selectedListName !== candidate.selectedListName;
+            const stale =
+                current.ip !== candidate.ip ||
+                current.port !== candidate.port ||
+                current.cronExpression !== candidate.cronExpression ||
+                current.selectedListName !== candidate.selectedListName;
             if (stale) {
                 logger.warn('[Sync] Receiver settings changed during sync - discarding result.');
                 return { ...result, stale: true };
             }
 
             preApplySnapshot = getState();
-            updateState(s => {
+            updateState((s) => {
                 Object.assign(s.config, {
                     ip: candidate.ip,
                     port: candidate.port,
@@ -124,7 +127,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
                     selectedListName: result.selectedListName,
                     channels: result.channels,
                     detectedModel: hdhrModule.modelLabel(result.detectedModel),
-                    lastSync: new Date().toISOString()
+                    lastSync: new Date().toISOString(),
                 });
                 s.configured = true;
                 s.sync.lastError = null;
@@ -151,7 +154,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
             return result;
         } catch (err) {
             const e = err instanceof Error ? err : new Error(String(err));
-            updateState(s => {
+            updateState((s) => {
                 s.sync.lastError = e.message;
                 s.sync.lastErrorAt = new Date().toISOString();
                 s.sync.consecutiveFailures++;
@@ -170,7 +173,7 @@ function createSyncService({ state, configStore, receiver, validation, hdhrModul
         mergeSettings,
         persistState,
         rebuildViews,
-        performSync
+        performSync,
     };
 }
 

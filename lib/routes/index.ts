@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Route registration for all HTTP routes.
  *
@@ -8,13 +6,13 @@
  */
 
 import type { Express, Request, Response } from 'express';
-import { registerHealthRoutes } from './health.js';
-import { registerConfigRoutes } from './config.js';
-import { registerMappingRoutes } from './mapping.js';
-import { registerPlaylistRoutes } from './playlist.js';
-import { registerHdhrRoutes } from './hdhr.js';
-import { registerMetricsRoutes } from './metrics.js';
 import type { RouteContext } from '../app/types.js';
+import { registerConfigRoutes } from './config.js';
+import { registerHdhrRoutes } from './hdhr.js';
+import { registerHealthRoutes } from './health.js';
+import { registerMappingRoutes } from './mapping.js';
+import { registerMetricsRoutes } from './metrics.js';
+import { registerPlaylistRoutes } from './playlist.js';
 
 function registerAllRoutes(app: Express, ctx: RouteContext): void {
     const { logger } = ctx;
@@ -34,8 +32,13 @@ function registerAllRoutes(app: Express, ctx: RouteContext): void {
 
 // Lazy indirection so the error handler stays a separate concern.
 import { createErrorHandler } from '../http-security.js';
+
 function createErrorHandlerFrom(logger: RouteContext['logger']) {
-    return createErrorHandler({ error(...args: unknown[]) { logger.error(...args); } });
+    return createErrorHandler({
+        error(...args: unknown[]) {
+            logger.error(...args);
+        },
+    });
 }
 
 export { registerAllRoutes };

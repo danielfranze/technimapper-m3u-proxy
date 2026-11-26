@@ -1,8 +1,6 @@
-'use strict';
-
 import type { Express, Request, Response } from 'express';
-import { HttpError, findDuplicateIds, findDuplicateGroups, partitionMapping } from '../validation.js';
 import type { StateStore } from '../state-store.js';
+import { findDuplicateGroups, findDuplicateIds, HttpError, partitionMapping } from '../validation.js';
 
 interface MappingCtx {
     getState(): ReturnType<StateStore['get']>;
@@ -24,11 +22,15 @@ function registerMappingRoutes(app: Express, ctx: MappingCtx): void {
     app.post('/api/save-mapping', async (req: Request, res: Response) => {
         const { mapping, invalid } = validateMapping((req.body as { mapping?: unknown })?.mapping);
         if (invalid.length) {
-            throw HttpError.badRequest(`Invalid channel ID for: ${invalid.slice(0, 5).join(', ')}${invalid.length > 5 ? ', ...' : ''}. Allowed: letters, digits, "_", "-", "." (max. 32 chars, not "." or "..").`);
+            throw HttpError.badRequest(
+                `Invalid channel ID for: ${invalid.slice(0, 5).join(', ')}${invalid.length > 5 ? ', ...' : ''}. Allowed: letters, digits, "_", "-", "." (max. 32 chars, not "." or "..").`,
+            );
         }
 
         const before = getState();
-        updateState(s => { s.config.mapping = mapping; });
+        updateState((s) => {
+            s.config.mapping = mapping;
+        });
         rebuildViews();
         try {
             await persistState();
@@ -38,13 +40,16 @@ function registerMappingRoutes(app: Express, ctx: MappingCtx): void {
         }
 
         const snapshot = getState();
-        const { active, orphans } = partitionMapping(mapping, snapshot.config.channels.map(channel => channel.name));
+        const { active, orphans } = partitionMapping(
+            mapping,
+            snapshot.config.channels.map((channel) => channel.name),
+        );
         res.json({
             success: true,
             mappedCount: Object.keys(mapping).length,
             duplicates: findDuplicateIds(active),
             duplicateGroups: findDuplicateGroups(active),
-            orphans
+            orphans,
         });
     });
 }

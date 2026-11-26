@@ -1,7 +1,5 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 import http from 'http';
 import { createSoapReceiver, escapeXml } from '../dist/lib/receiver.js';
 
@@ -10,13 +8,13 @@ const quietLogger = { info() {}, warn() {}, error() {} };
 function startServer(handler: http.RequestListener): Promise<{ server: http.Server; port: number }> {
     return new Promise((resolve, reject) => {
         const server = http.createServer(handler);
-        server.listen(0, "127.0.0.1", () => resolve({ server, port: (server.address() as { port: number }).port }));
+        server.listen(0, '127.0.0.1', () => resolve({ server, port: (server.address() as { port: number }).port }));
         server.on('error', reject);
     });
 }
 
 function stopServer(server: http.Server): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         if (typeof server.closeAllConnections === 'function') server.closeAllConnections();
         server.close(() => resolve());
     });
@@ -52,7 +50,11 @@ test('receiver falls back to the first list when the selected list is missing', 
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 1000,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         const result = await receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'Missing' });
         receiver.close();
         assert.equal(result.selectedListName, 'TV-Liste');
@@ -83,7 +85,11 @@ test('receiver handles duplicate channel names', async () => {
     });
 
     try {
-        const receiver = createSoapReceiver({ requestTimeoutMs: 1000, maxResponseBytes: 64 * 1024, logger: quietLogger });
+        const receiver = createSoapReceiver({
+            requestTimeoutMs: 1000,
+            maxResponseBytes: 64 * 1024,
+            logger: quietLogger,
+        });
         const result = await receiver.fetchChannels({ ip: '127.0.0.1', port, selectedListName: 'TV-Liste' });
         receiver.close();
         assert.equal(result.channels.length, 2);

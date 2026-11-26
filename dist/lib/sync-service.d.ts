@@ -1,6 +1,6 @@
+import type { LineupEntry } from './hdhr.js';
 import type { AppState, StateStore } from './state-store.js';
 import { type ValidatedSettings } from './validation.js';
-import type { LineupEntry } from './hdhr.js';
 /**
  * Application service for receiver sync and playlist state.
  *

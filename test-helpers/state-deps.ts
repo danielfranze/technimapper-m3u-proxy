@@ -1,7 +1,5 @@
-'use strict';
-
-import { createValidation, sortMapping } from '../dist/lib/validation.js';
 import * as hdhr from '../dist/lib/hdhr.js';
+import { createValidation, sortMapping } from '../dist/lib/validation.js';
 
 const fakeCron = (value: string): boolean => typeof value === 'string' && value.trim().split(/\s+/).length === 5;
 
@@ -24,7 +22,7 @@ function createDeps(logger: Deps['logger']): Deps {
         isAllowedReceiverIp: validation.isAllowedReceiverIp,
         cronValidate: fakeCron,
         defaultCron: '*/5 * * * *',
-        logger
+        logger,
     };
 }
 

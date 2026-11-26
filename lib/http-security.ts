@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * HTTP security boundary facade: the middleware factories live in `lib/http/middleware.ts`.
  *

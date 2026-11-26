@@ -1,4 +1,3 @@
-'use strict';
 /**
  * Health endpoints.
  * @param {import('express').Express} app
@@ -25,7 +24,7 @@ function registerHealthRoutes(app, ctx) {
             mappedChannels: Object.keys(snapshot.config.mapping).length,
             uptimeSeconds: Math.round(process.uptime()),
             syncQueueLength: ctx.syncCoordinator.queueLength,
-            syncBackoffMs: ctx.syncCoordinator.backoffRemainingMs()
+            syncBackoffMs: ctx.syncCoordinator.backoffRemainingMs(),
         };
     }
     app.get('/health', (_req, res) => res.json(healthPayload()));

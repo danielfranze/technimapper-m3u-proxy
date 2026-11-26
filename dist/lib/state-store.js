@@ -1,4 +1,10 @@
-'use strict';
+/**
+ * Immutable application state store.
+ *
+ * Release 2 (1.9.0) replaces the mutable `appConfig`/`syncStatus` globals with
+ * a single store. Every change builds a new snapshot and commits it atomically,
+ * so readers never observe a half-updated state and old snapshots stay valid.
+ */
 function deepFreeze(value, seen = new WeakSet()) {
     if (value === null || typeof value !== 'object')
         return value;
@@ -33,5 +39,5 @@ export class StateStore {
 function createStateStore(initial) {
     return new StateStore(initial);
 }
-export { deepFreeze, createStateStore };
+export { createStateStore, deepFreeze };
 //# sourceMappingURL=state-store.js.map

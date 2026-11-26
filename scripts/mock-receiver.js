@@ -1,7 +1,7 @@
-'use strict';
 // Minimal TechniSat SOAP mock for E2E tests.
 // Serves a discovery (TV-Liste) and a channel list on /ContentDirectory/Control.
 import http from 'http';
+
 const port = parseInt(process.env.MOCK_RECEIVER_PORT || '9199', 10);
 
 const discovery = `<?xml version="1.0" encoding="utf-8"?>
@@ -20,10 +20,16 @@ const list = `<?xml version="1.0" encoding="utf-8"?>
 
 const server = http.createServer((req, res) => {
     console.log('mock-receiver request:', req.method, req.url);
-    if (req.url && req.url.includes('/dev0/srv1/control')) { res.statusCode = 404; res.end('Not Found'); return; }
+    if (req.url?.includes('/dev0/srv1/control')) {
+        res.statusCode = 404;
+        res.end('Not Found');
+        return;
+    }
     // Read body to determine which response to send.
     let body = '';
-    req.on('data', (chunk) => { body += chunk; });
+    req.on('data', (chunk) => {
+        body += chunk;
+    });
     req.on('end', () => {
         const isDiscovery = /<ObjectID>3<\/ObjectID>/.test(body) || /<ObjectID>0\$3\$41<\/ObjectID>/.test(body);
         const resp = isDiscovery ? discovery : list;

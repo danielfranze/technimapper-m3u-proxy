@@ -10,4 +10,4 @@ interface ReceiverIpOptions {
  * Receiver must be a valid IPv4; loopback/link-local/multicast are always rejected.
  */
 declare function isAllowedReceiverIp(ip: unknown, options?: ReceiverIpOptions): boolean;
-export { ID_REGEX, isAllowedReceiverIp, ReceiverIpOptions };
+export { ID_REGEX, isAllowedReceiverIp, type ReceiverIpOptions };

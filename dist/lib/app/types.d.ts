@@ -1,16 +1,16 @@
 /**
  * Shared AppDeps interface for `createApp` + `lib/app/wiring.ts`.
  */
-import type { Server } from 'http';
 import type { Express } from 'express';
-import { createLogger } from '../logger.js';
-import { type RuntimeConfig } from '../runtime-config.js';
-import { type Receiver } from '../receiver.js';
-import { createValidation, type ValidatedSettings } from '../validation.js';
+import type { Server } from 'http';
+import type { ConfigStore } from '../config-store.js';
+import type { HdhrConfig } from '../hdhr.js';
+import type { createLogger } from '../logger.js';
+import type { Receiver } from '../receiver.js';
+import type { RuntimeConfig } from '../runtime-config.js';
+import type { StateStore } from '../state-store.js';
 import type { SyncCoordinator } from '../sync-coordinator.js';
-import { type ConfigStore } from '../config-store.js';
-import { type StateStore } from '../state-store.js';
-import { type HdhrConfig } from '../hdhr.js';
+import type { createValidation, ValidatedSettings } from '../validation.js';
 type Logger = ReturnType<typeof createLogger>;
 type AppRuntime = RuntimeConfig;
 type CronHandle = {
@@ -82,5 +82,4 @@ export interface RouteContext {
     playlistPaths: string[];
 }
 /** Express server handle (used by lib/shutdown). */
-export type { Express, Server };
-export type { HdhrConfig, SyncCoordinator, CronHandle, CronScheduler, Logger, AppRuntime, Receiver };
+export type { AppRuntime, CronHandle, CronScheduler, Express, HdhrConfig, Logger, Receiver, Server, SyncCoordinator };

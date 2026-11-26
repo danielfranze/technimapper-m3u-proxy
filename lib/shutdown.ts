@@ -37,19 +37,26 @@ async function runShutdown(signal: string, deps: ShutdownDeps): Promise<void> {
     hardStop.unref();
 
     try {
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
             server.close(async () => {
                 try {
                     await waitForSync(); // let a running sync finish (and persist) first
                 } catch (err) {
-                    logger.error('Running sync failed during shutdown:', err instanceof Error ? err.message : String(err));
+                    logger.error(
+                        'Running sync failed during shutdown:',
+                        err instanceof Error ? err.message : String(err),
+                    );
                 }
                 resolve();
             });
             if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
         });
     } finally {
-        try { dispose(); } catch { /* ignore */ }
+        try {
+            dispose();
+        } catch {
+            /* ignore */
+        }
         clearTimeout(hardStop);
     }
 }
@@ -63,4 +70,4 @@ function installShutdownHandlers(onShutdown: (signal: string) => void): void {
     process.on('SIGINT', () => onShutdown('SIGINT'));
 }
 
-export { runShutdown, installShutdownHandlers };
+export { installShutdownHandlers, runShutdown };

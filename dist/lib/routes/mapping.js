@@ -1,5 +1,4 @@
-'use strict';
-import { HttpError, findDuplicateIds, findDuplicateGroups, partitionMapping } from '../validation.js';
+import { findDuplicateGroups, findDuplicateIds, HttpError, partitionMapping } from '../validation.js';
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
@@ -13,7 +12,9 @@ function registerMappingRoutes(app, ctx) {
             throw HttpError.badRequest(`Invalid channel ID for: ${invalid.slice(0, 5).join(', ')}${invalid.length > 5 ? ', ...' : ''}. Allowed: letters, digits, "_", "-", "." (max. 32 chars, not "." or "..").`);
         }
         const before = getState();
-        updateState(s => { s.config.mapping = mapping; });
+        updateState((s) => {
+            s.config.mapping = mapping;
+        });
         rebuildViews();
         try {
             await persistState();
@@ -24,13 +25,13 @@ function registerMappingRoutes(app, ctx) {
             throw err;
         }
         const snapshot = getState();
-        const { active, orphans } = partitionMapping(mapping, snapshot.config.channels.map(channel => channel.name));
+        const { active, orphans } = partitionMapping(mapping, snapshot.config.channels.map((channel) => channel.name));
         res.json({
             success: true,
             mappedCount: Object.keys(mapping).length,
             duplicates: findDuplicateIds(active),
             duplicateGroups: findDuplicateGroups(active),
-            orphans
+            orphans,
         });
     });
 }

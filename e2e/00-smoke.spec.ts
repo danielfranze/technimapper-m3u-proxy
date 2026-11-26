@@ -2,11 +2,13 @@ import { expect, test } from '@playwright/test';
 
 test('home page loads and shows the application title', async ({ page }) => {
     const pageErrors: Error[] = [];
-    page.on('pageerror', error => { pageErrors.push(error); });
+    page.on('pageerror', (error) => {
+        pageErrors.push(error);
+    });
     await page.goto('/');
     await expect(page).toHaveTitle(/TechniMapper/i);
     await expect(page.locator('#applyBtn')).toBeVisible();
-    expect(pageErrors, pageErrors.map(e => e.message).join('\n')).toHaveLength(0);
+    expect(pageErrors, pageErrors.map((e) => e.message).join('\n')).toHaveLength(0);
 });
 
 test('playlist responds (503 before sync, 200 after)', async ({ request }) => {

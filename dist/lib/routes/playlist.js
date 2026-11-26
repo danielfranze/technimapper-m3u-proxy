@@ -1,4 +1,3 @@
-'use strict';
 import crypto from 'crypto';
 /**
  * @param {import('express').Express} app
@@ -26,7 +25,9 @@ function registerPlaylistRoutes(app, ctx) {
         res.set('Cache-Control', 'no-cache');
         return res.type('audio/x-mpegurl; charset=utf-8').send(snapshot.cachedM3u8);
     };
-    playlistPaths.forEach(route => app.get(route, servePlaylist));
+    playlistPaths.forEach((route) => {
+        app.get(route, servePlaylist);
+    });
 }
 export { registerPlaylistRoutes };
 //# sourceMappingURL=playlist.js.map

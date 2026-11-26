@@ -92,7 +92,7 @@ function sortMapping(mapping, channelNames) {
         if (value !== undefined && Object.hasOwn(mapping, name) && !Object.hasOwn(sorted, name))
             sorted[name] = value;
     }
-    const rest = Object.keys(mapping).filter(name => !Object.hasOwn(sorted, name));
+    const rest = Object.keys(mapping).filter((name) => !Object.hasOwn(sorted, name));
     // Unknown/stale entries keep their current (insertion) order instead of being
     // re-sorted alphabetically, so the user's manual ordering is preserved.
     for (const name of rest) {
@@ -102,5 +102,5 @@ function sortMapping(mapping, channelNames) {
     }
     return sorted;
 }
-export { validateMapping, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping };
+export { findDuplicateGroups, findDuplicateIds, partitionMapping, sortMapping, validateMapping };
 //# sourceMappingURL=mapping.js.map

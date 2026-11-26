@@ -35,7 +35,12 @@ export interface ConfigStore {
     write: (data: unknown) => Promise<void>;
 }
 
-export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs as FsLike }: {
+export function createJsonConfigStore({
+    dataDir,
+    configFile,
+    logger,
+    fsModule = fs as FsLike,
+}: {
     dataDir: string;
     configFile: string;
     logger: StoreLogger;
@@ -48,7 +53,9 @@ export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = 
             fsModule.mkdirSync(dataDir, { recursive: true });
             fsModule.accessSync(dataDir);
         } catch (err) {
-            throw new Error(`Data directory "${dataDir}" is not writable: ${err instanceof Error ? err.message : String(err)}`);
+            throw new Error(
+                `Data directory "${dataDir}" is not writable: ${err instanceof Error ? err.message : String(err)}`,
+            );
         }
     }
 
@@ -69,7 +76,11 @@ export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = 
             const json = JSON.stringify(data, null, 2);
             const tempFile = `${configFile}.${process.pid}.${++writeCounter}.tmp`;
             const removeTemp = async () => {
-                try { await promises.unlink(tempFile); } catch { /* ignore */ }
+                try {
+                    await promises.unlink(tempFile);
+                } catch {
+                    /* ignore */
+                }
             };
 
             try {

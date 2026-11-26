@@ -27,4 +27,4 @@ declare function runShutdown(signal: string, deps: ShutdownDeps): Promise<void>;
  * @param onShutdown Called with the signal name when a shutdown starts.
  */
 declare function installShutdownHandlers(onShutdown: (signal: string) => void): void;
-export { runShutdown, installShutdownHandlers };
+export { installShutdownHandlers, runShutdown };

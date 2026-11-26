@@ -1,7 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 test('syncs channels from the mock receiver', async ({ request }) => {
-    const saveRes = await request.post('/api/save-settings', { data: { ip: '127.0.0.1', port: '9199', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' } });
+    const saveRes = await request.post('/api/save-settings', {
+        data: { ip: '127.0.0.1', port: '9199', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' },
+    });
     expect(saveRes.ok()).toBeTruthy();
 
     const syncRes = await request.post('/api/fetch-channels', { data: {} });
@@ -12,13 +14,17 @@ test('syncs channels from the mock receiver', async ({ request }) => {
 });
 
 test('mapped channels appear in playlist and lineup after save-mapping', async ({ request }) => {
-    const saveRes = await request.post('/api/save-settings', { data: { ip: '127.0.0.1', port: '9199', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' } });
+    const saveRes = await request.post('/api/save-settings', {
+        data: { ip: '127.0.0.1', port: '9199', cronExpression: '*/5 * * * *', selectedListName: 'TV-Liste' },
+    });
     expect(saveRes.ok()).toBeTruthy();
 
     const syncRes = await request.post('/api/fetch-channels', { data: {} });
     expect(syncRes.ok()).toBeTruthy();
 
-    const mappingRes = await request.post('/api/save-mapping', { data: { mapping: { 'Das Erste HD': 1, 'ZDF HD': 2 } } });
+    const mappingRes = await request.post('/api/save-mapping', {
+        data: { mapping: { 'Das Erste HD': 1, 'ZDF HD': 2 } },
+    });
     expect(mappingRes.ok()).toBeTruthy();
 
     const playlistRes = await request.get('/playlist.m3u8');

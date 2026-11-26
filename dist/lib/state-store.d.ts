@@ -16,4 +16,4 @@ export declare class StateStore<T = AppState> {
     update(mutator: (state: T) => void): T;
 }
 declare function createStateStore<T = AppState>(initial: T): StateStore<T>;
-export { deepFreeze, createStateStore };
+export { createStateStore, deepFreeze };

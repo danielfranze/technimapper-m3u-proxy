@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 const fsp = fs.promises;
-export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs }) {
+export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = fs, }) {
     const promises = fsModule.promises || fsp;
     function ensureDataDir() {
         try {
@@ -33,7 +33,9 @@ export function createJsonConfigStore({ dataDir, configFile, logger, fsModule = 
                 try {
                     await promises.unlink(tempFile);
                 }
-                catch { /* ignore */ }
+                catch {
+                    /* ignore */
+                }
             };
             try {
                 await promises.writeFile(tempFile, json, 'utf8');

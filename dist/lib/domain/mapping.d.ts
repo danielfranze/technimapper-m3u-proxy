@@ -39,4 +39,4 @@ declare function partitionMapping(mapping: Mapping, channelNames: string[]): {
  * Purely cosmetic (lookups use the channel name) but keeps mapping.json readable and diffs stable.
  */
 declare function sortMapping(mapping: Mapping, channelNames: string[]): Mapping;
-export { validateMapping, findDuplicateIds, findDuplicateGroups, partitionMapping, sortMapping };
+export { findDuplicateGroups, findDuplicateIds, partitionMapping, sortMapping, validateMapping };

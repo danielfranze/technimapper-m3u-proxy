@@ -1,10 +1,15 @@
-'use strict';
-import { registerHealthRoutes } from './health.js';
+/**
+ * Route registration for all HTTP routes.
+ *
+ * Re-exported from the individual modules for backwards compatibility; see
+ * `registerAllRoutes()` below.
+ */
 import { registerConfigRoutes } from './config.js';
-import { registerMappingRoutes } from './mapping.js';
-import { registerPlaylistRoutes } from './playlist.js';
 import { registerHdhrRoutes } from './hdhr.js';
+import { registerHealthRoutes } from './health.js';
+import { registerMappingRoutes } from './mapping.js';
 import { registerMetricsRoutes } from './metrics.js';
+import { registerPlaylistRoutes } from './playlist.js';
 function registerAllRoutes(app, ctx) {
     const { logger } = ctx;
     registerHealthRoutes(app, ctx);
@@ -20,7 +25,11 @@ function registerAllRoutes(app, ctx) {
 // Lazy indirection so the error handler stays a separate concern.
 import { createErrorHandler } from '../http-security.js';
 function createErrorHandlerFrom(logger) {
-    return createErrorHandler({ error(...args) { logger.error(...args); } });
+    return createErrorHandler({
+        error(...args) {
+            logger.error(...args);
+        },
+    });
 }
 export { registerAllRoutes };
 //# sourceMappingURL=index.js.map

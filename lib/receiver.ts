@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * UPnP/SOAP adapter for TechniSat receivers.
  *
@@ -52,7 +50,7 @@ const DiscoveryType = {
     STC: 'STC',
     S1: 'S1',
     S2: 'S2',
-    S_SERIES: 'S_SERIES'
+    S_SERIES: 'S_SERIES',
 } as const;
 type DiscoveryType = (typeof DiscoveryType)[keyof typeof DiscoveryType];
 
@@ -62,7 +60,7 @@ const ESCAPE_MAP: Record<string, string> = { '<': '&lt;', '>': '&gt;', '&': '&am
 
 const DISCOVERY_TARGETS = Object.freeze([
     { type: DiscoveryType.STC, parentObj: '0$3$41', path: '/dev0/srv1/control' },
-    { type: DiscoveryType.S_SERIES, parentObj: '3', path: '/ContentDirectory/Control' }
+    { type: DiscoveryType.S_SERIES, parentObj: '3', path: '/ContentDirectory/Control' },
 ] as const);
 
 function escapeXml(str: string): string {
@@ -70,7 +68,7 @@ function escapeXml(str: string): string {
 }
 
 function asNode(value: unknown): XmlNode | undefined {
-    return value && typeof value === 'object' ? value as XmlNode : undefined;
+    return value && typeof value === 'object' ? (value as XmlNode) : undefined;
 }
 
 /** xml2js gibt entweder einen String oder { _: text, $: attrs } zurück. */
@@ -89,7 +87,7 @@ function asArray(value: XmlValue): XmlNode[] {
 }
 
 function nodeKey(node: XmlNode | undefined, key: string): XmlValue {
-    return node ? node[key] as XmlValue : undefined;
+    return node ? (node[key] as XmlValue) : undefined;
 }
 
 /** Extracts the DIDL-Lite containers (channel lists) from a Browse response. */
@@ -120,14 +118,24 @@ function parseChannelItems(didl: XmlValue): Channel[] {
     return channels;
 }
 
-function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 1024 * 1024, logger = console as SoapReceiverLogger, agent }: {
+function createSoapReceiver({
+    requestTimeoutMs = 5000,
+    maxResponseBytes = 2 * 1024 * 1024,
+    logger = console as SoapReceiverLogger,
+    agent,
+}: {
     requestTimeoutMs?: number;
     maxResponseBytes?: number;
     logger?: SoapReceiverLogger;
     agent?: http.Agent;
 } = {}): {
     fetchChannels: (settings: { ip: string; port: string | number; selectedListName: string }) => Promise<FetchResult>;
-    browseUpnp: (ip: string, port: string | number, objectId: string, pathEndpoint: string) => Promise<XmlNode | undefined>;
+    browseUpnp: (
+        ip: string,
+        port: string | number,
+        objectId: string,
+        pathEndpoint: string,
+    ) => Promise<XmlNode | undefined>;
     discoverTvLists: (ip: string, port: string | number) => Promise<DiscoveryResult>;
     close: () => void;
 } {
@@ -151,55 +159,66 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                 else if (value !== undefined) resolve(value);
             };
 
-            const req = http.request({
-                hostname: ip,
-                port: parseInt(String(port), 10),
-                path: pathEndpoint,
-                method: 'POST',
-                agent: upnpAgent,
-                headers: {
-                    'Content-Type': 'text/xml; charset="utf-8"',
-                    SOAPACTION: SOAP_ACTION,
-                    'Content-Length': Buffer.byteLength(soapEnvelope),
-                    'Connection': 'close'
-                }
-            }, (res: http.IncomingMessage) => {
-                const chunks: Buffer[] = [];
-                let size = 0;
+            const req = http.request(
+                {
+                    hostname: ip,
+                    port: parseInt(String(port), 10),
+                    path: pathEndpoint,
+                    method: 'POST',
+                    agent: upnpAgent,
+                    headers: {
+                        'Content-Type': 'text/xml; charset="utf-8"',
+                        SOAPACTION: SOAP_ACTION,
+                        'Content-Length': Buffer.byteLength(soapEnvelope),
+                        Connection: 'close',
+                    },
+                },
+                (res: http.IncomingMessage) => {
+                    const chunks: Buffer[] = [];
+                    let size = 0;
 
-                res.on('data', (chunk: Buffer) => {
-                    if (settled) return;
-                    size += chunk.length;
-                    if (size > maxResponseBytes) {
-                        req.destroy();
-                        finish(new Error('UPnP response too large'));
-                        return;
-                    }
-                    chunks.push(chunk);
-                });
+                    res.on('data', (chunk: Buffer) => {
+                        if (settled) return;
+                        size += chunk.length;
+                        if (size > maxResponseBytes) {
+                            req.destroy();
+                            finish(new Error('UPnP response too large'));
+                            return;
+                        }
+                        chunks.push(chunk);
+                    });
 
-                res.on('end', () => {
-                    if (settled) return;
-                    if ((res.statusCode || 0) < 200 || (res.statusCode || 0) >= 300) {
-                        finish(new Error(`UPnP request failed with HTTP ${res.statusCode}`));
-                        return;
-                    }
-                    finish(null, Buffer.concat(chunks).toString('utf8'));
-                });
+                    res.on('end', () => {
+                        if (settled) return;
+                        if ((res.statusCode || 0) < 200 || (res.statusCode || 0) >= 300) {
+                            finish(new Error(`UPnP request failed with HTTP ${res.statusCode}`));
+                            return;
+                        }
+                        finish(null, Buffer.concat(chunks).toString('utf8'));
+                    });
 
-                res.on('error', err => finish(err));
-            });
+                    res.on('error', (err) => finish(err));
+                },
+            );
 
             // Idle timeout + hard overall deadline.
             req.setTimeout(requestTimeoutMs, () => req.destroy(new Error('UPnP request timed out')));
-            totalTimer = setTimeout(() => req.destroy(new Error('UPnP request exceeded total deadline')), requestTimeoutMs * 3);
-            req.on('error', err => finish(err));
+            totalTimer = setTimeout(
+                () => req.destroy(new Error('UPnP request exceeded total deadline')),
+                requestTimeoutMs * 3,
+            );
+            req.on('error', (err) => finish(err));
             req.write(soapEnvelope);
             req.end();
         });
     }
 
-    async function browseUpnp(ip: string, port: string | number, objectId: string, pathEndpoint: string): Promise<XmlNode | undefined> {
+    async function browseUpnp(
+        ip: string,
+        port: string | number,
+        objectId: string,
+        pathEndpoint: string,
+    ): Promise<XmlNode | undefined> {
         const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
 <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
   <s:Body><u:Browse xmlns:u="urn:schemas-upnp-org:service:ContentDirectory:1">
@@ -209,13 +228,13 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
 </s:Envelope>`;
 
         const body = await postSoap(ip, port, pathEndpoint, soapEnvelope);
-        const parsed = await xml2js.parseStringPromise(body, { explicitArray: false }) as XmlNode;
+        const parsed = (await xml2js.parseStringPromise(body, { explicitArray: false })) as XmlNode;
         const envelope = asNode(parsed['s:Envelope']);
         const response = asNode(nodeKey(envelope, 's:Body'));
         const resultXml = xmlText(nodeKey(asNode(nodeKey(response, 'u:BrowseResponse')), 'Result'));
         if (!resultXml) throw new Error('UPnP SOAP Browse response invalid');
 
-        const browse = await xml2js.parseStringPromise(resultXml, { explicitArray: false }) as XmlNode;
+        const browse = (await xml2js.parseStringPromise(resultXml, { explicitArray: false })) as XmlNode;
         const didl = browse['DIDL-Lite'];
         if (!didl || typeof didl !== 'object') throw new Error('Invalid DIDL-Lite payload');
         return asNode(didl);
@@ -225,11 +244,17 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
      * Best-effort generation detection for S-series receivers.
      */
     function detectSSeriesGeneration(lists: ChannelList[]): DiscoveryType {
-        const titles = new Set(lists.map(list => list.title));
+        const titles = new Set(lists.map((list) => list.title));
         if (titles.has('Astra-TV-Liste')) return DiscoveryType.S1;
-        if (titles.has('TV-Liste') && lists.length === 5
-            && titles.has('Alle Videos') && titles.has('Datum')
-            && titles.has('Eigene TV-Aufnahmen') && titles.has('Verzeichnis')) return DiscoveryType.S2;
+        if (
+            titles.has('TV-Liste') &&
+            lists.length === 5 &&
+            titles.has('Alle Videos') &&
+            titles.has('Datum') &&
+            titles.has('Eigene TV-Aufnahmen') &&
+            titles.has('Verzeichnis')
+        )
+            return DiscoveryType.S2;
         return DiscoveryType.S_SERIES;
     }
 
@@ -242,9 +267,7 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
                 const didl = await browseUpnp(ip, port, target.parentObj, target.path);
                 const lists = parseContainerList(didl);
                 if (lists.length > 0) {
-                    const deviceType = target.type === 'S_SERIES'
-                        ? detectSSeriesGeneration(lists)
-                        : target.type;
+                    const deviceType = target.type === 'S_SERIES' ? detectSSeriesGeneration(lists) : target.type;
                     return { deviceType, path: target.path, lists };
                 }
             } catch (err) {
@@ -253,14 +276,22 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
             }
         }
 
-        throw new Error('No TechniSat Live-TV containers found' + (lastError ? ` (${lastError.message})` : '.'));
+        throw new Error(`No TechniSat Live-TV containers found${lastError ? ` (${lastError.message})` : '.'}`);
     }
 
     /** Reads channels from the receiver. Never mutates application state. */
-    async function fetchChannels({ ip, port, selectedListName }: { ip: string; port: string | number; selectedListName: string }): Promise<FetchResult> {
+    async function fetchChannels({
+        ip,
+        port,
+        selectedListName,
+    }: {
+        ip: string;
+        port: string | number;
+        selectedListName: string;
+    }): Promise<FetchResult> {
         const discovery = await discoverTvLists(ip, port);
 
-        let targetList = discovery.lists.find(list => list.title === selectedListName) ?? discovery.lists[0];
+        const targetList = discovery.lists.find((list) => list.title === selectedListName) ?? discovery.lists[0];
         if (!targetList) throw new Error('No TechniSat Live-TV containers found.');
         if (targetList.title !== selectedListName) {
             logger.warn(`List "${selectedListName}" not found, falling back to "${targetList.title}".`);
@@ -270,23 +301,25 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
         const channels = parseChannelItems(didl);
         if (channels.length === 0) throw new Error('Failed to parse channel items.');
 
-        const uniqueNames = new Set(channels.map(channel => channel.name));
+        const uniqueNames = new Set(channels.map((channel) => channel.name));
         if (uniqueNames.size !== channels.length) {
-            logger.warn(`${channels.length - uniqueNames.size} duplicate channel name(s) detected - they share one mapping entry.`);
+            logger.warn(
+                `${channels.length - uniqueNames.size} duplicate channel name(s) detected - they share one mapping entry.`,
+            );
         }
 
         // Only containers that actually hold channels are selectable TV lists;
         // empty folders (Alle Videos, Datum, Verzeichnis, ...) are hidden from
         // the UI. Fall back to all containers when none reports a child count.
-        const tvLists = discovery.lists.filter(list => (list.childCount || 0) > 0);
-        const availableLists = (tvLists.length ? tvLists : discovery.lists).map(list => list.title);
+        const tvLists = discovery.lists.filter((list) => (list.childCount || 0) > 0);
+        const availableLists = (tvLists.length ? tvLists : discovery.lists).map((list) => list.title);
 
         logger.info(`${channels.length} channels loaded from list "${targetList.title}".`);
         return {
             channels,
             selectedListName: targetList.title,
             availableLists,
-            detectedModel: discovery.deviceType
+            detectedModel: discovery.deviceType,
         };
     }
 
@@ -294,18 +327,18 @@ function createSoapReceiver({ requestTimeoutMs = 5000, maxResponseBytes = 2 * 10
         fetchChannels,
         browseUpnp,
         discoverTvLists,
-        close: () => upnpAgent.destroy()
+        close: () => upnpAgent.destroy(),
     };
 }
 
 export {
+    asArray,
+    createSoapReceiver,
     DISCOVERY_TARGETS,
     DiscoveryType,
     escapeXml,
-    xmlText,
-    asArray,
-    parseContainerList,
     parseChannelItems,
-    createSoapReceiver
+    parseContainerList,
+    xmlText,
 };
 export type Receiver = ReturnType<typeof createSoapReceiver>;

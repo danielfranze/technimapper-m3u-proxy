@@ -35,7 +35,7 @@ export function defaultSink(): LogSink {
     return {
         info: (...args: unknown[]) => console.log(...args),
         warn: (...args: unknown[]) => console.warn(...args),
-        error: (...args: unknown[]) => console.error(...args)
+        error: (...args: unknown[]) => console.error(...args),
     };
 }
 
@@ -74,7 +74,7 @@ export function createLogger(options: LoggerOptions = {}): {
         format,
         info: (...args: unknown[]) => write('info', args),
         warn: (...args: unknown[]) => write('warn', args),
-        error: (...args: unknown[]) => write('error', args)
+        error: (...args: unknown[]) => write('error', args),
     };
 }
 

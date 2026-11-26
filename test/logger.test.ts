@@ -1,10 +1,11 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLogger, safeStringify, defaultSink } from '../dist/lib/logger.js';
+import test from 'node:test';
+import { createLogger, defaultSink, safeStringify } from '../dist/lib/logger.js';
 
-function recordingLogger(level: string = 'info', format: string = 'text'): { logger: ReturnType<typeof createLogger>; calls: [string, unknown[]][] } {
+function recordingLogger(
+    level: string = 'info',
+    format: string = 'text',
+): { logger: ReturnType<typeof createLogger>; calls: [string, unknown[]][] } {
     const calls: [string, unknown[]][] = [];
     const logger = createLogger({
         level,
@@ -12,8 +13,8 @@ function recordingLogger(level: string = 'info', format: string = 'text'): { log
         sink: {
             info: (...args: unknown[]) => calls.push(['info', args]),
             warn: (...args: unknown[]) => calls.push(['warn', args]),
-            error: (...args: unknown[]) => calls.push(['error', args])
-        }
+            error: (...args: unknown[]) => calls.push(['error', args]),
+        },
     });
     return { logger, calls };
 }
@@ -50,7 +51,10 @@ test('the default sink is used when none is provided and non-string values are s
 
 test('non-string values are serialized through a custom sink', () => {
     const calls: unknown[][] = [];
-    const logger = createLogger({ level: 'info', sink: { info: (...args: unknown[]) => calls.push(args), warn() {}, error() {} } });
+    const logger = createLogger({
+        level: 'info',
+        sink: { info: (...args: unknown[]) => calls.push(args), warn() {}, error() {} },
+    });
     logger.info({ ok: 1 });
     assert.equal(calls.length, 1);
     const call = calls[0];
@@ -62,7 +66,10 @@ test('the logger filters levels and supports text and JSON output', () => {
     const { logger: textLogger, calls: textCalls } = recordingLogger('warn');
     textLogger.info('should be hidden');
     textLogger.warn('visible');
-    assert.deepEqual(textCalls.map((call: [string, unknown[]]) => call[0]), ['warn']);
+    assert.deepEqual(
+        textCalls.map((call: [string, unknown[]]) => call[0]),
+        ['warn'],
+    );
     const textEntry = textCalls[0];
     assert.ok(textEntry);
     assert.equal(textEntry[1][1], 'visible');

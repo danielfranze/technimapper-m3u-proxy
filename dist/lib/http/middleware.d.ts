@@ -1,3 +1,10 @@
+/**
+ * HTTP middleware factories: security headers, Basic Auth, CSRF/origin checks and
+ * bounded in-memory rate limiting.
+ *
+ * Everything here is transport-level policy. Business routes only register
+ * themselves and rely on these middleware functions.
+ */
 /** Minimal request shape used by the middleware (structurally compatible with express.Request). */
 export interface RequestLike {
     ip?: string | undefined;
@@ -29,7 +36,7 @@ interface FailureLimiterResult {
  * Bounded map of failed authentication attempts. Only failures are counted, so
  * a legitimate client is not locked out by successful requests.
  */
-export declare function createFailureLimiter({ windowMs, max, maxEntries, now }: {
+export declare function createFailureLimiter({ windowMs, max, maxEntries, now, }: {
     windowMs: number;
     max: number;
     maxEntries?: number;
@@ -45,7 +52,7 @@ interface AuthLogger {
  * else is protected as soon as both credentials are configured. If only one
  * credential is present, protected routes fail closed with 503.
  */
-export declare function createAuth({ user, password, publicPaths, publicPrefixes, failureWindowMs, failureMax, logger, now }?: {
+export declare function createAuth({ user, password, publicPaths, publicPrefixes, failureWindowMs, failureMax, logger, now, }?: {
     user?: string;
     password?: string;
     publicPaths?: string[];
@@ -67,7 +74,7 @@ interface RateLimitResult {
  * Bounded fixed-window limiter. The map never grows without limit; the oldest
  * entry is evicted when `maxEntries` is reached.
  */
-export declare function createRateLimiter({ windowMs, max, maxEntries, key, now }: {
+export declare function createRateLimiter({ windowMs, max, maxEntries, key, now, }: {
     windowMs: number;
     max: number;
     maxEntries?: number;
@@ -90,7 +97,7 @@ export declare function createOriginGuard(): (req: RequestLike, res: ResponseLik
  * Static security headers. `Cache-Control: no-store` is applied to API and health
  * responses so proxies and browsers never keep stale configuration or status.
  */
-export declare function securityHeaders({ hsts }?: {
+export declare function securityHeaders({ hsts, }?: {
     hsts?: boolean;
 }): (req: RequestLike, res: ResponseLike, next: NextLike) => void;
 interface HttpSecurityErrorLike {

@@ -1,9 +1,8 @@
-'use strict';
 import { spawn } from 'child_process';
 import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import http from 'http';
+import os from 'os';
+import path from 'path';
 
 const MOCK_PORT = 9199;
 const DATA_DIR = path.join(os.tmpdir(), 'technimapper-e2e-mock');
@@ -18,7 +17,7 @@ export default async (): Promise<void> => {
         mapping: {},
         channels: [],
         lastSync: null,
-        detectedModel: null
+        detectedModel: null,
     };
     fs.writeFileSync(path.join(DATA_DIR, 'mapping.json'), JSON.stringify(mapping, null, 2));
     console.log('global-setup: seeded', path.join(DATA_DIR, 'mapping.json'));
@@ -26,7 +25,7 @@ export default async (): Promise<void> => {
     const child = spawn(process.execPath, [path.join(process.cwd(), 'scripts', 'mock-receiver.js')], {
         env: { ...process.env, MOCK_RECEIVER_PORT: String(MOCK_PORT) },
         stdio: 'inherit',
-        detached: true
+        detached: true,
     });
     child.unref();
     if (child.pid !== undefined) fs.writeFileSync(path.join(DATA_DIR, 'mock.pid'), String(child.pid));
@@ -34,7 +33,10 @@ export default async (): Promise<void> => {
 
     await new Promise<void>((resolve, reject) => {
         const tryConnect = () => {
-            const req = http.get(`http://127.0.0.1:${MOCK_PORT}/`, (res) => { res.resume(); resolve(); });
+            const req = http.get(`http://127.0.0.1:${MOCK_PORT}/`, (res) => {
+                res.resume();
+                resolve();
+            });
             req.on('error', () => setTimeout(tryConnect, 200));
         };
         tryConnect();

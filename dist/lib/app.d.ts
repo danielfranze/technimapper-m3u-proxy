@@ -3,8 +3,9 @@ declare module 'express-serve-static-core' {
         requestId?: string;
     }
 }
+import type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver } from './app/types.js';
+import type { ValidatedSettings } from './domain/settings.js';
 import type { StateStore } from './state-store.js';
-import type { AppDeps, CronHandle, Receiver, AppRuntime, CronScheduler, Logger } from './app/types.js';
 /**
  * HTTP application factory.
  *
@@ -12,11 +13,11 @@ import type { AppDeps, CronHandle, Receiver, AppRuntime, CronScheduler, Logger }
  * It never starts a listener, which is what makes integration tests possible:
  * tests can call it with fake receiver, persistence and cron implementations.
  */
-declare function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig, publicDir, syncCoordinator: syncCoordinatorDep }: AppDeps): {
+declare function createApp({ runtime, logger, state: stateDep, configStore, receiver, validation, cron, version, hdhrConfig, publicDir, syncCoordinator: syncCoordinatorDep, }: AppDeps): {
     app: import("express-serve-static-core").Express;
     state: StateStore<import("./state.js").AppState>;
     services: {
-        performSync: (candidate: import("./validation.js").ValidatedSettings) => Promise<Awaited<ReturnType<(settings: {
+        performSync: (candidate: ValidatedSettings) => Promise<Awaited<ReturnType<(settings: {
             ip: string;
             port: string | number;
             selectedListName: string;
@@ -40,5 +41,5 @@ declare function createApp({ runtime, logger, state: stateDep, configStore, rece
         dispose(): void;
     };
 };
+export type { AppDeps, AppRuntime, CronHandle, CronScheduler, Logger, Receiver };
 export { createApp };
-export type { AppDeps, AppRuntime, Receiver, CronHandle, CronScheduler, Logger };

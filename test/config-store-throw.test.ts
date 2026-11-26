@@ -1,10 +1,8 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import test from 'node:test';
 import { createJsonConfigStore, type FsLike } from '../dist/lib/config-store.js';
 
 const logger = { warn() {}, error() {} };
@@ -20,7 +18,7 @@ test('config store rethrows unexpected rename errors', async () => {
             const err = new Error('no such file') as Error & { code?: string };
             err.code = 'ENOENT';
             throw err;
-        }
+        },
     };
 
     const store = createJsonConfigStore({ dataDir, configFile, logger, fsModule });

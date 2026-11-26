@@ -4,23 +4,38 @@
  * without a browser.
  */
 
-import { BACKEND_URL } from './view.js';
+import type { CopySource, Filter } from './model.js';
 import { model } from './model.js';
-import type { Filter, CopySource } from './model.js';
-const {
-    escapeHtml, isDirty, getActiveMapping, getOrphans, describeDuplicates
-} = model;
+
+const { escapeHtml, isDirty, getActiveMapping, getOrphans, describeDuplicates } = model;
+
+import type { SaveSettingsResponse, SettingsPayload } from '../api.js';
 import {
-    copySelectedUrl, renderTable, renderCopyButton, showToast, updateModelBadge,
-    updateDirtyIndicator, triggerSyncPulse, handleSearchInput, fitLayout,
-    fitVersionBadge, setListOptions, setSelectedList, getSelectedList,
-    closeCopyMenu, closeListMenu
-} from './view.js';
-import {
-    getConfig, saveSettings, fetchChannelsRequest, saveMappingRequest, importConfig
+    BACKEND_URL,
+    fetchChannelsRequest,
+    getConfig,
+    importConfig,
+    saveMappingRequest,
+    saveSettings,
 } from '../api.js';
-import type { SettingsPayload, SaveSettingsResponse } from '../api.js';
-import { byId, buttonById, dialogById, inputById, maybeInputById, queryAll } from './dom.js';
+import { buttonById, byId, dialogById, inputById, maybeInputById, queryAll } from './dom.js';
+import {
+    closeCopyMenu,
+    closeListMenu,
+    copySelectedUrl,
+    fitLayout,
+    fitVersionBadge,
+    getSelectedList,
+    handleSearchInput,
+    renderCopyButton,
+    renderTable,
+    setListOptions,
+    setSelectedList,
+    showToast,
+    triggerSyncPulse,
+    updateDirtyIndicator,
+    updateModelBadge,
+} from './view.js';
 
 type UnsavedMode = 'fetch' | 'import';
 type UnsavedChoice = 'save' | 'discard' | 'cancel';
@@ -36,9 +51,11 @@ export function askUnsaved(mode: UnsavedMode): Promise<UnsavedChoice> {
         : 'Apply & Fetch reloads the mapping from the server. Save your changes first or they will be lost.';
     byId('unsavedSave').hidden = isImport;
     byId('unsavedDiscard').textContent = isImport ? 'Discard and import' : 'Discard changes';
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
         dialog.returnValue = '';
-        dialog.addEventListener('close', () => resolve((dialog.returnValue || 'cancel') as UnsavedChoice), { once: true });
+        dialog.addEventListener('close', () => resolve((dialog.returnValue || 'cancel') as UnsavedChoice), {
+            once: true,
+        });
         dialog.showModal();
     });
 }
@@ -50,19 +67,20 @@ export async function removeStaleMappings(): Promise<void> {
         showToast('No stale entries found');
         return;
     }
-    orphans.forEach(name => delete model.currentMapping[name]);
+    orphans.forEach((name) => {
+        delete model.currentMapping[name];
+    });
     await saveMapping(orphans);
 }
 
 /**
  * Sets the active channel filter mode ('all', 'mapped', or 'unmapped') and updates chips.
+ * The active chip is derived from `data-filter`, not its text content, and synced across the desktop + mobile chip sets.
  */
-export function setFilter(filterType: Filter, element: HTMLElement): void {
+export function setFilter(filterType: Filter): void {
     model.currentFilter = filterType;
-    const chipTexts = (element.textContent ?? '').trim().toLowerCase();
-    queryAll('.filter-chip').forEach(el => {
-        if ((el.textContent ?? '').trim().toLowerCase() === chipTexts) el.classList.add('active');
-        else el.classList.remove('active');
+    queryAll('.filter-chip').forEach((el) => {
+        el.classList.toggle('active', el.dataset['filter'] === filterType);
     });
     renderTable();
 }
@@ -85,7 +103,7 @@ export function autoFillFromName(): void {
     // Only extract IDs from names when EVERY channel name yields a number.
     // Otherwise fall back to sequential IDs in the current table order.
     const searchTerm = getSearchTerm();
-    const channelsToFill = model.detectedChannels.filter(name => {
+    const channelsToFill = model.detectedChannels.filter((name) => {
         const assignedId = model.currentMapping[name] !== undefined ? model.currentMapping[name] : '';
         const isMapped = assignedId !== '';
         if (model.currentFilter === 'mapped' && !isMapped) return false;
@@ -94,13 +112,15 @@ export function autoFillFromName(): void {
         return true;
     });
 
-    const allHaveNumbers = channelsToFill.length > 0 && channelsToFill.every(name => /^\d+/.test(name));
+    const allHaveNumbers = channelsToFill.length > 0 && channelsToFill.every((name) => /^\d+/.test(name));
 
     // Parse is an explicit action: drop previously assigned IDs for the
     // targeted channels first so the result can be adopted or discarded via Save.
-    channelsToFill.forEach(name => { delete model.currentMapping[name]; });
+    channelsToFill.forEach((name) => {
+        delete model.currentMapping[name];
+    });
 
-    channelsToFill.forEach(name => {
+    channelsToFill.forEach((name) => {
         // Duplicate channel names only get an ID on their first occurrence.
         if (seenNames.has(name)) {
             skipped.push(name);
@@ -114,7 +134,7 @@ export function autoFillFromName(): void {
             const raw = match?.[1];
             if (raw) {
                 const num = Number(raw);
-                id = (raw.length <= 15 && Number.isSafeInteger(num)) ? num : raw;
+                id = raw.length <= 15 && Number.isSafeInteger(num) ? num : raw;
             }
         }
         if (id === null) {
@@ -138,7 +158,11 @@ export function autoFillFromName(): void {
     renderTable();
     if (skipped.length > 0) {
         const sample = skipped.slice(0, 3).join(', ') + (skipped.length > 3 ? ', …' : '');
-        showToast(`Extracted ${count} channel IDs. Skipped ${skipped.length} because the ID is already in use: ${sample}`, 'warning', 10000);
+        showToast(
+            `Extracted ${count} channel IDs. Skipped ${skipped.length} because the ID is already in use: ${sample}`,
+            'warning',
+            10000,
+        );
     } else {
         showToast(count > 0 ? `Extracted ${count} channel IDs from names` : 'No new channel numbers found in names');
     }
@@ -155,14 +179,13 @@ export function updateId(name: string, value: string | number, index?: number): 
         const text = String(value).trim();
         // Canonical non-negative integers stay numbers; anything else (including
         // "001" and "12abc") is kept verbatim so no information is lost.
-        const isCanonicalNumber = /^(0|[1-9]\d*)$/.test(text) && text.length <= 15 && Number.isSafeInteger(Number(text));
+        const isCanonicalNumber =
+            /^(0|[1-9]\d*)$/.test(text) && text.length <= 15 && Number.isSafeInteger(Number(text));
         model.currentMapping[name] = isCanonicalNumber ? Number(text) : text;
         // The occurrence being edited becomes the one holding the ID.
-        model.activeOccurrence[name] = (typeof index === 'number')
-            ? index
-            : (model.activeOccurrence[name] ?? model.detectedChannels.indexOf(name));
+        model.activeOccurrence[name] =
+            typeof index === 'number' ? index : (model.activeOccurrence[name] ?? model.detectedChannels.indexOf(name));
     }
-    updateDirtyIndicator();
     renderTable();
 }
 
@@ -176,18 +199,21 @@ export async function saveMapping(removedStale: string[] = []): Promise<boolean>
         if (isOk) {
             const groups = result.duplicateGroups || model.getDuplicateGroups(getActiveMapping());
             const orphans = result.orphans || getOrphans();
-            const head = removedStale.length > 0
-                ? `Removed ${removedStale.length} stale entries (${summarize(removedStale)}) and saved.`
-                : 'Saved.';
+            const head =
+                removedStale.length > 0
+                    ? `Removed ${removedStale.length} stale entries (${summarize(removedStale)}) and saved.`
+                    : 'Saved.';
             const parts: string[] = [];
             if (groups.length > 0) {
                 parts.push(`${groups.length} ID(s) are used by more than one channel: ${describeDuplicates(groups)}.`);
             }
             if (orphans.length > 0) {
-                parts.push(`${orphans.length} stale entries for channels no longer on the receiver (${summarize(orphans)}) - use "Clean" to remove them.`);
+                parts.push(
+                    `${orphans.length} stale entries for channels no longer on the receiver (${summarize(orphans)}) - use "Clean" to remove them.`,
+                );
             }
             if (parts.length > 0) {
-                showToast(head + ' ' + parts.join(' '), 'warning', 14000);
+                showToast(`${head} ${parts.join(' ')}`, 'warning', 14000);
             } else {
                 showToast(removedStale.length > 0 ? head : 'Mappings saved successfully!');
             }
@@ -207,7 +233,7 @@ export async function saveMapping(removedStale: string[] = []): Promise<boolean>
 
 /** Triggers the server endpoint to export the current system configuration and mapping file as a JSON download. */
 export function exportConfig(): void {
-    window.location.href = BACKEND_URL + '/api/export-config';
+    window.location.href = `${BACKEND_URL}/api/export-config`;
     showToast('Exporting configuration...');
 }
 
@@ -222,7 +248,7 @@ export async function loadInitialConfig(): Promise<void> {
 
         const versionEl = document.getElementById('versionLabel');
         if (versionEl && config.version) {
-            versionEl.textContent = 'v' + config.version;
+            versionEl.textContent = `v${config.version}`;
             fitVersionBadge();
         }
         if (typeof config.hdhrEnabled === 'boolean') {
@@ -237,12 +263,31 @@ export async function loadInitialConfig(): Promise<void> {
             model.activeListName = config.selectedListName;
             setListOptions([config.selectedListName], config.selectedListName);
         }
-    } catch (e) { console.error('Initial config load failed', e); }
+    } catch (e) {
+        console.error('Initial config load failed', e);
+    }
 }
 
-/** Polls the backend for the latest playlist synchronization timestamp and updates the UI badge. */
-export async function updateSyncTime(): Promise<void> {
-    if (document.hidden) return;
+/**
+ * Polls the backend for the latest playlist synchronization timestamp and updates the UI badge.
+ *
+ * Concurrency-safe: while a request is in flight, further calls (e.g. `setInterval` ticks,
+ * `fetchChannels`, the initial bootstrap) join the same in-flight promise instead of firing
+ * a second `getConfig()`. Network/HTTP errors are swallowed (the UI keeps its last known state).
+ */
+let syncInflight: Promise<void> | null = null;
+
+export function updateSyncTime(): Promise<void> {
+    if (document.hidden) return Promise.resolve();
+    if (syncInflight) return syncInflight;
+    const pending = syncLastSync();
+    syncInflight = pending;
+    return pending.finally(() => {
+        if (syncInflight === pending) syncInflight = null;
+    });
+}
+
+async function syncLastSync(): Promise<void> {
     try {
         const { data } = await getConfig();
         const el = document.getElementById('last-sync-time');
@@ -260,7 +305,9 @@ export async function updateSyncTime(): Promise<void> {
         }
         fitLayout();
         if (changed) triggerSyncPulse();
-    } catch (e) { /* ignore */ }
+    } catch {
+        /* ignore */
+    }
 }
 
 /**
@@ -327,7 +374,7 @@ export async function fetchChannels(): Promise<void> {
         statusMsg.title = `Loaded ${model.detectedChannels.length} channels ("${data.selectedListName}")`;
 
         renderTable();
-        updateSyncTime();
+        await updateSyncTime();
         showToast(`${model.detectedChannels.length} channels loaded`);
     } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -349,7 +396,11 @@ export async function fetchChannels(): Promise<void> {
 export function chooseCopySource(source: CopySource): void {
     if (!model.hdhrEnabled && source === 'hdhr') source = 'm3u8';
     model.copySource = source;
-    try { localStorage.setItem('technimapper.copySource', source); } catch (e) { /* storage unavailable */ }
+    try {
+        localStorage.setItem('technimapper.copySource', source);
+    } catch {
+        /* storage unavailable */
+    }
     renderCopyButton();
     closeCopyMenu(true);
     copySelectedUrl(source);
@@ -400,10 +451,15 @@ export async function handleImportFile(event: Event): Promise<void> {
             }
         } catch (err) {
             const message = err instanceof Error ? err.message : String(err);
-            showToast('Import failed: ' + message, 'error');
+            showToast(`Import failed: ${message}`, 'error');
         } finally {
             input.value = '';
         }
+    };
+    reader.onerror = () => {
+        const message = reader.error?.message ?? 'Could not read file';
+        showToast(`Import failed: ${message}`, 'error');
+        input.value = '';
     };
     reader.readAsText(file);
 }
@@ -413,6 +469,8 @@ function getSearchTerm(): string {
     try {
         const searchInput = maybeInputById('searchInput');
         const searchInputMobile = maybeInputById('searchInputMobile');
-        return ((searchInput && searchInput.value) || (searchInputMobile && searchInputMobile.value) || '').toLowerCase();
-    } catch (e) { return ''; }
+        return (searchInput?.value || searchInputMobile?.value || '').toLowerCase();
+    } catch {
+        return '';
+    }
 }

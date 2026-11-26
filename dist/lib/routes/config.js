@@ -1,13 +1,12 @@
-'use strict';
-import { HttpError } from '../validation.js';
 import { errorMessage } from '../error-message.js';
 import * as hdhrModule from '../hdhr.js';
+import { HttpError } from '../validation.js';
 /**
  * @param {import('express').Express} app
  * @param {any} ctx
  */
 function registerConfigRoutes(app, ctx) {
-    const { getState, updateState, state: stateStore, currentSettings, mergeSettings, persistState, startBackgroundCron, syncCoordinator, validation, version, hdhrConfig, logger, performSync } = ctx;
+    const { getState, updateState, state: stateStore, currentSettings, mergeSettings, persistState, startBackgroundCron, syncCoordinator, validation, version, hdhrConfig, logger, performSync, } = ctx;
     const { validateMapping } = validation;
     app.get('/api/config', (_req, res) => {
         const snapshot = getState();
@@ -21,13 +20,13 @@ function registerConfigRoutes(app, ctx) {
             lastError: snapshot.sync.lastError,
             lastErrorAt: snapshot.sync.lastErrorAt,
             consecutiveFailures: snapshot.sync.consecutiveFailures,
-            hdhrEnabled: hdhrConfig.enabled
+            hdhrEnabled: hdhrConfig.enabled,
         });
     });
     app.post('/api/save-settings', async (req, res) => {
         const settings = mergeSettings((req.body || {}));
         const before = getState();
-        updateState(s => {
+        updateState((s) => {
             Object.assign(s.config, settings);
             s.configured = true;
         });
@@ -45,7 +44,9 @@ function registerConfigRoutes(app, ctx) {
     });
     app.post('/api/fetch-channels', async (req, res, next) => {
         try {
-            const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {};
+            const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+                ? req.body
+                : {};
             const candidate = mergeSettings(body);
             if (getState().configured && (body.ip !== undefined || body.port !== undefined)) {
                 const snapshot = getState();
@@ -53,18 +54,18 @@ function registerConfigRoutes(app, ctx) {
                     throw HttpError.conflict('Receiver address changed. Save the settings first, then fetch channels.');
                 }
             }
-            const result = await syncCoordinator.request(() => performSync(candidate));
+            const result = (await syncCoordinator.request(() => performSync(candidate)));
             if (result?.stale) {
                 throw HttpError.conflict('Receiver settings changed during sync. Please retry.');
             }
             startBackgroundCron();
             const snapshot = getState();
             res.json({
-                channels: snapshot.config.channels.map(channel => channel.name),
+                channels: snapshot.config.channels.map((channel) => channel.name),
                 availableLists: result.availableLists,
                 selectedListName: snapshot.config.selectedListName,
                 mapping: snapshot.config.mapping,
-                detectedModel: hdhrModule.modelLabel(result.detectedModel ?? null)
+                detectedModel: hdhrModule.modelLabel(result.detectedModel ?? null),
             });
         }
         catch (err) {
@@ -81,7 +82,7 @@ function registerConfigRoutes(app, ctx) {
             version,
             exportedAt: new Date().toISOString(),
             config: currentSettings(),
-            mapping: snapshot.config.mapping || {}
+            mapping: snapshot.config.mapping || {},
         });
     });
     app.post('/api/import-config', async (req, res) => {
@@ -97,7 +98,7 @@ function registerConfigRoutes(app, ctx) {
             mapping = checked.mapping;
         }
         const beforeImport = getState();
-        updateState(s => {
+        updateState((s) => {
             if (settings)
                 Object.assign(s.config, settings);
             if (mapping)

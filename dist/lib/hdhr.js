@@ -4,7 +4,7 @@
 import { STREAM_URL_REGEX } from './m3u8.js';
 const DEFAULTS = Object.freeze({
     deviceId: '12345678',
-    tunerCount: 2
+    tunerCount: 2,
 });
 const DEVICE_ID_REGEX = /^[0-9A-Fa-f]{8}$/;
 const HOST_REGEX = /^(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
@@ -12,11 +12,14 @@ const LINEUP_STATUS = Object.freeze({
     ScanInProgress: 0,
     ScanPossible: 1,
     Source: 'Cable',
-    SourceList: Object.freeze(['Cable'])
+    SourceList: Object.freeze(['Cable']),
 });
 export function resolveConfig(env = {}) {
     const warnings = [];
-    const rawName = String(env.HDHR_FRIENDLY_NAME || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 64);
+    const rawName = String(env.HDHR_FRIENDLY_NAME || '')
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .trim()
+        .slice(0, 64);
     const friendlyName = rawName === '' || rawName === '-' ? null : rawName;
     let deviceId = DEFAULTS.deviceId;
     if (env.HDHR_DEVICE_ID) {
@@ -37,17 +40,25 @@ export function resolveConfig(env = {}) {
 }
 export function modelLabel(deviceType) {
     switch (deviceType) {
-        case 'STC': return 'DIGIT ISIO STC';
-        case 'S': return 'DIGIT ISIO S';
-        case 'S1': return 'DIGIT ISIO S1';
-        case 'S2': return 'DIGIT ISIO S2';
-        default: return 'DIGIT ISIO S/S1/S2';
+        case 'STC':
+            return 'DIGIT ISIO STC';
+        case 'S':
+            return 'DIGIT ISIO S';
+        case 'S1':
+            return 'DIGIT ISIO S1';
+        case 'S2':
+            return 'DIGIT ISIO S2';
+        default:
+            return 'DIGIT ISIO S/S1/S2';
     }
 }
 export function sanitizeModel(value) {
     if (typeof value !== 'string')
         return null;
-    return value.replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60) || null;
+    return (value
+        .replace(/[\u0000-\u001f\u007f]/g, ' ')
+        .trim()
+        .slice(0, 60) || null);
 }
 export function defaultFriendlyName(model) {
     return model ? `TechniSat ${model}` : 'TechniSat';
@@ -62,7 +73,9 @@ export function buildLineup(channels, mapping) {
     for (const ch of channels) {
         if (!Object.hasOwn(mapping, ch.name))
             continue;
-        const guideNumber = String(mapping[ch.name]).trim().replace(/^ts-ch/, '');
+        const guideNumber = String(mapping[ch.name])
+            .trim()
+            .replace(/^ts-ch/, '');
         const url = String(ch.url).trim();
         if (!guideNumber || seen.has(guideNumber) || !STREAM_URL_REGEX.test(url))
             continue;
@@ -86,14 +99,14 @@ export function discoverPayload(baseUrl, config, model) {
         DeviceAuth: 'technisat123',
         BaseURL: `${baseUrl}/hdhr`,
         LineupURL: `${baseUrl}/hdhr/lineup.json`,
-        TunerCount: config.tunerCount
+        TunerCount: config.tunerCount,
     };
 }
 export function lineupPayload(entries, baseUrl) {
     return entries.map((e) => ({
         GuideNumber: e.guideNumber,
         GuideName: e.guideName,
-        URL: `${baseUrl}/hdhr/stream/${encodeURIComponent(e.guideNumber)}`
+        URL: `${baseUrl}/hdhr/stream/${encodeURIComponent(e.guideNumber)}`,
     }));
 }
 export { DEFAULTS, LINEUP_STATUS };

@@ -1,6 +1,6 @@
 import type { Express } from 'express';
+import type { AppState, StateStore } from '../state-store.js';
 import type { ValidatedSettings } from '../validation.js';
-import type { StateStore, AppState } from '../state-store.js';
 interface PerformSyncResult {
     channels: {
         name: string;

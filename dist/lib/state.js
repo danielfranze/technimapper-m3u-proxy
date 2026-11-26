@@ -14,14 +14,14 @@ const DEFAULT_CONFIG = Object.freeze({
     mapping: Object.freeze({}),
     channels: Object.freeze([]),
     lastSync: null,
-    detectedModel: null
+    detectedModel: null,
 });
 function createState(overrides = {}) {
     const config = {
         ...DEFAULT_CONFIG,
         mapping: {},
         channels: [],
-        ...(overrides.config || {})
+        ...(overrides.config || {}),
     };
     return {
         config,
@@ -31,11 +31,11 @@ function createState(overrides = {}) {
             lastAttemptAt: null,
             lastDurationMs: null,
             consecutiveFailures: 0,
-            ...(overrides.sync || {})
+            ...(overrides.sync || {}),
         },
         configured: Boolean(overrides.configured),
         cachedM3u8: overrides.cachedM3u8 ?? null,
-        lineupEntries: Array.isArray(overrides.lineupEntries) ? [...overrides.lineupEntries] : []
+        lineupEntries: Array.isArray(overrides.lineupEntries) ? [...overrides.lineupEntries] : [],
     };
 }
 /** The subset of the state that belongs in mapping.json. */
@@ -47,9 +47,9 @@ function persistedSnapshot(state) {
         cronExpression: config.cronExpression,
         selectedListName: config.selectedListName,
         mapping: { ...config.mapping },
-        channels: config.channels.map(channel => ({ name: channel.name, url: channel.url })),
+        channels: config.channels.map((channel) => ({ name: channel.name, url: channel.url })),
         lastSync: config.lastSync,
-        detectedModel: config.detectedModel
+        detectedModel: config.detectedModel,
     };
 }
 /**
@@ -95,20 +95,24 @@ function applyPersistedState(state, parsed, deps) {
         logger.warn(`Dropped ${invalid.length} invalid mapping entries from disk.`);
     const rawChannels = record.channels;
     const channels = Array.isArray(rawChannels)
-        ? rawChannels.filter((c) => !!c && typeof c === 'object' && typeof c.name === 'string' && typeof c.url === 'string')
+        ? rawChannels.filter((c) => !!c &&
+            typeof c === 'object' &&
+            typeof c.name === 'string' &&
+            typeof c.url === 'string')
         : [];
     const config = state.config;
     config.ip = typeof record.ip === 'string' ? record.ip : config.ip;
     config.port = record.port !== undefined ? String(record.port) : config.port;
     config.cronExpression = typeof record.cronExpression === 'string' ? record.cronExpression : config.cronExpression;
-    config.selectedListName = typeof record.selectedListName === 'string' ? record.selectedListName : config.selectedListName;
+    config.selectedListName =
+        typeof record.selectedListName === 'string' ? record.selectedListName : config.selectedListName;
     config.lastSync = typeof record.lastSync === 'string' ? record.lastSync : null;
     config.detectedModel = sanitizeModel(record.detectedModel);
-    config.mapping = sortMapping(mapping, channels.map(channel => channel.name));
+    config.mapping = sortMapping(mapping, channels.map((channel) => channel.name));
     config.channels = channels;
     state.configured = true;
     const changed = repairPersistedSettings(state, deps);
     return { changed, droppedMapping: invalid.length };
 }
-export { createState, persistedSnapshot, repairPersistedSettings, applyPersistedState };
+export { applyPersistedState, createState, persistedSnapshot, repairPersistedSettings };
 //# sourceMappingURL=state.js.map

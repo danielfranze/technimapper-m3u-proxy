@@ -26,7 +26,7 @@ export interface ConfigStore {
     read: () => StoreData | null;
     write: (data: unknown) => Promise<void>;
 }
-export declare function createJsonConfigStore({ dataDir, configFile, logger, fsModule }: {
+export declare function createJsonConfigStore({ dataDir, configFile, logger, fsModule, }: {
     dataDir: string;
     configFile: string;
     logger: StoreLogger;

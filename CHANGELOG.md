@@ -6,21 +6,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 ## [2.0.0-rc.6]
 
 ### Added
+
 - Frontend TypeScript migration: sources in `frontend/`, emitted ESM in `public/app/js/`, strict flags, no bundler (ADR 0007). `public/app/js/` is generated and gitignored.
 - `build:backend` / `build:frontend` scripts; `npm run build` now builds both halves.
 - E2E smoke test fails on `pageerror` to catch a broken frontend module graph.
 
 ### Changed
+
 - `tsconfig.frontend.json` now compiles TypeScript (`frontend/` → `public/app/js/`); `allowJs`/`checkJs` removed.
 - Tests import the TypeScript sources directly (`tsx`); `test/tsconfig.json` gained the DOM libs.
 - `scripts/coverage.js` excludes `frontend/**`.
 - README documents `frontend/` as source and `public/app/js/` as generated output.
 - Dockerfile verifies the frontend build output (`test -f public/app/js/main.js`); release builds run with `no-cache` to prevent stale layers.
 - Dockerfile now copies `public/` from the builder stage (not the build context), so generated `app/js/` is included in the runtime image.
+- `noPropertyAccessFromIndexSignature`; `dataset['…']`; `@ts-expect-error`, not `@ts-ignore`. No `@ts-ignore`/`@ts-expect-error` needed.
+- **OpenAPI-Typen:** `openapi-typescript@7` + `npm run types:openapi` → `frontend/api.generated.d.ts`. `ConfigResponse` = generated `GetConfig`; `FetchChannelsResponse` = generated `FetchChannelsResult`. `docs/openapi.yaml` `FetchChannelsResult` corrected (`channels: string[]`, `mapping`). `SaveSettingsResponse` gegen `/api/save-settings` verifiziert.
+- **P3 Qualität:** **Biome** (`@biomejs/biome`) `npm run lint` / `lint:fix` / `format` / `format:check`; `biome.json`. **`knip`** `npm run knip`. `biome check` + `format` in CI.
+- **Konkurrenz/Frontend-Robustheit:** `await updateSyncTime()`; `loadInitialConfig` + `updateSyncTime` `await`; `setInterval`; **`syncInflight`**; `reader.onerror`; **`ApiError`** + `JsonResult.error`.
 
 ## [2.0.0-rc.5]
 
 ### Added
+
 - Frontend MVP: `public/app/lib/` – `model.js` (state + pure logic), `view.js` (DOM rendering), `presenter.js` (business logic); `main.js` only wires DOM events to the presenter.
 - `public/app/api.js` – typed endpoint wrappers around `getJson`/`postJson`.
 - `public/app/lib/dom.js` – typed DOM access helpers used by view, presenter and main.
@@ -35,6 +42,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - `npm run check:tests` script (`npx tsc --noEmit -p test && npx tsc --noEmit -p test-helpers`) + CI job "Type checks (tests, helpers, e2e)".
 
 ### Changed
+
 - API: `GET /api/get-config` renamed to `GET /api/config` (frontend and tests updated).
 - Health: added `GET /health/liveness` (alias for `/health/live`).
 - `GET /health/live` kept for compatibility.
@@ -49,11 +57,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - `npm run build && npm test && npm run test:e2e` – all green (167 unit/integration tests + 23 E2E tests).
 
 ### Fixed
+
 - Copy-menu keyboard navigation called `.filter()` on a `NodeList`, which browsers do not provide; it now uses the typed DOM helper (`Array.from`). Found by the new frontend type check.
 
 ## [2.0.0-rc.4]
 
 ### Changed
+
 - OOP adjustments: `HttpError` with factory methods (`badRequest`, `notFound`, …), `StateStore` as class.
 - Architecture: middleware in `lib/http/middleware.ts`, domain modules in `lib/domain/{ids,settings,mapping}.ts`; `lib/validation.ts` and `lib/http-security.ts` as facades.
 - `noImplicitAny` removed from `tsconfig.json` (full `strict` mode).
@@ -61,57 +71,67 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - README updated (new module overview).
 
 ### Added
+
 - `lib/error-message.ts` (shared error-to-string helper).
 - `lib/http-error.ts` (`HttpError` with status factories).
 
 ## [2.0.0-rc.3]
 
 ### Added
+
 - Strong typing for `lib/state.ts` and `lib/validation.ts` (interfaces, explicit return types).
 - TypeScript build step (`tsc` → `dist/`) with `strict: true`.
 
 ### Changed
+
 - All backend files converted to `.ts`.
 - Test imports updated to `dist/lib/*.js`.
 
 ### Fixed
+
 - Dockerfile multi-stage build (data dir path, static assets).
 - `formatSync` test made locale-independent.
 
 ## [2.0.0-rc.2]
 
 ### Added
+
 - TypeScript migration (Phase 1-4): Backend converted to `.ts` with `tsc` build step.
 - `tsconfig.json` with Node16 module resolution and strict mode (initially `strict: false`).
 - Multi-stage Docker build (build stage + runtime stage).
 
-
 ### Changed
+
 - `package.json`: `main` → `dist/server.js`, scripts updated (`build`, `start`, `test`, `check`).
 - Test imports updated to `dist/lib/*.js`.
 - App `publicDir` resolved via `process.cwd()` for compiled output.
 
 ### Fixed
+
 - None.
 
 ## [2.0.0-rc.1]
 
 ### Added
+
 - TypeScript migration (Phase 1-4): Backend converted to `.ts` with `tsc` build step.
 - `tsconfig.json` with Node16 module resolution and strict mode (initially `strict: false`).
 - Multi-stage Docker build (build stage + runtime stage).
 
 ### Changed
+
 - `package.json`: `main` → `dist/server.js`, scripts updated (`build`, `start`, `test`, `check`).
 - Test imports updated to `dist/lib/*.js`.
 - App `publicDir` resolved via `process.cwd()` for compiled output.
 
 ### Fixed
+
 - None.
 
 ## [1.9.6]
 
 ### Added
+
 - Development Tools section in README (scripts overview).
 - Screenshots moved to `docs/images/`.
 - E2E tests expanded: mock-receiver sync flow, UI interactions (search, filter, dirty-state, parse, dropdown, copy menu).
@@ -119,75 +139,92 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Shared test harnesses (`test-helpers/`) and coverage threshold enforcement.
 
 ### Changed
+
 - Folder structure cleaned up (`.playwright-data` removed, `assets/` → `docs/images/`).
 - Coverage-only tests removed; meaningful edge-case tests retained.
 
 ### Fixed
+
 - None.
 
 ## [1.9.5]
 
 ### Added
+
 - Receiver probe script now inspects both STC and S-series paths.
 - STC mock test reflects real structure (Astra-TV-Liste + TV-Liste).
 
 ### Changed
+
 - None.
 
 ### Fixed
+
 - None.
 
 ## [1.9.4]
 
 ### Added
+
 - AutoFill ("Parse") assigns sequential IDs in visible/filter order; leading zeros are stripped.
 - Duplicate channel names: only the first occurrence holds the ID, editing moves it between occurrences.
 - Target channel list dropdown shows only containers that contain channels (TV lists).
 - Table re-sorts by channel ID after changes; stable column layout (fixed table layout + scrollbar gutter).
 
 ### Changed
+
 - AutoFill overwrites existing IDs (Save button adopts or discards).
 - `sortMapping` keeps stale/unknown entries in their current order.
 
 ### Fixed
+
 - CSP no longer blocks inline styles generated by JavaScript (style-src allows unsafe-inline, script-src stays strict).
 - Font paths corrected after CSS extraction to `public/app/styles.css`.
 
 ## [1.9.3]
 
 ### Added
+
 - CSP hardening: `script-src` and `style-src` now only allow `'self'` (no `unsafe-inline`).
 - Extracted `public/app/api.js` (backend URL + fetch helpers) as first UI module.
 - Event delegation via `data-action` attributes instead of inline handlers.
 
 ### Changed
+
 - Inline styles replaced by CSS utility classes; inline `style="..."` attributes removed.
 - `public/app/main.js` loaded as ES module (`type="module"`).
 
 ### Fixed
+
 - None.
 
 ### Coverage
+
 - 169 tests passing, 100 % line coverage across `lib/`.
 
 ## [1.9.2]
 
 ### Added
+
 - Persistence-failure rollback semantics (P0.6): in-memory state is restored when a write to `mapping.json` fails (`save-settings`, `save-mapping`, `import-config`, sync).
 - Probe helpers under `scripts/` for inspecting receiver UPnP/ContentDirectory structure (STC, S, S1, S2).
 
 ### Changed
+
 - SOAP receiver keeps connections non-persistent (keep-alive disabled) to avoid HTTP 412 on S-series receivers.
 
 ### Fixed
+
 - S1/S2 generation detection is now verified against two independent S2 devices; fingerprint logic confirmed.
 
 ### Coverage
+
 - 166+ tests passing.
 
 ## [1.9.1]
 
 ### Added
+
 - End-to-end smoke tests with Playwright (`e2e/smoke.spec.js`) and CI integration.
 - TypeScript readiness layer: `lib/types.js`, `lib/ports.js`, `jsconfig.json`, ADR 0005.
 - Extracted HTTP route modules under `lib/routes/` (`health`, `config`, `mapping`, `playlist`, `hdhr`, `metrics`).
@@ -198,6 +235,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Additional unit/integration tests for SOAP flows, coverage branches, sync coordination, state repair, HTTP security and logger.
 
 ### Changed
+
 - `lib/app.js` is now a thin composition/wiring layer around the sync service and route modules.
 - Config persistence is asynchronous (`fs.promises`) to avoid blocking the event loop on the request path.
 - Inline UI JavaScript moved from `public/index.html` to `public/app/main.js`.
@@ -206,12 +244,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - CI test job name now includes the Node version.
 
 ### Fixed
+
 - `TRUST_PROXY=false`/`0` no longer risks startup issues.
 - Logger test assertions and stray test artifacts removed.
 - Config store tests now mock the asynchronous rename path correctly.
 - UI tests updated for the externalized script.
 
 ### Coverage
+
 - 155+ tests passing.
 - 100 % line coverage across `lib/`.
 - Branch coverage improved to ~92 %.
@@ -219,6 +259,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 ## [1.9.0]
 
 ### Added
+
 - Immutable application state store (`lib/state-store.js`) with deep-frozen snapshots and copy-on-write updates.
 - Sync coordinator (`lib/sync-coordinator.js`) with single-flight execution, bounded queue, backoff and idle waiting.
 - Request context with `X-Request-Id`, request logging and a Prometheus-style `/metrics` endpoint.
@@ -226,6 +267,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Tests for the state store and sync coordinator.
 
 ### Changed
+
 - `createApp()` now uses the state store instead of mutating global state directly.
 - Persistence is applied to a mutable draft before being committed.
 - Graceful shutdown waits for the sync coordinator to become idle.
@@ -233,6 +275,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 ## [1.8.0]
 
 ### Added
+
 - `createApp()` application factory and a split between server startup (`server.js`) and HTTP wiring (`lib/app.js`), so the full API can be tested without starting a real listener.
 - Unit tests for the new modules and HTTP integration tests using a fake receiver, an in-memory config store and a fake scheduler.
 - `npm run coverage` (Node's built-in coverage report) and a coverage step in CI.
@@ -248,6 +291,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Documentation for the new endpoints, environment variables and module layout.
 
 ### Changed
+
 - The API now fails closed when only one of `ADMIN_USER` / `ADMIN_PASSWORD` is set: public routes keep working, protected routes answer `503`.
 - Authentication failures and API requests use bounded rate-limit maps; auth failures are throttled before credentials are checked.
 - State-changing `/api/*` requests require `Content-Type: application/json` and a same-origin `Origin`/`Referer` when one is sent.
@@ -259,6 +303,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 - Channel IDs `.` and `..` are rejected; the UI keeps leading zeros (for example `001`) and treats ID `0` as mapped.
 
 ### Fixed
+
 - `TRUST_PROXY=false` and `TRUST_PROXY=0` no longer risk a startup crash.
 - The UI no longer truncates IDs such as `001` or `12abc` through `parseInt`.
 - The README now names `lib/m3u8.js` correctly.
@@ -266,6 +311,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 ## [1.7.2]
 
 ### Changed
+
 - Upgraded Express to 5.3.0, including the API rate-limit route syntax required by Express 5.
 - Updated the container base image to Node 26 Alpine with a pinned image digest.
 - Updated GitHub Actions to current major versions and Node 26 in the CI and release workflows.
@@ -273,6 +319,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 ## [1.7.1]
 
 ### Changed
+
 - The playlist is now called M3U8 everywhere: it is served at `/playlist.m3u8` (the former `/playlist.m3u` keeps working as an
   alias), and the UI, README, tests and modules say M3U8. The `#EXTM3U` header line stays, as the format requires. The image and
   container name `technimapper-m3u-proxy` is unchanged.
@@ -290,11 +337,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/), versions fol
 First stable release with the HDHomeRun emulation. It contains everything from the release candidates 1.7.0-rc.1 and 1.7.0-rc.2.
 
 ### Breaking changes
+
 - The server now listens on port **9191** by default (was 3000). The Dockerfile (`EXPOSE`, health check), the compose file, the CI
   smoke test and all examples use `9191:9191`. If your stack publishes `3000:3000` and does not set `PORT`, change the mapping to
   `9191:9191` or set `PORT=3000`. The health checks follow `PORT`.
 
 ### Added
+
 - HDHomeRun emulation below `/hdhr` for Plex and Jellyfin: `discover.json`, `lineup_status.json`, `lineup.json` (built from the
   mapping) and `stream/:id`, which redirects (HTTP 302) to the receiver's stream URL. Public like the playlist; can be disabled with
   `HDHR_ENABLED=false`. Settings: `HDHR_FRIENDLY_NAME`, `HDHR_DEVICE_ID`, `HDHR_TUNER_COUNT`.
@@ -305,6 +354,7 @@ First stable release with the HDHomeRun emulation. It contains everything from t
   Choosing an entry copies it right away. The menu works with the keyboard and offers only the M3U URL if `HDHR_ENABLED=false`.
 
 ### Changed
+
 - Docs: Dispatcharr is no longer part of the documentation; Plex and Jellyfin are the documented clients. The `/playlist.m3u`
   endpoint stays available for other M3U players.
 - `GET /api/get-config` also reports `hdhrEnabled`.
@@ -314,11 +364,13 @@ First stable release with the HDHomeRun emulation. It contains everything from t
 Second release candidate with the changes after the first Plex tests. It does not move the `latest` image tag; use the exact tag `1.7.0-rc.2` to try it.
 
 ### Breaking changes
+
 - The server now listens on port **9191** by default (was 3000). The Dockerfile (`EXPOSE`, health check), the compose file, the CI
   smoke test and all examples use `9191:9191`. If your stack publishes `3000:3000` and does not set `PORT`, change the mapping to
   `9191:9191` or set `PORT=3000`. The health checks follow `PORT`.
 
 ### Changed
+
 - HDHomeRun emulation: the default tuner count is now 2 (was 4). `HDHR_FRIENDLY_NAME` defaults to `-`: without a custom name the
   tuner is called "TechniSat <detected model>" (e.g. "TechniSat DIGIT ISIO STC", just "TechniSat" before the first successful
   sync). The detected model is stored in `mapping.json`.
@@ -330,6 +382,7 @@ Second release candidate with the changes after the first Plex tests. It does no
 Release candidate for testing the HDHomeRun emulation with Plex and Jellyfin. It does not move the `latest` image tag; use the exact tag `1.7.0-rc.1` to try it.
 
 ### Added
+
 - HDHomeRun emulation below `/hdhr` for Plex and Jellyfin: `discover.json`, `lineup_status.json`, `lineup.json` (built from the
   mapping) and `stream/:id`, which redirects (HTTP 302) to the receiver's stream URL. Public like the playlist; can be disabled with
   `HDHR_ENABLED=false`. New settings: `HDHR_FRIENDLY_NAME`, `HDHR_DEVICE_ID`, `HDHR_TUNER_COUNT`.
@@ -337,6 +390,7 @@ Release candidate for testing the HDHomeRun emulation with Plex and Jellyfin. It
 ## [1.6.1]
 
 ### Changed
+
 - UI (header): "Last sync" shows the time without seconds, and a new sync is acknowledged by a calm pulse (the icon turns once,
   a green ring fades out) instead of a green flash; it respects "reduce motion" and no longer shifts the layout. After
   "Apply & Fetch" the badge updates immediately.
@@ -351,11 +405,13 @@ Release candidate for testing the HDHomeRun emulation with Plex and Jellyfin. It
 ## [1.6.0]
 
 ### Added
+
 - UI: protection against losing unsaved ID changes. A dot on "Save" shows pending changes, and "Apply & Fetch" (also when
   switching the channel list) and "Import" ask whether to save, discard or cancel. The browser warns before closing the
   tab with unsaved changes.
 
 ### Changed
+
 - UI: "Clean" shows the number of stale entries as a small badge in the corner of the button instead of text in brackets.
 - UI: the channel ID and search fields have `id`, `name` and an accessible label (fixes the browser's form-field hint).
 - UI: the unsaved-changes dialog is centered on narrow screens; its buttons are stacked at full width with equal margins.
@@ -366,6 +422,7 @@ Release candidate for testing the HDHomeRun emulation with Plex and Jellyfin. It
 Hardening and quality release (includes all changes since 1.3.0; 1.4.0 was an internal working version).
 
 ### Breaking changes
+
 - The container now runs as the unprivileged user `node` (UID 1000). Bind-mounted data directories must be
   writable for that user: `chown -R 1000:1000 ./data`.
 - Node.js 24 or newer is required (`engines`), the image is based on `node:24-alpine`.
@@ -376,6 +433,7 @@ Hardening and quality release (includes all changes since 1.3.0; 1.4.0 was an in
 - Default cron expression is now `*/5 * * * *` (was `*/60 * * * *`).
 
 ### Added
+
 - Optional HTTP Basic Auth (`ADMIN_USER`, `ADMIN_PASSWORD`), security headers (CSP etc.), rate limiting.
 - `/health` endpoint, Docker `HEALTHCHECK`, graceful shutdown, `tini` as PID 1.
 - `lastError` / `consecutiveFailures` in `/api/get-config`; sync errors visible in the UI.
@@ -389,6 +447,7 @@ Hardening and quality release (includes all changes since 1.3.0; 1.4.0 was an in
 - UI: header with version and last-sync badge, "Copy M3U URL" button (with fallback for plain-HTTP origins).
 
 ### Changed
+
 - The runtime image no longer contains npm, corepack and yarn (not needed at runtime; keeps vulnerability scans free of findings in tooling that is not part of the application).
 - Validation and playlist generation moved to `lib/` (testable); a failed sync keeps the last known good playlist.
 - Syncs (cron and manual) can no longer overlap; configuration is only applied after a successful fetch.
@@ -396,6 +455,7 @@ Hardening and quality release (includes all changes since 1.3.0; 1.4.0 was an in
 - `mapping.json` is saved atomically, with a fallback for single-file bind mounts, and its entries are written in the order of the receiver's channel list (stale entries last, alphabetically).
 
 ### Fixed
+
 - UI was missing document structure and header markup; the initial config load could fail silently.
 - XSS via channel names / error messages in the UI; M3U injection via line breaks or quotes.
 - SSRF possibilities through unvalidated receiver IP and port.

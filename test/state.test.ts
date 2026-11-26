@@ -1,8 +1,6 @@
-'use strict';
-
-import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createState, persistedSnapshot, applyPersistedState, type AppState } from '../dist/lib/state.js';
+import test from 'node:test';
+import { type AppState, applyPersistedState, createState, persistedSnapshot } from '../dist/lib/state.js';
 import { createDeps } from '../test-helpers/state-deps.ts';
 
 const logger = { warn() {}, info() {}, error() {} };
@@ -32,8 +30,8 @@ test('persistedSnapshot contains only plain data and does not share mapping/chan
             mapping: { A: 1 },
             channels: [{ name: 'A', url: 'http://192.168.1.20/a' }],
             lastSync: '2026-01-01T00:00:00.000Z',
-            detectedModel: 'DIGIT ISIO STC'
-        }
+            detectedModel: 'DIGIT ISIO STC',
+        },
     });
 
     const snapshot = persistedSnapshot(state) as { mapping: Record<string, number>; channels: Array<{ name: string }> };
@@ -49,19 +47,23 @@ test('persistedSnapshot contains only plain data and does not share mapping/chan
 
 test('applyPersistedState sanitises values, sorts the mapping and repairs invalid settings', () => {
     const state = createState();
-    const result = applyPersistedState(state, {
-        ip: '192.168.1.10',
-        port: 'not-a-port',
-        cronExpression: 'not cron',
-        selectedListName: '',
-        mapping: { '002 B': 2, '001 A': 1, bad: 'has space' },
-        channels: [
-            { name: '001 A', url: 'http://192.168.1.20/a' },
-            { name: '002 B', url: 'http://192.168.1.20/b' },
-            { name: 42, url: 'http://invalid' }
-        ],
-        detectedModel: 'DIGIT ISIO STC'
-    }, deps);
+    const result = applyPersistedState(
+        state,
+        {
+            ip: '192.168.1.10',
+            port: 'not-a-port',
+            cronExpression: 'not cron',
+            selectedListName: '',
+            mapping: { '002 B': 2, '001 A': 1, bad: 'has space' },
+            channels: [
+                { name: '001 A', url: 'http://192.168.1.20/a' },
+                { name: '002 B', url: 'http://192.168.1.20/b' },
+                { name: 42, url: 'http://invalid' },
+            ],
+            detectedModel: 'DIGIT ISIO STC',
+        },
+        deps,
+    );
 
     assert.equal(state.configured, true);
     assert.equal(result.changed, true);
