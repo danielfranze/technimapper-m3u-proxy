@@ -4,7 +4,7 @@ info:
     description: >
         API of TechniMapper (M3U8 proxy & HDHomeRun tuner emulation for TechniSat receivers).
         Object names use camelCase; channel IDs are strings or numbers.
-    version: 2.0.1
+    version: 2.0.2
     license:
         name: MIT
         url: https://github.com/danielfranze/technimapper-m3u-proxy/blob/main/LICENSE
@@ -132,7 +132,7 @@ paths:
                                     ]
                                 properties:
                                     status: { type: string, enum: [ok, degraded], example: ok }
-                                    version: { type: string, example: 2.0.1 }
+                                    version: { type: string, example: 2.0.2 }
                                     configured: { type: boolean }
                                     playlistAvailable: { type: boolean }
                                     lastSync: { type: string, format: date-time, nullable: true }

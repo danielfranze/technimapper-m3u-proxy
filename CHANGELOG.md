@@ -3,11 +3,16 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/), versions follow [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [2.0.2] - 2026-11-27
+
+Patch release for the readability pass after 2.0.1. No runtime behavior changed.
 
 ### Changed
 
-- Readability pass: removed stale JSDoc blocks, translated the remaining German comments, consolidated shared types (`Logger`, `Metrics`, `FetchResult`), deduplicated the frontend request and search helpers, and normalized Node.js imports. No behavior change.
+- Removed stale JSDoc blocks from the route modules, fixed misleading comments and translated the remaining German comments.
+- Consolidated shared types (`Logger`, `Metrics`, `FetchResult`) and removed redundant aliases and defensive guards.
+- Deduplicated the frontend request and search helpers and normalized Node.js imports (`node:` protocol).
+- Added a README table of contents and clarified the HDHomeRun discovery limitation for Plex and Jellyfin.
 
 ## [2.0.1] - 2026-11-26
 
