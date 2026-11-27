@@ -57,17 +57,21 @@ export function updateDirtyIndicator(): void {
     });
 }
 
-/** Renders the channel ID mapping table rows based on filters and search queries. */
-export function renderTable(): void {
-    const tbody = byId('channelTableBody');
-    let searchTerm = '';
+/** Returns the active search term from the desktop/mobile inputs. */
+export function getSearchTerm(): string {
     try {
         const searchInput = maybeInputById('searchInput');
         const searchInputMobile = maybeInputById('searchInputMobile');
-        searchTerm = (searchInput?.value || searchInputMobile?.value || '').toLowerCase();
+        return (searchInput?.value || searchInputMobile?.value || '').toLowerCase();
     } catch {
-        /* no document (e.g. unit tests) */
+        return '';
     }
+}
+
+/** Renders the channel ID mapping table rows based on filters and search queries. */
+export function renderTable(): void {
+    const tbody = byId('channelTableBody');
+    const searchTerm = getSearchTerm();
     const rows: string[] = [];
     const dupIds = new Set(model.getDuplicateGroups(model.getActiveMapping()).map((g) => g.id));
 

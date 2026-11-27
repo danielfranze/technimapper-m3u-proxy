@@ -2,6 +2,22 @@
 
 Turns the live TV channel list of a TechniSat receiver into a stable **HDHomeRun network tuner** for **Plex** and **Jellyfin**. The same channels are also available as an optional M3U8 playlist.
 
+## Contents
+
+- [The Problem: Stream Instability](#the-problem-stream-instability)
+- [The Solution: TechniMapper](#the-solution-technimapper)
+- [Compatibility Note](#compatibility-note)
+- [Prerequisites](#prerequisites)
+- [Quick Start & Deployment](#quick-start--deployment)
+- [Configuration](#configuration)
+- [HDHomeRun Emulation (Plex / Jellyfin)](#hdhomerun-emulation-plex--jellyfin)
+- [Optional M3U8 Playlist](#optional-m3u8-playlist)
+- [Security](#security)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Third-party fonts](#third-party-fonts)
+- [License](#license)
+
 ## The Problem: Stream Instability
 
 TechniSat receivers frequently change internal stream URLs and session parameters due to channel rescans, background updates, or reboots. Linking these raw URLs directly into a media center causes constant breakage, as the streams become dead ends as soon as the receiver refreshes its internal state.
@@ -194,7 +210,7 @@ The absolute URLs in the answers are built from the `Host` header of the request
 
 **Limitations**
 
-- No automatic discovery (SSDP/UDP): the tuner has to be added by address.
+- No automatic discovery: Plex looks for HDHomeRun tuners via SSDP (`239.255.255.250:1900`), Jellyfin via the SiliconDust UDP protocol on port `65001` followed by HTTP on port 80. TechniMapper supports neither, so add the tuner by address (`http://<server-ip>:9191/hdhr`).
 - No program guide (EPG) is provided. Plex and Jellyfin need a separate guide source to show program data.
 - The tuner count is only reported to the client. The number of parallel streams is limited by the receiver itself.
 - Streams are redirected, not proxied. The client must be able to reach the receiver's IP address directly, and the receiver must serve the stream to that client.

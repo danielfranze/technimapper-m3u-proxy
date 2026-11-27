@@ -1,6 +1,8 @@
+import type { Metrics } from './app-types.js';
 import type { LineupEntry } from './hdhr.js';
 import { HttpError } from './http-error.js';
 import { buildM3u8 } from './m3u8.js';
+import type { FetchResult, Receiver } from './receiver.js';
 import { persistedSnapshot } from './state.js';
 import type { AppState, StateStore } from './state-store.js';
 import type { ValidatedSettings } from './validation.js';
@@ -12,23 +14,10 @@ import type { ValidatedSettings } from './validation.js';
  * sync flow reusable and testable without Express.
  */
 
-interface SyncRunnerMetrics {
-    syncRuns: number;
-    syncFailures: number;
-    syncDurationMs: number;
-}
-
 interface SyncRunnerDeps {
     state: StateStore;
     configStore: { write(data: unknown): Promise<void> };
-    receiver: {
-        fetchChannels(settings: { ip: string; port: string | number; selectedListName: string }): Promise<{
-            channels: { name: string; url: string }[];
-            selectedListName: string;
-            availableLists: string[];
-            detectedModel: string;
-        }>;
-    };
+    receiver: Pick<Receiver, 'fetchChannels'>;
     validation: {
         validateSettings(raw: unknown): ValidatedSettings;
         validateMapping?(input: unknown): unknown;
@@ -38,7 +27,7 @@ interface SyncRunnerDeps {
         modelLabel(deviceType: string | null): string;
     };
     logger: { warn(...args: unknown[]): void };
-    metrics?: SyncRunnerMetrics;
+    metrics?: Metrics;
 }
 
 function createSyncRunner({ state, configStore, receiver, validation, hdhrModule, logger, metrics }: SyncRunnerDeps) {
@@ -88,9 +77,7 @@ function createSyncRunner({ state, configStore, receiver, validation, hdhrModule
         return count;
     }
 
-    async function performSync(
-        candidate: ValidatedSettings,
-    ): Promise<Awaited<ReturnType<typeof receiver.fetchChannels>> & { stale?: boolean }> {
+    async function performSync(candidate: ValidatedSettings): Promise<FetchResult & { stale?: boolean }> {
         const startedAt = Date.now();
         updateState((s) => {
             s.sync.lastAttemptAt = new Date().toISOString();
@@ -178,4 +165,4 @@ function createSyncRunner({ state, configStore, receiver, validation, hdhrModule
     };
 }
 
-export { createSyncRunner, type SyncRunnerMetrics };
+export { createSyncRunner };

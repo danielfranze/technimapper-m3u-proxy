@@ -42,7 +42,7 @@
             "style": {
                 "noNonNullAssertion": "error",
                 "useConst": "error",
-                "useNodejsImportProtocol": "off"
+                "useNodejsImportProtocol": "on"
             },
             "complexity": {
                 "noUselessTypeConstraint": "error",

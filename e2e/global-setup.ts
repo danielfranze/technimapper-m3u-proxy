@@ -1,8 +1,8 @@
-import { spawn } from 'child_process';
-import fs from 'fs';
-import http from 'http';
-import os from 'os';
-import path from 'path';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
 
 const MOCK_PORT = 9199;
 const DATA_DIR = path.join(os.tmpdir(), 'technimapper-e2e-mock');

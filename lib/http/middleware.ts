@@ -6,7 +6,7 @@
  * themselves and rely on these middleware functions.
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { HttpError } from '../http-error.js';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
@@ -358,7 +358,7 @@ interface HttpSecurityErrorLike {
  * Keeping this as a factory makes the status mapping testable without an HTTP
  * route that has to throw a synthetic error in production.
  */
-export function createErrorHandler(logger: { error(prefix: string, err: unknown): void } = { error: () => undefined }) {
+export function createErrorHandler(logger: { error(...args: unknown[]): void } = { error: () => undefined }) {
     return (err: HttpSecurityErrorLike | unknown, _req: RequestLike, res: ResponseLike, _next: NextLike) => {
         const e = err as HttpSecurityErrorLike;
         if (e?.type === 'entity.parse.failed') return res.status(400).json({ error: 'Invalid JSON payload' });

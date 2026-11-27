@@ -1,6 +1,6 @@
 // Minimal TechniSat SOAP mock for E2E tests.
 // Serves a discovery (TV-Liste) and a channel list on /ContentDirectory/Control.
-import http from 'http';
+import http from 'node:http';
 
 const port = parseInt(process.env.MOCK_RECEIVER_PORT || '9199', 10);
 

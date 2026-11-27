@@ -2,15 +2,9 @@ import type { Express, NextFunction, Request, Response } from 'express';
 import { errorMessage } from '../error-message.js';
 import * as hdhrModule from '../hdhr.js';
 import { HttpError } from '../http-error.js';
+import type { FetchResult } from '../receiver.js';
 import type { AppState, StateStore } from '../state-store.js';
 import type { ValidatedSettings } from '../validation.js';
-
-interface PerformSyncResult {
-    channels: { name: string; url: string }[];
-    availableLists: string[];
-    stale?: boolean;
-    detectedModel?: string;
-}
 
 interface ConfigCtx {
     getState(): AppState;
@@ -28,19 +22,11 @@ interface ConfigCtx {
     version: string;
     hdhrConfig: { enabled: boolean };
     logger: { error(...args: unknown[]): void };
-    performSync(candidate: {
-        ip: string;
-        port: string | number;
-        selectedListName: string;
-        cronExpression: string;
-    }): Promise<PerformSyncResult>;
+    performSync(candidate: ValidatedSettings): Promise<FetchResult & { stale?: boolean }>;
     rebuildViews(): void;
 }
 
-/**
- * @param {import('express').Express} app
- * @param {any} ctx
- */
+/** Registers settings, sync, export and import endpoints. */
 function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
     const {
         getState,
@@ -85,7 +71,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
         try {
             await persistState();
         } catch (err) {
-            if (stateStore && typeof stateStore.commit === 'function') stateStore.commit(before);
+            stateStore.commit(before);
             throw err;
         }
         syncQueue.clearBackoff();
@@ -108,7 +94,7 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
                 }
             }
 
-            const result = (await syncQueue.request(() => performSync(candidate))) as PerformSyncResult;
+            const result = (await syncQueue.request(() => performSync(candidate))) as FetchResult & { stale?: boolean };
             if (result?.stale) {
                 throw HttpError.conflict('Receiver settings changed during sync. Please retry.');
             }
@@ -167,10 +153,10 @@ function registerConfigRoutes(app: Express, ctx: ConfigCtx): void {
         try {
             await persistState();
         } catch (err) {
-            if (stateStore && typeof stateStore.commit === 'function') stateStore.commit(beforeImport);
+            stateStore.commit(beforeImport);
             throw err;
         }
-        if (typeof syncQueue.clearBackoff === 'function') syncQueue.clearBackoff();
+        syncQueue.clearBackoff();
         startBackgroundCron();
         res.json({ success: true, message: 'Configuration imported successfully' });
     });

@@ -45,13 +45,15 @@ export interface LoggerOptions {
     sink?: LogSink;
 }
 
-export function createLogger(options: LoggerOptions = {}): {
+export interface Logger {
     level: string;
     format: string;
     info: LogFunction;
     warn: LogFunction;
     error: LogFunction;
-} {
+}
+
+export function createLogger(options: LoggerOptions = {}): Logger {
     const level = normalizeLevel(options.level);
     const format = normalizeFormat(options.format);
     const sink = options.sink || defaultSink();

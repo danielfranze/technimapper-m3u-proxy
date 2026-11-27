@@ -1,7 +1,7 @@
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import compression from 'compression';
-import crypto from 'crypto';
 import express from 'express';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -12,7 +12,7 @@ declare module 'express-serve-static-core' {
     }
 }
 
-import type { AppDeps, CronHandle, RouteContext } from './app-types.js';
+import type { AppDeps, CronHandle, Metrics, RouteContext } from './app-types.js';
 import type { ValidatedSettings } from './domain/settings.js';
 import { errorMessage } from './error-message.js';
 import * as hdhrModule from './hdhr.js';
@@ -112,7 +112,7 @@ function createApp({
         }),
     );
 
-    const metrics = { httpRequests: 0, httpErrors: 0, syncRuns: 0, syncFailures: 0, syncDurationMs: 0 };
+    const metrics: Metrics = { httpRequests: 0, httpErrors: 0, syncRuns: 0, syncFailures: 0, syncDurationMs: 0 };
 
     app.use((req, res, next) => {
         const startedAt = Date.now();

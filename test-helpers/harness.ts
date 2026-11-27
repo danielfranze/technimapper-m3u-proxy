@@ -1,6 +1,6 @@
 import { type AppDeps, createApp } from '../lib/app.js';
 import type { ConfigStore } from '../lib/config-store.js';
-import { createLogger } from '../lib/logger.js';
+import { createLogger, type Logger } from '../lib/logger.js';
 import type { Receiver } from '../lib/receiver.js';
 import { createState } from '../lib/state.js';
 import type { StateStore } from '../lib/state-store.js';
@@ -10,7 +10,7 @@ import { createValidation } from '../lib/validation.js';
 
 const fakeCron = (value: string): boolean => typeof value === 'string' && /^\S+ \S+ \S+ \S+ \S+$/.test(value.trim());
 
-function quietLogger(): ReturnType<typeof createLogger> {
+function quietLogger(): Logger {
     return createLogger({ level: 'error', sink: { info() {}, warn() {}, error() {} } });
 }
 

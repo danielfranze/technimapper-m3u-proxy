@@ -1,21 +1,18 @@
 import type { Express, Request, Response } from 'express';
 import { HttpError } from '../http-error.js';
-import type { StateStore } from '../state-store.js';
+import type { AppState, StateStore } from '../state-store.js';
 import { findDuplicateGroups, findDuplicateIds, partitionMapping } from '../validation.js';
 
 interface MappingCtx {
-    getState(): ReturnType<StateStore['get']>;
-    updateState(mutator: (state: ReturnType<StateStore['get']>) => void): void;
+    getState(): AppState;
+    updateState(mutator: (state: AppState) => void): void;
     state: StateStore;
     persistState(): Promise<void>;
     rebuildViews(): void;
     validation: { validateMapping(input: unknown): { mapping: Record<string, string | number>; invalid: string[] } };
 }
 
-/**
- * @param {import('express').Express} app
- * @param {any} ctx
- */
+/** Registers channel-mapping endpoints. */
 function registerMappingRoutes(app: Express, ctx: MappingCtx): void {
     const { getState, updateState, state: stateStore, persistState, rebuildViews, validation } = ctx;
     const { validateMapping } = validation;
@@ -36,7 +33,7 @@ function registerMappingRoutes(app: Express, ctx: MappingCtx): void {
         try {
             await persistState();
         } catch (err) {
-            if (stateStore && typeof stateStore.commit === 'function') stateStore.commit(before);
+            stateStore.commit(before);
             throw err;
         }
 

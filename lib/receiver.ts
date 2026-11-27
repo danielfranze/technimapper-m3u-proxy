@@ -6,11 +6,11 @@
  * objects, which makes the sync flow testable with a fake receiver.
  */
 
-import http from 'http';
+import http from 'node:http';
 import xml2js from 'xml2js';
 import { STREAM_URL_REGEX } from './m3u8.js';
 
-/** xml2js-Ergebnisse: Entweder ein String, ein Objekt ({ ... }) oder ein Array davon. */
+/** xml2js values: either a string, an object ({ ... }) or an array of them. */
 type XmlValue = XmlNode | XmlNode[] | string | undefined;
 interface XmlNode {
     [key: string]: unknown;
@@ -33,7 +33,7 @@ interface DiscoveryResult {
     lists: ChannelList[];
 }
 
-interface FetchResult {
+export interface FetchResult {
     channels: Channel[];
     selectedListName: string;
     availableLists: string[];
@@ -71,7 +71,7 @@ function asNode(value: unknown): XmlNode | undefined {
     return value && typeof value === 'object' ? (value as XmlNode) : undefined;
 }
 
-/** xml2js gibt entweder einen String oder { _: text, $: attrs } zurück. */
+/** xml2js returns either a string or { _: text, $: attrs }. */
 function xmlText(value: XmlValue): string | undefined {
     let current: XmlValue = value;
     if (Array.isArray(current)) current = current[0];

@@ -82,32 +82,29 @@ function errorFrom(data: unknown, res: Response): string {
     return `HTTP ${res.status}${statusText}`;
 }
 
-export async function postJson<T>(path: string, body: unknown): Promise<JsonResult<T>> {
+async function requestJson<T>(path: string, init?: RequestInit): Promise<JsonResult<T>> {
     let res: Response;
     try {
-        res = await fetch(BACKEND_URL + path, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-        });
+        res = await fetch(BACKEND_URL + path, init);
     } catch (err) {
-        throw new ApiError(`POST ${path} failed: ${err instanceof Error ? err.message : String(err)}`, 0, null);
+        const method = init?.method ?? 'GET';
+        throw new ApiError(`${method} ${path} failed: ${err instanceof Error ? err.message : String(err)}`, 0, null);
     }
     const data = await parseJson(res);
     const error = res.ok ? undefined : errorFrom(data, res);
     return { ok: res.ok, res, data: data as T, ...(error ? { error } : {}) };
 }
 
+export async function postJson<T>(path: string, body: unknown): Promise<JsonResult<T>> {
+    return requestJson<T>(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+}
+
 export async function getJson<T>(path: string): Promise<JsonResult<T>> {
-    let res: Response;
-    try {
-        res = await fetch(BACKEND_URL + path);
-    } catch (err) {
-        throw new ApiError(`GET ${path} failed: ${err instanceof Error ? err.message : String(err)}`, 0, null);
-    }
-    const data = await parseJson(res);
-    const error = res.ok ? undefined : errorFrom(data, res);
-    return { ok: res.ok, res, data: data as T, ...(error ? { error } : {}) };
+    return requestJson<T>(path);
 }
 
 export async function getConfig(): Promise<JsonResult<ConfigResponse>> {

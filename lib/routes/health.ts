@@ -7,11 +7,7 @@ interface HealthCtx {
     syncQueue: { queueLength: number; backoffRemainingMs(): number };
 }
 
-/**
- * Health endpoints.
- * @param {import('express').Express} app
- * @param {any} ctx
- */
+/** Registers liveness, readiness and health endpoints. */
 function registerHealthRoutes(app: Express, ctx: HealthCtx): void {
     const { getState, version } = ctx;
 

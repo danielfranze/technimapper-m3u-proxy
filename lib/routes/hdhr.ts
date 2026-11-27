@@ -8,10 +8,7 @@ interface HdhrCtx {
     hdhrConfig?: hdhrModule.HdhrConfig;
 }
 
-/**
- * @param {import('express').Express} app
- * @param {any} ctx
- */
+/** Registers the HDHomeRun emulation endpoints below /hdhr. */
 function registerHdhrRoutes(app: express.Express, ctx: HdhrCtx): void {
     const { getState } = ctx;
     const hdhrConfig = ctx.hdhrConfig || {

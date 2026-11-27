@@ -1,22 +1,14 @@
 import type { Express, Request, Response } from 'express';
+import type { Metrics } from '../app-types.js';
 import type { AppState } from '../state-store.js';
 
 interface MetricsCtx {
     getState(): AppState;
-    metrics: {
-        httpRequests: number;
-        httpErrors: number;
-        syncRuns: number;
-        syncFailures: number;
-        syncDurationMs: number;
-    };
+    metrics: Metrics;
     syncQueue: { queueLength: number };
 }
 
-/**
- * @param {import('express').Express} app
- * @param {any} ctx
- */
+/** Registers the Prometheus metrics endpoint. */
 function registerMetricsRoutes(app: Express, ctx: MetricsCtx): void {
     const { getState, metrics, syncQueue } = ctx;
 

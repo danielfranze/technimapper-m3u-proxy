@@ -4,11 +4,6 @@
  * without a browser.
  */
 
-import type { CopySource, Filter } from './model.js';
-import { model } from './model.js';
-
-const { escapeHtml, isDirty, getActiveMapping, getOrphans, describeDuplicates } = model;
-
 import type { SaveSettingsResponse, SettingsPayload } from '../api.js';
 import {
     BACKEND_URL,
@@ -19,12 +14,15 @@ import {
     saveSettings,
 } from '../api.js';
 import { buttonById, byId, dialogById, inputById, maybeInputById, queryAll } from './dom.js';
+import type { CopySource, Filter } from './model.js';
+import { model } from './model.js';
 import {
     closeCopyMenu,
     closeListMenu,
     copySelectedUrl,
     fitLayout,
     fitVersionBadge,
+    getSearchTerm,
     getSelectedList,
     handleSearchInput,
     renderCopyButton,
@@ -36,6 +34,8 @@ import {
     updateDirtyIndicator,
     updateModelBadge,
 } from './view.js';
+
+const { escapeHtml, isDirty, getActiveMapping, getOrphans, describeDuplicates } = model;
 
 type UnsavedMode = 'fetch' | 'import';
 type UnsavedChoice = 'save' | 'discard' | 'cancel';
@@ -462,15 +462,4 @@ export async function handleImportFile(event: Event): Promise<void> {
         input.value = '';
     };
     reader.readAsText(file);
-}
-
-/** Returns the active search term from the desktop/mobile inputs. */
-function getSearchTerm(): string {
-    try {
-        const searchInput = maybeInputById('searchInput');
-        const searchInputMobile = maybeInputById('searchInputMobile');
-        return (searchInput?.value || searchInputMobile?.value || '').toLowerCase();
-    } catch {
-        return '';
-    }
 }

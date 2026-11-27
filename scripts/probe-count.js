@@ -1,4 +1,4 @@
-import http from 'http';
+import http from 'node:http';
 
 const ip = process.argv[2];
 const port = process.argv[3] || '9100';

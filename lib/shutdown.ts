@@ -3,7 +3,7 @@
  * sync and the cron scheduler, extracted from server.ts so it is testable.
  */
 
-import type { Server } from 'http';
+import type { Server } from 'node:http';
 
 interface ShutdownLogger {
     info(...args: unknown[]): void;

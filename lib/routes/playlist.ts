@@ -1,11 +1,8 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import type { Express, Request, Response } from 'express';
 import type { AppState } from '../state-store.js';
 
-/**
- * @param {import('express').Express} app
- * @param {any} ctx
- */
+/** Registers the M3U8 playlist endpoints. */
 function registerPlaylistRoutes(app: Express, ctx: { getState(): AppState; playlistPaths?: string[] }): void {
     const { getState } = ctx;
     const playlistPaths: string[] = ctx.playlistPaths || ['/playlist.m3u8', '/playlist.m3u'];

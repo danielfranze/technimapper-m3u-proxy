@@ -38,6 +38,7 @@ import path from 'node:path';
 import cron from 'node-cron';
 import { createApp } from './lib/app.js';
 import { type ConfigStore, createJsonConfigStore } from './lib/config-store.js';
+import { errorMessage } from './lib/error-message.js';
 import * as hdhr from './lib/hdhr.js';
 import { createLogger } from './lib/logger.js';
 import { createSoapReceiver } from './lib/receiver.js';
@@ -49,8 +50,6 @@ import { createValidation, sortMapping } from './lib/validation.js';
 import packageJson from './package.json' with { type: 'json' };
 
 const APP_VERSION = packageJson.version;
-
-import { errorMessage } from './lib/error-message.js';
 
 async function main() {
     const runtime = loadRuntimeConfig(process.env);

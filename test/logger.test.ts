@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createLogger, defaultSink, safeStringify } from '../lib/logger.js';
+import { createLogger, defaultSink, type Logger, safeStringify } from '../lib/logger.js';
 
 function recordingLogger(
     level: string = 'info',
     format: string = 'text',
-): { logger: ReturnType<typeof createLogger>; calls: [string, unknown[]][] } {
+): { logger: Logger; calls: [string, unknown[]][] } {
     const calls: [string, unknown[]][] = [];
     const logger = createLogger({
         level,

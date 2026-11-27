@@ -1,12 +1,10 @@
 /**
- * Route registration for all HTTP routes.
- *
- * Re-exported from the individual modules for backwards compatibility; see
- * `registerAllRoutes()` below.
+ * Registers all HTTP routes and the central 404/error handlers.
  */
 
 import type { Express, Request, Response } from 'express';
 import type { RouteContext } from '../app-types.js';
+import { createErrorHandler } from '../http/middleware.js';
 import { registerConfigRoutes } from './config.js';
 import { registerHdhrRoutes } from './hdhr.js';
 import { registerHealthRoutes } from './health.js';
@@ -26,19 +24,7 @@ function registerAllRoutes(app: Express, ctx: RouteContext): void {
 
     // 404 for unknown API routes, then central error handler
     app.use('/api', (_req: Request, res: Response) => res.status(404).json({ error: 'Not found' }));
-
-    app.use(createErrorHandlerFrom(logger));
-}
-
-// Lazy indirection so the error handler stays a separate concern.
-import { createErrorHandler } from '../http/middleware.js';
-
-function createErrorHandlerFrom(logger: RouteContext['logger']) {
-    return createErrorHandler({
-        error(...args: unknown[]) {
-            logger.error(...args);
-        },
-    });
+    app.use(createErrorHandler(logger));
 }
 
 export { registerAllRoutes };
